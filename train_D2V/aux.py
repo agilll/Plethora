@@ -2,6 +2,9 @@
 
 # folders and filenames involved in corpus construction
 MODELS_FOLDER = "../models"
+if not os.path.exists(MODELS_FOLDER):
+	os.makedirs(MODELS_FOLDER)
+
 KORPUS_FOLDER = "../KORPUS"
 
 LEE_D2V_MODEL = MODELS_FOLDER + "/model_d2v_lee.model"
