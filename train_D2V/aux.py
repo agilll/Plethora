@@ -6,14 +6,14 @@ MODELS_FOLDER = "../models/"
 if not os.path.exists(MODELS_FOLDER):
 	os.makedirs(MODELS_FOLDER)
 
-KORPUS_FOLDER = "../CORPUS/"
+CORPUS_FOLDER = "../CORPUS/"
 
 LEE_D2V_MODEL = MODELS_FOLDER + "model_d2v_lee"
 
 OWN_D2V_MODEL = MODELS_FOLDER + "model_d2v_own"
 
-TRAINING_TXT_FOLDER = KORPUS_FOLDER + '/files_txt/'
-TRAINING_T_FOLDER = KORPUS_FOLDER + '/files_t/'
+TRAINING_TXT_FOLDER = CORPUS_FOLDER + '/files_txt/'
+TRAINING_T_FOLDER = CORPUS_FOLDER + '/files_t/'
 
 
 
