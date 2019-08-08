@@ -1,4 +1,4 @@
-
+import os
 
 # folders and filenames involved in corpus construction
 MODELS_FOLDER = "../models"
