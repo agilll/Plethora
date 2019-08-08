@@ -81,7 +81,7 @@ def buildDoc2VecModel():
 
 
 	# Save model to disk, so we won't need to do the training everytime
-	model.save(_LEE_D2V_MODEL)
+	model.save(_LEE_D2V_MODEL+".model")
 
 	# Count how each document ranks with respect to the training corpus
 	documents_ranks = collections.Counter(ranks)

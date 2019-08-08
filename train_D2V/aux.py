@@ -2,18 +2,18 @@ import os
 
 
 # folders and filenames involved in corpus construction
-MODELS_FOLDER = "../models"
+MODELS_FOLDER = "../models/"
 if not os.path.exists(MODELS_FOLDER):
 	os.makedirs(MODELS_FOLDER)
 
-KORPUS_FOLDER = "../CORPUS"
+KORPUS_FOLDER = "../CORPUS/"
 
-LEE_D2V_MODEL = MODELS_FOLDER + "/model_d2v_lee.model"
+LEE_D2V_MODEL = MODELS_FOLDER + "model_d2v_lee"
 
-OWN_D2V_MODEL = MODELS_FOLDER + "/model_d2v_own.model"
+OWN_D2V_MODEL = MODELS_FOLDER + "model_d2v_own"
 
-TRAINING_TXT_FOLDER = KORPUS_FOLDER + '/files_txt'
-TRAINING_T_FOLDER = KORPUS_FOLDER + '/files_t'
+TRAINING_TXT_FOLDER = KORPUS_FOLDER + '/files_txt/'
+TRAINING_T_FOLDER = KORPUS_FOLDER + '/files_t/'
 
 
 

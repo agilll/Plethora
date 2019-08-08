@@ -1,14 +1,14 @@
-# con 100 epochs y .txt
+# with 100 epochs and .txt
 
 import glob
 from gensim.models.doc2vec import Doc2Vec, TaggedDocument
 from nltk.tokenize import word_tokenize
 
-from aux import TRAINING_TEXTS_FOLDER as _TRAINING_TEXTS_FOLDER, OWN_D2V_MODEL as _OWN_D2V_MODEL
+from aux import TRAINING_TXT_FOLDER as _TRAINING_TXT_FOLDER, OWN_D2V_MODEL as _OWN_D2V_MODEL
 
 
 # Name the model
-model = _OWN_D2V_MODEL+"-b"
+model = _OWN_D2V_MODEL+"-txt.model"
 
 # vector_size (int, optional) – Dimensionality of the feature vectors
 vector_size = 20
@@ -45,7 +45,7 @@ alpha_delta = 0.0002
 def buildDoc2VecModel(model_name, vector_size, window, alpha, min_alpha, min_count, distributed_memory, epochs, alpha_delta):
 
 	# Get all text files in the training documents folder
-	training_documents = glob.glob(_TRAINING_TEXTS_FOLDER+"/*.txt")
+	training_documents = glob.glob(_TRAINING_TXT_FOLDER+"*.txt")
 
 	# A corpus with all the training documents
 	training_corpus = []
