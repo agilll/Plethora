@@ -12,9 +12,12 @@ LEE_D2V_MODEL = MODELS_FOLDER + "/model_d2v_lee.model"
 
 OWN_D2V_MODEL = MODELS_FOLDER + "/model_d2v_own.model"
 
-TRAINING_TEXTS_FOLDER = KORPUS_FOLDER + '/original_texts'
+TRAINING_TXT_FOLDER = KORPUS_FOLDER + '/files_txt'
+TRAINING_T_FOLDER = KORPUS_FOLDER + '/files_t'
 
-#DEFAULT_TRAINING_TEXTS = "historical_modify.txt"
+
+
+
 DEFAULT_TRAINING_TEXTS = "originales.s.w"
 
 
