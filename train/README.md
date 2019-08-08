@@ -1,4 +1,4 @@
-This is the code to train a Doc2Vec network
+This is the code to train a Doc2Vec and Word2Vec networks
 
 buildD2VLeeModel.py - To train a Doc2Vec model with Lee corpus
 
