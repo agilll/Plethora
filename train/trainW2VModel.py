@@ -1,6 +1,7 @@
 #!/Library/Frameworks/Python.framework/Versions/Current/bin/python3
 
-# This script trains Word2Vec models from one or several (folder) '.t' files   
+# This script trains Word2Vec models from one or several (folder) '.t' files
+# saves the model in the current folder
 
 import gensim
 from gensim.models import Word2Vec

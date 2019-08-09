@@ -9,11 +9,18 @@ from smart_open import open as smart_open
 import gensim
 from gensim.models.doc2vec import Doc2Vec
 
+from aux import MODELS_FOLDER as _MODELS_FOLDER
+if not os.path.exists(_MODELS_FOLDER):
+	os.makedirs(_MODELS_FOLDER)
+	
+from aux import LEE_D2V_MODEL as _LEE_D2V_MODEL
+model_full_filename = _MODELS_FOLDER + _LEE_D2V_MODEL + ".model"
+
+	
 LEE_TRAINING_CORPUS = 'lee_background.cor'
 LEE_TESTING_CORPUS = 'lee.cor'
 
 def buildDoc2VecModel():
-	from aux import LEE_D2V_MODEL as _LEE_D2V_MODEL
 	# Set file names for training and testing data
 	test_data_dir = '{}'.format(os.sep).join([gensim.__path__[0], 'test', 'test_data'])
 
@@ -81,7 +88,8 @@ def buildDoc2VecModel():
 
 
 	# Save model to disk, so we won't need to do the training everytime
-	model.save(_LEE_D2V_MODEL+".model")
+	model.save(model_full_filename)
+	print("Doc2Vec model saved!")
 
 	# Count how each document ranks with respect to the training corpus
 	documents_ranks = collections.Counter(ranks)

@@ -1,14 +1,28 @@
 # with 100 epochs and .txt
 
 import glob
+import os
 from gensim.models.doc2vec import Doc2Vec, TaggedDocument
 from nltk.tokenize import word_tokenize
 
-from aux import TRAINING_TXT_FOLDER as _TRAINING_TXT_FOLDER, OWN_D2V_MODEL as _OWN_D2V_MODEL
+from aux import CORPUS_FOLDER as _CORPUS_FOLDER
+if not os.path.exists(_CORPUS_FOLDER):
+	print(_CORPUS_FOLDER, "not found!")
+	exit()
+	
+from aux import TRAINING_TXT_FOLDER as _TRAINING_TXT_FOLDER
+if not os.path.exists(_TRAINING_TXT_FOLDER):
+	print(_TRAINING_TXT_FOLDER, "not found!")
+	exit()
+
+from aux import MODELS_FOLDER as _MODELS_FOLDER
+if not os.path.exists(_MODELS_FOLDER):
+	os.makedirs(_MODELS_FOLDER)
 
 
-# Name the model
-model = _OWN_D2V_MODEL+"-txt.model"
+from aux import OWN_D2V_MODEL as _OWN_D2V_MODEL
+model_full_filename = _MODELS_FOLDER + _OWN_D2V_MODEL + "-txt.model"
+
 
 # vector_size (int, optional) – Dimensionality of the feature vectors
 vector_size = 20
@@ -83,4 +97,4 @@ def buildDoc2VecModel(model_name, vector_size, window, alpha, min_alpha, min_cou
 
 
 # Build a doc2vec model trained with files in textos originales folder
-buildDoc2VecModel(model, vector_size, window, alpha, min_alpha, min_count, distributed_memory, epochs, alpha_delta)
+buildDoc2VecModel(model_full_filename, vector_size, window, alpha, min_alpha, min_count, distributed_memory, epochs, alpha_delta)
