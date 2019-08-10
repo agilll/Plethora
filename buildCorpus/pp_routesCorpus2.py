@@ -129,6 +129,8 @@ def buildCorpus2():
 	from pa_similarities import similarityFunctions as _similarityFunctions
 	from pa_scrap import scrapFunctions as _scrapFunctions
 
+	if not os.path.exists(_URLs_FOLDER):
+		os.makedirs(_URLs_FOLDER)
 
 	selectedWikicats = json.loads(request.values.get("wikicats"))
 	print(len(selectedWikicats), "wikicats")
@@ -159,7 +161,7 @@ def buildCorpus2():
 		numUrlsDB += len(dbUrls)
 		for url in dbUrls:
 			content += url+"\n"
-		_saveFile(_CORPUS_FOLDER+"/_Wikicat_"+wikicat+"_DB_Urls.txt", content)  # save all results from DB
+		_saveFile(_URLs_FOLDER+"/_Wikicat_"+wikicat+"_DB_Urls.txt", content)  # save all results from DB
 
 		# now, the results from WK
 		content = ""
@@ -168,7 +170,7 @@ def buildCorpus2():
 		numUrlsWK += len(wkUrls)
 		for url in wkUrls:
 			content += url+"\n"
-		_saveFile(_CORPUS_FOLDER+"/_Wikicat_"+wikicat+"_WK_Urls.txt", content) # save all results from WK
+		_saveFile(_URLs_FOLDER+"/_Wikicat_"+wikicat+"_WK_Urls.txt", content) # save all results from WK
 
 		longs1 = "(" + str(len(dbUrls)) + "," + str(len(wkUrls)) + ")"
 		print(wikicat, longs1, end=', ')

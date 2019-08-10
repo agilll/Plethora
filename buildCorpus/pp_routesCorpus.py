@@ -6,7 +6,6 @@ import pickle
 from flask import request, jsonify
 from os.path import isfile
 from requests_futures.sessions import FuturesSession
-
 import shutil
 
 
@@ -16,9 +15,6 @@ import shutil
 def getWikicatsFromText():
 	if request.method == "POST":
 		from aux import CORPUS_FOLDER as _CORPUS_FOLDER, WIKICAT_LIST_FILENAME as _WIKICAT_LIST_FILENAME, SELECTED_WIKICAT_LIST_FILENAME as _SELECTED_WIKICAT_LIST_FILENAME, saveFile as _saveFile
-		import sys
-		sys.path.append('../')
-
 		from px_DB_Manager import getCategoriesInText as _getCategoriesInText
 		
 		texto = request.values.get("text")
