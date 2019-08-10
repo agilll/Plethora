@@ -15,7 +15,10 @@ import shutil
 # returns: list of wikicats (and stores them in the file CORPUS_FOLDER/WIKICAT_LIST)
 def getWikicatsFromText():
 	if request.method == "POST":
-		from px_aux import CORPUS_FOLDER as _CORPUS_FOLDER, WIKICAT_LIST_FILENAME as _WIKICAT_LIST_FILENAME, SELECTED_WIKICAT_LIST_FILENAME as _SELECTED_WIKICAT_LIST_FILENAME, saveFile as _saveFile
+		from aux import CORPUS_FOLDER as _CORPUS_FOLDER, WIKICAT_LIST_FILENAME as _WIKICAT_LIST_FILENAME, SELECTED_WIKICAT_LIST_FILENAME as _SELECTED_WIKICAT_LIST_FILENAME, saveFile as _saveFile
+		import sys
+		sys.path.append('../')
+
 		from px_DB_Manager import getCategoriesInText as _getCategoriesInText
 		
 		texto = request.values.get("text")
@@ -28,6 +31,9 @@ def getWikicatsFromText():
 		content = ""
 		for w in result["wikicats"]:
 			content += w+"\n"
+		
+		if not os.path.exists(_CORPUS_FOLDER):
+			os.makedirs(_CORPUS_FOLDER)
 		
 		_saveFile(_CORPUS_FOLDER+"/"+_WIKICAT_LIST_FILENAME, content)
 

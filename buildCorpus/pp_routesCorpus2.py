@@ -5,6 +5,9 @@ import csv
 import nltk
 from nltk.tokenize import RegexpTokenizer
 
+import sys
+sys.path.append('../')
+
 '''
 # Folders and filenames used #
 
@@ -116,7 +119,11 @@ def measureWikicatsAndSubjectsSimilarity(original_text, corpus_text):
 # receives: the list of selected wikicats
 # returns: the results, mainly the number of files identified for each wikicat
 def buildCorpus2():
-	from px_aux import CORPUS_FOLDER as _CORPUS_FOLDER, SELECTED_WIKICAT_LIST_FILENAME as _SELECTED_WIKICAT_LIST_FILENAME, URLs_FOLDER as _URLs_FOLDER, SCRAPPED_PAGES_FOLDER as _SCRAPPED_PAGES_FOLDER, SCRAPPED_TEXT_PAGES_FOLDER as _SCRAPPED_TEXT_PAGES_FOLDER, DISCARDED_PAGES_FILENAME as _DISCARDED_PAGES_FILENAME, UNRETRIEVED_PAGES_FILENAME as _UNRETRIEVED_PAGES_FILENAME, SIMILARITIES_CSV_FILENAME as _SIMILARITIES_CSV_FILENAME, LEE_D2V_MODEL as _LEE_D2V_MODEL, OWN_D2V_MODEL as _OWN_D2V_MODEL, saveFile as _saveFile
+	from aux import CORPUS_FOLDER as _CORPUS_FOLDER, SELECTED_WIKICAT_LIST_FILENAME as _SELECTED_WIKICAT_LIST_FILENAME, URLs_FOLDER as _URLs_FOLDER
+	from aux import DISCARDED_PAGES_FILENAME as _DISCARDED_PAGES_FILENAME, SCRAPPED_PAGES_FOLDER as _SCRAPPED_PAGES_FOLDER, SCRAPPED_TEXT_PAGES_FOLDER as _SCRAPPED_TEXT_PAGES_FOLDER
+	from aux import UNRETRIEVED_PAGES_FILENAME as _UNRETRIEVED_PAGES_FILENAME, SIMILARITIES_CSV_FILENAME as _SIMILARITIES_CSV_FILENAME
+	from aux import LEE_D2V_MODEL as _LEE_D2V_MODEL, OWN_D2V_MODEL as _OWN_D2V_MODEL, saveFile as _saveFile
+	
 	import json
 	from pp_routesCorpus import getUrlsWithWikicats as _getUrlsWithWikicats
 	from pa_similarities import similarityFunctions as _similarityFunctions
