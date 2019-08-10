@@ -9,4 +9,5 @@ buildD2VOwnModel-t.py - To train a Doc2Vec model with our own .t files (the txt 
 trainW2VModel.py - To train a Word2Vec model with .t files
 
 It requires ../CORPUS with the training files
+
 It saves the models in ../models
