@@ -8,7 +8,7 @@ if __name__ == '__main__':
 	app = Flask(__name__)
 
 	# leemos el texto por defecto de la demo
-	DEFAULT_TEXT = 'defaultText.txt'
+	DEFAULT_TEXT = '../defaultText.txt'
 	defaultTextFile = open(DEFAULT_TEXT, "r")
 	defaultText = defaultTextFile.read()
 
