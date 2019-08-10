@@ -69,8 +69,7 @@
 		</h4>
 		<div id='div_wikicatsList'></div>
 		<p style="margin-bottom:1cm;"></p>
-		<input id="submit_buildCorpus" type="button" value="Build Corpus"></input>
-		&nbsp;&nbsp;&nbsp;&nbsp;<span id="spanDelta">&delta;<input id="delta" type="text" size="2" value="0.4"></input></span>
+		
 		<input id="submit_buildCorpus2" type="button" value="Build Corpus v2 (Abdullah)"></input>
 		&nbsp;&nbsp;&nbsp;&nbsp;<span id="spanOverwriteCorpus"> Overwrite <input id="overwriteCorpus" name="overwriteCorpus" type="checkbox"></input></span>
 		
@@ -93,7 +92,6 @@
 	<script type="text/javascript" src="http://backbonejs.org/backbone-min.js"></script>
 	<script type="text/javascript" src="http://warfares.github.io/pretty-json/pretty-json-min.js"></script>
 
-
 	<script type="text/javascript">
 
 		// Here it starts what is executed when finishing to load the page  
@@ -104,7 +102,6 @@
 
 			$("#buildCorpusText").val({{ parDefaultText | tojson }});
 			$("#legendWikicatsList").hide()
-			$("#submit_buildCorpus").hide()
 			$("#spanDelta").hide()
 			$("#submit_buildCorpus2").hide()
 			$("#spanOverwriteCorpus").hide()
@@ -149,7 +146,6 @@
 									results += "<input type='checkbox' name='checkboxWikicatList' value='"+w+"' > "+w;
 							});
 							results += "</table>"
-							// $("#submit_buildCorpus").show()
 							$("#submit_buildCorpus2").show()
 							$("#spanOverwriteCorpus").show()
 						
@@ -224,16 +220,8 @@
 			
 			
 			// to build corpus starting from selected wikicats
-			$("#submit_buildCorpus, #submit_buildCorpus2").click(function(event) {
-				var dt = event.delegateTarget;
-				if (dt.id == "submit_buildCorpus") {
-					target = "/buildCorpus";
-				}
-				else {
-					target = "/buildCorpus2";
-					var overwriteCorpus = $("input[name='overwriteCorpus']:checked").val() == "on" ? true : false;
-				}
-				console.log(target);
+			$("#submit_buildCorpus2").click(function(event) {
+				var overwriteCorpus = $("input[name='overwriteCorpus']:checked").val() == "on" ? true : false;
 				
 				$("#legendSelectedWikicatsList").show()
 				$("#spinner").modal("show");
@@ -244,7 +232,7 @@
 				
 				$.ajax({
 					type: "POST",
-					url: target,
+					url: "/buildCorpus2",
 					data: {"overwriteCorpus": overwriteCorpus, "wikicats":  JSON.stringify(selectedWikicats), "text":  $("#buildCorpusText").val()},  // send the selected wikicats and the context text
 					success: function(result) {
 						console.log(result)

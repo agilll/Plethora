@@ -49,63 +49,6 @@ def getWikicatsFromText():
 
 #############################################################################################################################################	
 
-# to attend the query to build the corpus (/buildCorpus)
-# receives: the list of selected wikicats
-# returns: the results, mainly the number of files identified for each wikicat
-def buildCorpus():
-	from px_aux import CORPUS_FOLDER as _CORPUS_FOLDER, SELECTED_WIKICAT_LIST_FILENAME as _SELECTED_WIKICAT_LIST_FILENAME, saveFile as _saveFile
-	import json
-		
-	selectedWikicats = json.loads(request.values.get("wikicats"))
-	print(len(selectedWikicats), "wikicats")
-	numUrlsDB = 0
-	numUrlsWK = 0
-	
-	# stores the selected wikicats in the file CORPUS_FOLDER/SELECTED_WIKICAT_LIST_FILENAME
-	content = ""
-	for w in selectedWikicats:
-		content += w+"\n"
-	_saveFile(_CORPUS_FOLDER+"/"+_SELECTED_WIKICAT_LIST_FILENAME, content)
-	
-	# get the information about all the wikicats
-	urlsObjects = getUrlsWithWikicats(selectedWikicats)
-	print("\n\nReceived result for all the queries\n")
-	
-	result = {}
-	fullList = [] # to agregate the full list of URLs
-		
-	# process all results to return
-	for wikicat in selectedWikicats:
-		# first, the results from DB
-		content = ""
-		dbUrls = urlsObjects[wikicat]["db"]
-		fullList.extend(dbUrls)
-		numUrlsDB += len(dbUrls)
-		for url in dbUrls:
-			content += url+"\n"
-		_saveFile(_CORPUS_FOLDER+"/_Wikicat_"+wikicat+"_DB_Urls.txt", content)  # save all results from DB
-				
-		# now, the results from WK
-		content = ""
-		wkUrls = urlsObjects[wikicat]["wk"]
-		fullList.extend(wkUrls)
-		numUrlsWK += len(wkUrls)
-		for url in wkUrls:
-			content += url+"\n"
-		_saveFile(_CORPUS_FOLDER+"/_Wikicat_"+wikicat+"_WK_Urls.txt", content) # save all results from WK
-	
-		longs1 = "(" + str(len(dbUrls)) + "," + str(len(wkUrls)) + ")"
-		print(wikicat, longs1, end=', ')
-		result[wikicat] = {"db": len(dbUrls), "wk": len(wkUrls)}  # add results for this wikicat
-	
-	listWithoutDuplicates = list(set(fullList))  # remove duplicates URLs
-	print("\n", numUrlsDB, numUrlsWK, len(listWithoutDuplicates))
-	# returns number of results
-	result["totalDB"] = numUrlsDB
-	result["totalWK"] = numUrlsWK
-	result["totalUrls"] = len(listWithoutDuplicates)
-	
-	return jsonify(result);  
 
 
 # aux function to all the URLs associated to a wikicats set
