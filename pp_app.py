@@ -321,11 +321,10 @@ app.add_url_rule("/recalculateEntities", "recalculateEntities", recalculateEntit
 
 
 from buildCorpus.pp_routesCorpus2 import buildCorpus2
-from buildCorpus.pp_routesCorpus import getWikicatsFromText, buildCorpus, getWikicatUrls
+from buildCorpus.pp_routesCorpus import getWikicatsFromText, getWikicatUrls
 
 
 app.add_url_rule("/getWikicatsFromText", "getWikicatsFromText", getWikicatsFromText, methods=["POST"])
-app.add_url_rule("/buildCorpus", "buildCorpus", buildCorpus, methods=["POST"])
 app.add_url_rule("/buildCorpus2", "buildCorpus2", buildCorpus2, methods=["POST"])
 app.add_url_rule("/getWikicatUrls", "getWikicatUrls", getWikicatUrls)
 
