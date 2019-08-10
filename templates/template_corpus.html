@@ -254,7 +254,7 @@
 													
 							// present the summary of results
 							results = "<b>"+selectedWikicats.length+" wikicats</b><br>\n"
-							results += "<table>"
+							results += "<table style='margin: 5px' >"
 							fila=0
 							selectedWikicats.forEach(function(w){
 								if (fila++ % 2 == 0 ) {
@@ -265,7 +265,7 @@
 								}
 								wr = result[w]
 								results += w+" ("+wr["db"]+" from <span style='color: blue; font-weight: bold; text-decoration: underline;' name='"+w+"'  class='wiki wikicat'>DBpedia</span>) ("
-								results += wr["wk"]+" from <span style='color: blue; font-weight: bold; text-decoration: underline;' name='"+w+"'  class='wiki wikidata'>Wikidata</span>) <br>";
+								results += wr["wk"]+" from <span style='color: blue; font-weight: bold; text-decoration: underline;' name='"+w+"'  class='wiki wikidata'>Wikidata</span>)";
 							});
 							results += "</table>"
 							results += "<p style='color: black'>Identified "+result['totalDB']+" files from DBpedia and "+result['totalWK']+" files from Wikidata. Distinct files: "+result['totalUrls']

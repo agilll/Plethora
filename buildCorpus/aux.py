@@ -2,7 +2,7 @@
 
 # folders and filenames involved in corpus construction
 
-MODELS_FOLDER = "../models"
+MODELS_FOLDER = "../MODELS"
 LEE_D2V_MODEL = MODELS_FOLDER+"/model_d2v_lee.model"
 OWN_D2V_MODEL = MODELS_FOLDER+"/model_d2v_own-t.model"
 

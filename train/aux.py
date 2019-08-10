@@ -2,7 +2,7 @@ import os
 
 
 # folders and filenames involved in corpus construction
-MODELS_FOLDER = "../models/"
+MODELS_FOLDER = "../MODELS/"
 
 LEE_D2V_MODEL = "model_d2v_lee"
 

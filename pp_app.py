@@ -51,7 +51,7 @@ import time
 
 
 # El directorio donde están los modelos entrenados de Word2Vec
-MODELS_FOLDER = './models/'
+MODELS_FOLDER = './MODELS/'
 DB_ENTITIES_FOLDER = "./DBentities/"
 
 # El fichero con el texto T por defecto de la demo
