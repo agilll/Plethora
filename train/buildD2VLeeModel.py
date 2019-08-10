@@ -9,12 +9,9 @@ from smart_open import open as smart_open
 import gensim
 from gensim.models.doc2vec import Doc2Vec
 
-from aux import MODELS_FOLDER as _MODELS_FOLDER
-if not os.path.exists(_MODELS_FOLDER):
-	os.makedirs(_MODELS_FOLDER)
 	
 from aux import LEE_D2V_MODEL as _LEE_D2V_MODEL
-model_full_filename = _MODELS_FOLDER + _LEE_D2V_MODEL + ".model"
+model_full_filename = _LEE_D2V_MODEL + ".model"
 
 	
 LEE_TRAINING_CORPUS = 'lee_background.cor'

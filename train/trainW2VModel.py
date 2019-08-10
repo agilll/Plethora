@@ -19,10 +19,6 @@ from aux import TRAINING_T_FOLDER as _TRAINING_T_FOLDER
 if not os.path.exists(_TRAINING_T_FOLDER):
 	print(_TRAINING_T_FOLDER, "not found!")
 	exit()
-
-from aux import MODELS_FOLDER as _MODELS_FOLDER
-if not os.path.exists(_MODELS_FOLDER):
-	os.makedirs(_MODELS_FOLDER)
 	
 	
 class MySentences (object):
@@ -54,7 +50,7 @@ def trainAndSave(sentences, w, m_c, i):
 	name = "agil_W" + str(w) + "_MC" + str(m_c) + "_I"+str(i)
 	print("Training "+name)
 	m = Word2Vec(sentences, size=300, workers=4, window=w, min_count=m_c, iter=i)   # always 300 neurons
-	m.save(_MODELS_FOLDER+name)
+	m.save(name)
 
 
 # start training

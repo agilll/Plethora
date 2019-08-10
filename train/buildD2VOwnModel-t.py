@@ -17,13 +17,10 @@ if not os.path.exists(_TRAINING_T_FOLDER):
 	print(_TRAINING_T_FOLDER, "not found!")
 	exit()
 
-from aux import MODELS_FOLDER as _MODELS_FOLDER
-if not os.path.exists(_MODELS_FOLDER):
-	os.makedirs(_MODELS_FOLDER)
 
 
 from aux import OWN_D2V_MODEL as _OWN_D2V_MODEL
-model_full_filename = _MODELS_FOLDER + _OWN_D2V_MODEL + "-t.model"
+model_full_filename = _OWN_D2V_MODEL + "-t.model"
 
 
 
