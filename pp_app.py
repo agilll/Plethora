@@ -52,6 +52,7 @@ import time
 
 # El directorio donde están los modelos entrenados de Word2Vec
 MODELS_FOLDER = './models/'
+DB_ENTITIES_FOLDER = "./DBentities/"
 
 # El fichero con el texto T por defecto de la demo
 DEFAULT_TEXT = 'defaultText.txt'
@@ -78,7 +79,7 @@ DEFAULT_ANSWER = "Xerxes I"
 app = Flask(__name__)
 
 # leemos la información de la DBpedia sobre las entidades de los textos de entrenamiento
-historicalDBpediaDataMod = pickle.load(open(MODELS_FOLDER+"/"+DBPEDIA_INFO_ABOUT_TRAINING, "rb" ))
+historicalDBpediaDataMod = pickle.load(open(DB_ENTITIES_FOLDER+DBPEDIA_INFO_ABOUT_TRAINING, "rb" ))
 dbManagerHistorical = _DBManager()
 dbManagerHistorical.setDictionaries(historicalDBpediaDataMod)
 
