@@ -129,9 +129,6 @@ def buildCorpus2():
 	from pa_similarities import similarityFunctions as _similarityFunctions
 	from pa_scrap import scrapFunctions as _scrapFunctions
 
-	if not os.path.exists(_URLs_FOLDER):
-		os.makedirs(_URLs_FOLDER)
-
 	selectedWikicats = json.loads(request.values.get("wikicats"))
 	print(len(selectedWikicats), "wikicats")
 	numUrlsDB = 0
@@ -151,7 +148,9 @@ def buildCorpus2():
 	result = {}
 	fullList = [] # to agregate the full list of URLs
 
-
+	if not os.path.exists(_URLs_FOLDER):
+		os.makedirs(_URLs_FOLDER)
+		
 	# process all results to return
 	for wikicat in selectedWikicats:
 		# first, the results from DB
