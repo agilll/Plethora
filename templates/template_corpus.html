@@ -31,285 +31,295 @@
 	.modal-dialog {
 		top: 40%;
 	}
+	
+	.centered {
+		display: block;
+		margin-left: auto;
+		margin-right: auto;
+	}
 </style>
 </head>
 
-<body>
+<body style="margin: 10px;" >
 	
-	<!-- spinner to animate waiting times  -->
-	<div id="spinner" class="modal fade">
-	  <div class="modal-dialog" role="document">
-		<div class="modal-content">
-		  <div class="modal-body">
-			<center><div class="loader"></div></center>
+	<div> 
+		<!-- spinner to animate waiting times  -->
+		<div id="spinner" class="modal fade">
+		  <div class="modal-dialog" role="document">
+			<div class="modal-content">
+			  <div class="modal-body">
+				<center><div class="loader"></div></center>
+			  </div>
+			</div>
 		  </div>
 		</div>
-	  </div>
-	</div>
-
-	<!-- Starting of the interface HTML page  -->
 	
-	<h1>Builder Corpus Tool</h1>
-	<h3>Origin Text</h3>
-
-	<!--  Central content if Tools->Build Corpus is selected -->
-	<div id="buildCorpusDiv">
-
-		<div class="form-group" style="margin-bottom: 0px">
-			<!--  the textarea will be filled with the  jquery $(#buildCorpusMenu).click  -->
-			<textarea id="buildCorpusText" style="width:1000px; height:200px;"></textarea> 
-		</div>
-		<div class="form-group" style="margin-bottom: 0px">
-			<input id="submit_corpusGetWikicatList" type="button" value="Get Wikicats"></input>
-		</div>
-		<p></p>
-
-		<h4 id='legendWikicatsList'><hr>Wikicats list from origin text &nbsp;&nbsp;
-			<input type="button" id="clearAllWikicats" value="Clear All"> &nbsp;&nbsp; <input type="button" id="selectAllWikicats" value="Select All">
-		</h4>
-		<div id='div_wikicatsList'></div>
-		<p style="margin-bottom:1cm;"></p>
+		<!-- Starting of the interface HTML page  -->
 		
-		<input id="submit_buildCorpus2" type="button" value="Build Corpus v2 (Abdullah)"></input>
-		&nbsp;&nbsp;&nbsp;&nbsp;<span id="spanOverwriteCorpus"> Overwrite <input id="overwriteCorpus" name="overwriteCorpus" type="checkbox"></input></span>
-		
-		<h4 id='legendSelectedWikicatsList'><hr>Results from selected Wikicats</h4>
-		<div id='div_selectedWikicatsList'></div>
-		<p></p>
-
-	</div>
-			
-
-	<!-- HTML page is finished , dynamic behabiour caused by JavaScript starts-->
-
-	<!-- jQuery CDN -->
-	<script src="https://code.jquery.com/jquery-1.12.0.min.js"></script>
-	<!-- Bootstrap Js CDN: is used to manage the menu collapse and the central menu tabs -->
-	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+		<h1 style="color:  #0066cc">Builder Corpus Tool</h1>
+		<h3 style="color: #0066cc">Origin Text</h3>
 	
-	<!--  not clear what they are used to -->
-	<script type="text/javascript" src="http://underscorejs.org/underscore-min.js"></script>
-	<script type="text/javascript" src="http://backbonejs.org/backbone-min.js"></script>
-	<script type="text/javascript" src="http://warfares.github.io/pretty-json/pretty-json-min.js"></script>
-
-	<script type="text/javascript">
-
-		// Here it starts what is executed when finishing to load the page  
+		<!--  Central content if Tools->Build Corpus is selected -->
+		<div id="buildCorpusDiv">
+	
+			<div class="form-group" style="margin-bottom: 0px">
+				<!--  the textarea will be filled with the  jquery $(#buildCorpusMenu).click  -->
+				<textarea id="buildCorpusText"  style="border: 2px solid #888; width:1000px; height:300px;"></textarea> 
+			</div>
+			<div class="form-group" style="margin-bottom: 0px">
+				<input style="background-color: #0066cc; color: white" id="submit_corpusGetWikicatList" type="button" value="Get Wikicats"></input>
+			</div>
+			<p></p>
+	
+			<h4 style="color: #0066cc" id='legendWikicatsList'><hr>Wikicats list from origin text &nbsp;&nbsp;
+				<input style="background-color: #0066cc; color: white" type="button" id="clearAllWikicats" value="Clear All"> &nbsp;&nbsp;
+				<input style="background-color: #0066cc; color: white" type="button" id="selectAllWikicats" value="Select All">
+			</h4>
+			<div id='div_wikicatsList'></div>
+			<p style="margin-bottom:1cm;"></p>
+			
+			<input style="background-color: #0066cc; color: white" id="submit_buildCorpus2" type="button" value="Build Corpus v2 (Abdullah)"></input>
+			&nbsp;&nbsp;&nbsp;&nbsp;<span id="spanOverwriteCorpus"> Overwrite <input id="overwriteCorpus" name="overwriteCorpus" type="checkbox"></input></span>
+			
+			<h4 style="color: #0066cc" id='legendSelectedWikicatsList'><hr>Results from selected Wikicats</h4>
+			<div id='div_selectedWikicatsList'></div>
+			<p></p>
+	
+		</div>
 				
-		$(document).ready(function () {
-
-			$("#spinner").modal({show: false, backdrop: 'static'});
-
-			$("#buildCorpusText").val({{ parDefaultText | tojson }});
-			$("#legendWikicatsList").hide()
-			$("#spanDelta").hide()
-			$("#submit_buildCorpus2").hide()
-			$("#spanOverwriteCorpus").hide()
-			$("#legendSelectedWikicatsList").hide()
-			
-			
-			// to request the building of the text training corpus 
-			// Flask "/getWikicatsFromText" is requested
-			// receives a wikicat list to present on the interface
-			$("#submit_corpusGetWikicatList").click(function() {
-				$("#spinner").modal("show");
-				$("#legendWikicatsList").show()
-				$.ajax({
-					type: "POST",
-					url: "/getWikicatsFromText",
-					data: {"text":  $("#buildCorpusText").val()},  // send the text with 'text' key
-					success: function(result) {
-						if (result.hasOwnProperty("error")) {
-							results = "<b style='color: red'>"+result["error"]+"</b>"
-						}
-						else {
-							
-							formerSelectedWikicats =  result["formerSelectedWikicats"]
-							console.log("Wikicats seleccionadas")
-							console.log(formerSelectedWikicats)
-							
-							wikicatList = result["wikicats"]   // ths is the list of wikicats
-							results = "<b>"+wikicatList.length+" wikicats</b><br>\n"
-							results += "<table>"
-							fila=0
-							wikicatList.forEach(function(w){
-								if (fila++ % 3 == 0 ) {
-									results += "<tr><td>"
-								}
-								else {
-									results += "<td>"
-								}
-								
-								if (formerSelectedWikicats.includes(w))
-									results += "<input type='checkbox' name='checkboxWikicatList' value='"+w+"' checked> "+w;
-								else
-									results += "<input type='checkbox' name='checkboxWikicatList' value='"+w+"' > "+w;
-							});
-							results += "</table>"
-							$("#submit_buildCorpus2").show()
-							$("#spanOverwriteCorpus").show()
-						
-						/*	
-							wl1 = ["5th-centuryBCGreekPeople", "AncientPeople", "GreekPeople", "5th-centuryBCRulers", "PeopleOfTheGreco-PersianWars", "RulersOfSparta", "Kings"]
-							wl2 = ["BattlesInvolvingAncientGreece", "BattlesInvolvingGreece", "Greco-PersianWars", "BattlesInvolvingTheAchaemenidEmpire", "BattlesOfTheGreco-PersianWars", "BattlesInvolvingSparta"]
-							wl3 = ["AncientGreekCities", "AncientCities", "ArchaeologicalSitesInGreece", "PopulatedPlacesInLaconia", "MunicipalitiesOfPeloponnese(Region)", "Persian-speakingCountriesAndTerritories" ]
-						
-							results = "<b>People:</b> <table>"
-							fila=0
-							wl1.forEach(function(w){
-								if (fila++ % 3 == 0 ) {
-									results += "<tr><td>"
-								}
-								else {
-									results += "<td>"
-								}
-								results += "<input type='checkbox' name='checkboxWikicatList' value='"+w+"' checked> "+w+"&nbsp;&nbsp;";
-							});
-							results += "</table><p/>"
-							
-							results += "<b>Events:</b> <table>"
-							fila=0
-							wl2.forEach(function(w){
-								if (fila++ % 3 == 0 ) {
-									results += "<tr><td>"
-								}
-								else {
-									results += "<td>"
-								}
-								results += "<input type='checkbox' name='checkboxWikicatList' value='"+w+"' checked> "+w+"&nbsp;&nbsp;";
-							});
-							results += "</table><p/>"
-							
-							results += "<b>Locations:</b> <table>"
-							fila=0
-							wl3.forEach(function(w){
-								if (fila++ % 3 == 0 ) {
-									results += "<tr><td>"
-								}
-								else {
-									results += "<td>"
-								}
-								results += "<input type='checkbox' name='checkboxWikicatList' value='"+w+"' checked> "+w+"&nbsp;&nbsp;";
-							});
-							results += "</table>"
-							
-							$("#submit_buildCorpus").show()
-							$("#spanDelta").show()
-						*/
-						}
-						$(div_wikicatsList).html(results)
-						$("#spinner").modal("hide");
-					}
-				});
-			});
-			
-			
-			// to clear selected wikicats if click radibutton option
-			$("#clearAllWikicats").click(function() {
-				$.each($("input[name='checkboxWikicatList']"), function(){            
-					$(this).prop('checked', false);
-				});
-			});
-			
-			// to select all wikicats if click radibutton option
-			$("#selectAllWikicats").click(function() {
-				$.each($("input[name='checkboxWikicatList']"), function(){            
-					$(this).prop('checked', true);
-				});
-			});
-			
-			
-			// to build corpus starting from selected wikicats
-			$("#submit_buildCorpus2").click(function(event) {
-				var overwriteCorpus = $("input[name='overwriteCorpus']:checked").val() == "on" ? true : false;
+	
+		<!-- HTML page is finished , dynamic behabiour caused by JavaScript starts-->
+	
+		<!-- jQuery CDN -->
+		<script src="https://code.jquery.com/jquery-1.12.0.min.js"></script>
+		<!-- Bootstrap Js CDN: is used to manage the menu collapse and the central menu tabs -->
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+		
+		<!--  not clear what they are used to -->
+		<script type="text/javascript" src="http://underscorejs.org/underscore-min.js"></script>
+		<script type="text/javascript" src="http://backbonejs.org/backbone-min.js"></script>
+		<script type="text/javascript" src="http://warfares.github.io/pretty-json/pretty-json-min.js"></script>
+	
+		<script type="text/javascript">
+	
+			// Here it starts what is executed when finishing to load the page  
+					
+			$(document).ready(function () {
+	
+				$("#spinner").modal({show: false, backdrop: 'static'});
+	
+				$("#buildCorpusText").val({{ parDefaultText | tojson }});
+				$("#legendWikicatsList").hide()
+				$("#spanDelta").hide()
+				$("#submit_buildCorpus2").hide()
+				$("#spanOverwriteCorpus").hide()
+				$("#legendSelectedWikicatsList").hide()
 				
-				$("#legendSelectedWikicatsList").show()
-				$("#spinner").modal("show");
-				var selectedWikicats = [];
-				$.each($("input[name='checkboxWikicatList']:checked"), function(){            
-					selectedWikicats.push($(this).val());
-				});
 				
-				$.ajax({
-					type: "POST",
-					url: "/buildCorpus2",
-					data: {"overwriteCorpus": overwriteCorpus, "wikicats":  JSON.stringify(selectedWikicats), "text":  $("#buildCorpusText").val()},  // send the selected wikicats and the context text
-					success: function(result) {
-						console.log(result)
-						$("#spinner").modal("hide");
-												
-						if (result.hasOwnProperty("error")) {
-							$("#div_selectedWikicatsList").hide()
-							alert("error received")
-							return
-						}
-												
-						// present the summary of results
-						results = "<b>"+selectedWikicats.length+" wikicats</b><br>\n"
-						results += "<table>"
-						fila=0
-						selectedWikicats.forEach(function(w){
-							if (fila++ % 2 == 0 ) {
-								results += "<tr><td>"
+				// to request the building of the text training corpus 
+				// Flask "/getWikicatsFromText" is requested
+				// receives a wikicat list to present on the interface
+				$("#submit_corpusGetWikicatList").click(function() {
+					$("#spinner").modal("show");
+					$("#legendWikicatsList").show()
+					$.ajax({
+						type: "POST",
+						url: "/getWikicatsFromText",
+						data: {"text":  $("#buildCorpusText").val()},  // send the text with 'text' key
+						success: function(result) {
+							if (result.hasOwnProperty("error")) {
+								results = "<b style='color: red'>"+result["error"]+"</b>"
 							}
 							else {
-								results += "<td>"
+								
+								formerSelectedWikicats =  result["formerSelectedWikicats"]
+								console.log("Wikicats seleccionadas")
+								console.log(formerSelectedWikicats)
+								
+								wikicatList = result["wikicats"]   // ths is the list of wikicats
+								results = "<b>"+wikicatList.length+" wikicats</b><br>\n"
+								results += "<table>"
+								fila=0
+								wikicatList.forEach(function(w){
+									if (fila++ % 3 == 0 ) {
+										results += "<tr><td>"
+									}
+									else {
+										results += "<td>"
+									}
+									
+									if (formerSelectedWikicats.includes(w))
+										results += "<input type='checkbox' name='checkboxWikicatList' value='"+w+"' checked> "+w;
+									else
+										results += "<input type='checkbox' name='checkboxWikicatList' value='"+w+"' > "+w;
+								});
+								results += "</table>"
+								$("#submit_buildCorpus2").show()
+								$("#spanOverwriteCorpus").show()
+							
+							/*	
+								wl1 = ["5th-centuryBCGreekPeople", "AncientPeople", "GreekPeople", "5th-centuryBCRulers", "PeopleOfTheGreco-PersianWars", "RulersOfSparta", "Kings"]
+								wl2 = ["BattlesInvolvingAncientGreece", "BattlesInvolvingGreece", "Greco-PersianWars", "BattlesInvolvingTheAchaemenidEmpire", "BattlesOfTheGreco-PersianWars", "BattlesInvolvingSparta"]
+								wl3 = ["AncientGreekCities", "AncientCities", "ArchaeologicalSitesInGreece", "PopulatedPlacesInLaconia", "MunicipalitiesOfPeloponnese(Region)", "Persian-speakingCountriesAndTerritories" ]
+							
+								results = "<b>People:</b> <table>"
+								fila=0
+								wl1.forEach(function(w){
+									if (fila++ % 3 == 0 ) {
+										results += "<tr><td>"
+									}
+									else {
+										results += "<td>"
+									}
+									results += "<input type='checkbox' name='checkboxWikicatList' value='"+w+"' checked> "+w+"&nbsp;&nbsp;";
+								});
+								results += "</table><p/>"
+								
+								results += "<b>Events:</b> <table>"
+								fila=0
+								wl2.forEach(function(w){
+									if (fila++ % 3 == 0 ) {
+										results += "<tr><td>"
+									}
+									else {
+										results += "<td>"
+									}
+									results += "<input type='checkbox' name='checkboxWikicatList' value='"+w+"' checked> "+w+"&nbsp;&nbsp;";
+								});
+								results += "</table><p/>"
+								
+								results += "<b>Locations:</b> <table>"
+								fila=0
+								wl3.forEach(function(w){
+									if (fila++ % 3 == 0 ) {
+										results += "<tr><td>"
+									}
+									else {
+										results += "<td>"
+									}
+									results += "<input type='checkbox' name='checkboxWikicatList' value='"+w+"' checked> "+w+"&nbsp;&nbsp;";
+								});
+								results += "</table>"
+								
+								$("#submit_buildCorpus").show()
+								$("#spanDelta").show()
+							*/
 							}
-							wr = result[w]
-							results += w+" ("+wr["db"]+" from <span style='font-weight: bold' name='"+w+"'  class='wiki wikicat'>DBpedia</span>) ("+wr["wk"]+" from <span style='font-weight: bold' name='"+w+"'  class='wiki wikidata'>Wikidata</span>) <br>";
-						});
-						results += "</table>"
-						results += "<p><b> Identified "+result["totalDB"]+" files from DBpedia and "+result["totalWK"]+" files from Wikidata. Distinct files: "+result["totalUrls"]+"</b>"
-						
-						$("#div_selectedWikicatsList").html(results)
-						$("#div_selectedWikicatsList").show()
-					}
-				});
-			});
-						
-			
-			// to get the urls corresponding to the wikicats, coming from teh DBpedia or coming from the Wikidata
-			$("#div_selectedWikicatsList").on('click', '.wiki', function() {
-				wikicat = $(this).attr("name")
-				$("#spinner").modal("show");
-				var w1 = window.open();
-				if ($(this).hasClass("wikicat")) {
-					DB= true
-				}
-				else {
-					DB=false
-				}
-				$.ajax({
-					type: "GET",
-					url: "/getWikicatUrls",
-					data: {"wikicat":  wikicat, "DB": DB},
-					success: function(result) {
-						if (result.hasOwnProperty("error")) {
-							results = "error in query"
+							$(div_wikicatsList).html(results)
+							$("#spinner").modal("hide");
 						}
-						else {
-							values = result["urls"]
-
-							results = values.length+"<br>\n"
-							values.forEach(function(u){
-								results += "<a href='"+u+"'>"+u+"</a><br>";
+					});
+				});
+				
+				
+				// to clear selected wikicats if click radibutton option
+				$("#clearAllWikicats").click(function() {
+					$.each($("input[name='checkboxWikicatList']"), function(){            
+						$(this).prop('checked', false);
+					});
+				});
+				
+				// to select all wikicats if click radibutton option
+				$("#selectAllWikicats").click(function() {
+					$.each($("input[name='checkboxWikicatList']"), function(){            
+						$(this).prop('checked', true);
+					});
+				});
+				
+				
+				// to build corpus starting from selected wikicats
+				$("#submit_buildCorpus2").click(function(event) {
+					var overwriteCorpus = $("input[name='overwriteCorpus']:checked").val() == "on" ? true : false;
+					
+					$("#legendSelectedWikicatsList").show()
+					$("#spinner").modal("show");
+					var selectedWikicats = [];
+					$.each($("input[name='checkboxWikicatList']:checked"), function(){            
+						selectedWikicats.push($(this).val());
+					});
+					
+					$.ajax({
+						type: "POST",
+						url: "/buildCorpus2",
+						data: {"overwriteCorpus": overwriteCorpus, "wikicats":  JSON.stringify(selectedWikicats), "text":  $("#buildCorpusText").val()},  // send the selected wikicats and the context text
+						success: function(result) {
+							console.log(result)
+							$("#spinner").modal("hide");
+													
+							if (result.hasOwnProperty("error")) {
+								$("#div_selectedWikicatsList").hide()
+								alert("error received")
+								return
+							}
+													
+							// present the summary of results
+							results = "<b>"+selectedWikicats.length+" wikicats</b><br>\n"
+							results += "<table>"
+							fila=0
+							selectedWikicats.forEach(function(w){
+								if (fila++ % 2 == 0 ) {
+									results += "<tr><td>"
+								}
+								else {
+									results += "<td>"
+								}
+								wr = result[w]
+								results += w+" ("+wr["db"]+" from <span style='color: blue; font-weight: bold; text-decoration: underline;' name='"+w+"'  class='wiki wikicat'>DBpedia</span>) ("
+								results += wr["wk"]+" from <span style='color: blue; font-weight: bold; text-decoration: underline;' name='"+w+"'  class='wiki wikidata'>Wikidata</span>) <br>";
 							});
-						
+							results += "</table>"
+							results += "<p style='color: black'>Identified "+result['totalDB']+" files from DBpedia and "+result['totalWK']+" files from Wikidata. Distinct files: "+result['totalUrls']
+							
+							$("#div_selectedWikicatsList").html(results)
+							$("#div_selectedWikicatsList").show()
 						}
-						if (w1 == null) alert("error opening window [w1]")
-						else {
-							w1.document.open();
-							w1.document.write(results);
-							w1.document.close();
-						}
-						$("#spinner").modal("hide");
-					}
+					});
 				});
+							
+				
+				// to get the urls corresponding to the wikicats, coming from teh DBpedia or coming from the Wikidata
+				$("#div_selectedWikicatsList").on('click', '.wiki', function() {
+					wikicat = $(this).attr("name")
+					$("#spinner").modal("show");
+					var w1 = window.open();
+					if ($(this).hasClass("wikicat")) {
+						DB= true
+					}
+					else {
+						DB=false
+					}
+					$.ajax({
+						type: "GET",
+						url: "/getWikicatUrls",
+						data: {"wikicat":  wikicat, "DB": DB},
+						success: function(result) {
+							if (result.hasOwnProperty("error")) {
+								results = "error in query"
+							}
+							else {
+								values = result["urls"]
+	
+								results = values.length+"<br>\n"
+								values.forEach(function(u){
+									results += "<a href='"+u+"'>"+u+"</a><br>";
+								});
+							
+							}
+							if (w1 == null) alert("error opening window [w1]")
+							else {
+								w1.document.open();
+								w1.document.write(results);
+								w1.document.close();
+							}
+							$("#spinner").modal("hide");
+						}
+					});
+				});
+			
+	
 			});
-		
-
-		});
-
-	</script>
+	
+		</script>
+	</div>
 </body>
 </html>
