@@ -16,10 +16,11 @@ SCRAPPED_TEXT_PAGES_FOLDER = CORPUS_FOLDER+"/SCRAPPED_TEXT_PAGES"
 DISCARDED_PAGES_FILENAME = CORPUS_FOLDER+"/discarded_list.txt"
 UNRETRIEVED_PAGES_FILENAME = CORPUS_FOLDER+"/unretrieved_pages.txt"
 SIMILARITIES_CSV_FILENAME = CORPUS_FOLDER+"/similarity.csv"
-
-
 HTML_PAGES_FOLDER = CORPUS_FOLDER+"/HTML_PAGES"
 
+# initial text for corpus building
+INITIAL_TEXT = 'initialText.txt'
+	
 # # to save some ASCII content in a file 
 def saveFile (f, content):
 	out = open(f, 'w')
