@@ -8,15 +8,17 @@ from os.path import isfile
 from requests_futures.sessions import FuturesSession
 import shutil
 
-
+from px_DB_Manager import getCategoriesInText as _getCategoriesInText
+from px_aux import saveFile as _saveFile, URL_DB as _URL_DB, URL_WK as _URL_WK
+from aux import CORPUS_FOLDER as _CORPUS_FOLDER, WIKICAT_LIST_FILENAME as _WIKICAT_LIST_FILENAME, SELECTED_WIKICAT_LIST_FILENAME as _SELECTED_WIKICAT_LIST_FILENAME 
+from aux import hasFieldPT as _hasFieldPT  # function to check if object has  ["pt"]["value"] field
+	
+	
 # to attend the query to get wikicats from a text   (/getWikicatsFromText)
 # receives: the text
 # returns: list of wikicats (and stores them in the file CORPUS_FOLDER/WIKICAT_LIST)
 def getWikicatsFromText():
-	if request.method == "POST":
-		from aux import CORPUS_FOLDER as _CORPUS_FOLDER, WIKICAT_LIST_FILENAME as _WIKICAT_LIST_FILENAME, SELECTED_WIKICAT_LIST_FILENAME as _SELECTED_WIKICAT_LIST_FILENAME, saveFile as _saveFile
-		from px_DB_Manager import getCategoriesInText as _getCategoriesInText
-		
+	if request.method == "POST":		
 		texto = request.values.get("text")
 		
 		result = _getCategoriesInText(texto)
@@ -54,9 +56,6 @@ def getWikicatsFromText():
 # aux function to all the URLs associated to a wikicats set
 # It queries DB and WK and parses the results
 def getUrlsWithWikicats (selectedWikicats):
-	from px_aux import URL_DB as _URL_DB, URL_WK as _URL_WK
-	from aux import hasFieldPT as _hasFieldPT  # function to check if object has  ["pt"]["value"] field
-	
 	requestObjects = {} # to store request objects 
 	
 	print("Starting queries for: ", end='')
@@ -219,9 +218,6 @@ def getWikicatUrls():
 
 #aux function to get results for DB
 def getUrlsWithWikicatFromDBpedia (wikicat):
-	from px_aux import URL_DB as _URL_DB
-	from aux import hasFieldPT as _hasFieldPT
-	
 	_session = FuturesSession()  # to manage asynchronous requests 
 		
 	fullWikicat = "Wikicat"+wikicat
@@ -252,8 +248,6 @@ def getUrlsWithWikicatFromDBpedia (wikicat):
 
 #aux function to get results for WK
 def getUrlsWithWikicatFromWikidata (wikicat):
-	from px_aux import URL_WK as _URL_WK
-	
 	_session = FuturesSession()  # to manage asynchronous requests 
 	
 	# asynchronous query to Wikidata

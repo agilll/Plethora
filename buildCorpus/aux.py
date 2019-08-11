@@ -21,12 +21,6 @@ HTML_PAGES_FOLDER = CORPUS_FOLDER+"/HTML_PAGES"
 # initial text for corpus building
 INITIAL_TEXT = 'initialText.txt'
 	
-# # to save some ASCII content in a file 
-def saveFile (f, content):
-	out = open(f, 'w')
-	out.write(content)
-	out.close()
-	return
 
 # to check if a dictionary has the field 'pt' (isPrimaryTopicOf), that is a dictionary that must contain the field 'value'
 def hasFieldPT(x):

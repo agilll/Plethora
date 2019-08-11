@@ -8,6 +8,10 @@ from nltk.tokenize import RegexpTokenizer
 import sys
 sys.path.append('../')
 
+from px_DB_Manager import getCategoriesInText as _getCategoriesInText
+from px_aux import saveFile as _saveFile
+from pa_similarities import similarityFunctions as _similarityFunctions
+	
 '''
 # Folders and filenames used #
 
@@ -63,9 +67,6 @@ def tokenizer(text):
 
 # Measures wikicats and subjects similarity
 def measureWikicatsAndSubjectsSimilarity(original_text, corpus_text):
-	from px_DB_Manager import getCategoriesInText as _getCategoriesInText
-	from pa_similarities import similarityFunctions as _similarityFunctions
-
 	original_text_categories = _getCategoriesInText(original_text)
 	corpus_text_categories = _getCategoriesInText(corpus_text)
 
@@ -122,7 +123,7 @@ def buildCorpus2():
 	from aux import CORPUS_FOLDER as _CORPUS_FOLDER, SELECTED_WIKICAT_LIST_FILENAME as _SELECTED_WIKICAT_LIST_FILENAME, URLs_FOLDER as _URLs_FOLDER
 	from aux import DISCARDED_PAGES_FILENAME as _DISCARDED_PAGES_FILENAME, SCRAPPED_PAGES_FOLDER as _SCRAPPED_PAGES_FOLDER, SCRAPPED_TEXT_PAGES_FOLDER as _SCRAPPED_TEXT_PAGES_FOLDER
 	from aux import UNRETRIEVED_PAGES_FILENAME as _UNRETRIEVED_PAGES_FILENAME, SIMILARITIES_CSV_FILENAME as _SIMILARITIES_CSV_FILENAME
-	from aux import LEE_D2V_MODEL as _LEE_D2V_MODEL, OWN_D2V_MODEL as _OWN_D2V_MODEL, saveFile as _saveFile
+	from aux import LEE_D2V_MODEL as _LEE_D2V_MODEL, OWN_D2V_MODEL as _OWN_D2V_MODEL
 	
 	import json
 	from pp_routesCorpus import getUrlsWithWikicats as _getUrlsWithWikicats

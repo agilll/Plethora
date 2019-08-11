@@ -3,9 +3,10 @@ import re
 from bs4 import BeautifulSoup
 import glob
 
+from px_aux import saveFile as _saveFile
 
 class scrapFunctions():
-	from aux import CORPUS_FOLDER as _CORPUS_FOLDER, URLs_FOLDER as _URLs_FOLDER, SCRAPPED_PAGES_FOLDER as _SCRAPPED_PAGES_FOLDER, SCRAPPED_TEXT_PAGES_FOLDER as _SCRAPPED_TEXT_PAGES_FOLDER, HTML_PAGES_FOLDER as _HTML_PAGES_FOLDER, saveFile as _saveFile
+	from aux import CORPUS_FOLDER as _CORPUS_FOLDER, URLs_FOLDER as _URLs_FOLDER, SCRAPPED_PAGES_FOLDER as _SCRAPPED_PAGES_FOLDER, SCRAPPED_TEXT_PAGES_FOLDER as _SCRAPPED_TEXT_PAGES_FOLDER, HTML_PAGES_FOLDER as _HTML_PAGES_FOLDER
 
 	# Scrap HTML pages
 	def scrapPage(self, page):
