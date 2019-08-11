@@ -7,3 +7,4 @@ These are the files to train the corpus
 * changing surfaces forms by named entities
 * removing puntuación and stopwords
 * tokenizing the sentences
+The result is a list of lists of words (each list is a sentence)
