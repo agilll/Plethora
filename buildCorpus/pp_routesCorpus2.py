@@ -10,21 +10,16 @@ sys.path.append('../')
 
 from px_DB_Manager import getCategoriesInText as _getCategoriesInText
 from px_aux import saveFile as _saveFile
-from pa_similarities import similarityFunctions as _similarityFunctions
 	
-'''
-# Folders and filenames used #
+from aux import CORPUS_FOLDER as _CORPUS_FOLDER, SELECTED_WIKICAT_LIST_FILENAME as _SELECTED_WIKICAT_LIST_FILENAME, URLs_FOLDER as _URLs_FOLDER
+from aux import DISCARDED_PAGES_FILENAME as _DISCARDED_PAGES_FILENAME, SCRAPPED_PAGES_FOLDER as _SCRAPPED_PAGES_FOLDER, SCRAPPED_TEXT_PAGES_FOLDER as _SCRAPPED_TEXT_PAGES_FOLDER
+from aux import UNRETRIEVED_PAGES_FILENAME as _UNRETRIEVED_PAGES_FILENAME, SIMILARITIES_CSV_FILENAME as _SIMILARITIES_CSV_FILENAME
+from aux import LEE_D2V_MODEL as _LEE_D2V_MODEL, OWN_D2V_MODEL as _OWN_D2V_MODEL
+	
+from pp_routesCorpus import getUrlsWithWikicats as _getUrlsWithWikicats
+from pa_scrap import scrapFunctions as _scrapFunctions
+from pa_similarities import similarityFunctions as _similarityFunctions
 
-# Similarities comparison csv file
-SIMILARITIES_FILENAME = 'similarity.csv'
-
-# Folder to save the scrapped pages
-SCRAPPED_PAGES_FOLDER = 'scrappedPages/'
-
-DISCARDED_LIST_FILENAME = 'discarded_list.txt'
-
-UNRETRIEVED_URLS = 'unretrieved_pages.txt'
-'''
 
 #############################################################################################################################################
 
@@ -120,15 +115,7 @@ def measureWikicatsAndSubjectsSimilarity(original_text, corpus_text):
 # receives: the list of selected wikicats
 # returns: the results, mainly the number of files identified for each wikicat
 def buildCorpus2():
-	from aux import CORPUS_FOLDER as _CORPUS_FOLDER, SELECTED_WIKICAT_LIST_FILENAME as _SELECTED_WIKICAT_LIST_FILENAME, URLs_FOLDER as _URLs_FOLDER
-	from aux import DISCARDED_PAGES_FILENAME as _DISCARDED_PAGES_FILENAME, SCRAPPED_PAGES_FOLDER as _SCRAPPED_PAGES_FOLDER, SCRAPPED_TEXT_PAGES_FOLDER as _SCRAPPED_TEXT_PAGES_FOLDER
-	from aux import UNRETRIEVED_PAGES_FILENAME as _UNRETRIEVED_PAGES_FILENAME, SIMILARITIES_CSV_FILENAME as _SIMILARITIES_CSV_FILENAME
-	from aux import LEE_D2V_MODEL as _LEE_D2V_MODEL, OWN_D2V_MODEL as _OWN_D2V_MODEL
-	
 	import json
-	from pp_routesCorpus import getUrlsWithWikicats as _getUrlsWithWikicats
-	from pa_similarities import similarityFunctions as _similarityFunctions
-	from pa_scrap import scrapFunctions as _scrapFunctions
 
 	selectedWikicats = json.loads(request.values.get("wikicats"))
 	print(len(selectedWikicats), "wikicats")
