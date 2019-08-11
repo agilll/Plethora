@@ -1,4 +1,8 @@
-This is the tool to build the corpus:
+This is the tool to build the corpus.
+
+Depends on px_aux, px_DB_Manager
+
+How to use it:
 
 - launch python3 pp_app_corpus.py
 
