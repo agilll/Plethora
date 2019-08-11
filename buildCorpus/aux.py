@@ -27,3 +27,11 @@ def saveFile (f, content):
 	out.write(content)
 	out.close()
 	return
+
+# to check if a dictionary has the field 'pt' (isPrimaryTopicOf), that is a dictionary that must contain the field 'value'
+def hasFieldPT(x):
+	try:
+		x["pt"]["value"]
+		return True
+	except:
+		return False

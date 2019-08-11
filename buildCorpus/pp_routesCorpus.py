@@ -54,15 +54,15 @@ def getWikicatsFromText():
 # aux function to all the URLs associated to a wikicats set
 # It queries DB and WK and parses the results
 def getUrlsWithWikicats (selectedWikicats):
-	from px_aux import hasFieldPT as _hasFieldPT  # function to check if object has  ["pt"]["value"] field
+	from px_aux import URL_DB as _URL_DB, URL_WK as _URL_WK
+	from aux import hasFieldPT as _hasFieldPT  # function to check if object has  ["pt"]["value"] field
+	
 	requestObjects = {} # to store request objects 
 	
 	print("Starting queries for: ", end='')
 	_session = FuturesSession()  # to manage asynchronous requests 
 					
 	for wikicat in selectedWikicats:
-		from px_aux import URL_DB as _URL_DB, URL_WK as _URL_WK
-		
 		print(wikicat, end=' ', flush=True)
 		fullWikicat = "Wikicat"+wikicat
 	
@@ -219,7 +219,8 @@ def getWikicatUrls():
 
 #aux function to get results for DB
 def getUrlsWithWikicatFromDBpedia (wikicat):
-	from px_aux import URL_DB as _URL_DB, hasFieldPT as _hasFieldPT
+	from px_aux import URL_DB as _URL_DB
+	from aux import hasFieldPT as _hasFieldPT
 	
 	_session = FuturesSession()  # to manage asynchronous requests 
 		
