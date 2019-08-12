@@ -1,4 +1,8 @@
-Subproject to process original corpus files downloaded from Internet. They are executed in order
+Subproject to process original corpus files downloaded from Internet. 
+
+Depends on px_aux, px_aux_add_suffix, px_DB_Manager
+
+They are executed in order
 
 1 - add suffixes to identified names (input .txt, output .s)
 
