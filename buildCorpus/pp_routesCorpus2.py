@@ -6,13 +6,13 @@ import nltk
 from nltk.tokenize import RegexpTokenizer
 
 import sys
-sys.path.append('../')
+sys.path.append('../') # to search px_DB_Manager and px_aux in the parent folder
 
 from px_DB_Manager import getCategoriesInText as _getCategoriesInText
 from px_aux import saveFile as _saveFile
 	
-from aux import CORPUS_FOLDER as _CORPUS_FOLDER, SELECTED_WIKICAT_LIST_FILENAME as _SELECTED_WIKICAT_LIST_FILENAME, URLs_FOLDER as _URLs_FOLDER
-from aux import DISCARDED_PAGES_FILENAME as _DISCARDED_PAGES_FILENAME, SCRAPPED_PAGES_FOLDER as _SCRAPPED_PAGES_FOLDER, SCRAPPED_TEXT_PAGES_FOLDER as _SCRAPPED_TEXT_PAGES_FOLDER
+from aux import CORPUS_FOLDER as _CORPUS_FOLDER, SELECTED_WIKICAT_LIST_FILENAME as _SELECTED_WIKICAT_LIST_FILENAME
+from aux import URLs_FOLDER as _URLs_FOLDER, DISCARDED_PAGES_FILENAME as _DISCARDED_PAGES_FILENAME,  SCRAPPED_TEXT_PAGES_FOLDER as _SCRAPPED_TEXT_PAGES_FOLDER
 from aux import UNRETRIEVED_PAGES_FILENAME as _UNRETRIEVED_PAGES_FILENAME, SIMILARITIES_CSV_FILENAME as _SIMILARITIES_CSV_FILENAME
 from aux import LEE_D2V_MODEL as _LEE_D2V_MODEL, OWN_D2V_MODEL as _OWN_D2V_MODEL
 	
@@ -73,8 +73,7 @@ def measureWikicatsAndSubjectsSimilarity(original_text, corpus_text):
 	try:
 		corpus_text_wikicats = corpus_text_categories["wikicats"]
 	except Exception as e:
-		# In case of long text, the function _getCategoriesInText returns an error.
-		# (length exceeds capacity limit)
+		# In case of long text, the function _getCategoriesInText returns an error  (length exceeds capacity limit)
 		# In this case, the similarity will be equal to zero
 		corpus_text_wikicats = []
 
@@ -169,7 +168,8 @@ def buildCorpus2():
 	result["totalDB"] = numUrlsDB
 	result["totalWK"] = numUrlsWK
 	result["totalUrls"] = len(listWithoutDuplicates)
-
+	#return jsonify(result);  # to modify interface without processing files
+	
 	texto = request.values.get("text")
 
 	# A list of the original text tokens
@@ -220,7 +220,6 @@ def buildCorpus2():
 		try:
 			pageName, pageContent = scrap.scrapPage(page)
 			print(pageName)
-
 		except Exception as e:
 			print(e)
 			unretrieved_pages.append(page)

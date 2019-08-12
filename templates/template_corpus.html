@@ -142,10 +142,10 @@
 								fila=0
 								wikicatList.forEach(function(w){
 									if (fila++ % 3 == 0 ) {
-										results += "<tr><td>"
+										results += "<tr><td style='padding-left:20px'>"
 									}
 									else {
-										results += "<td>"
+										results += "<td style='padding-left:20px'>"
 									}
 									
 									if (formerSelectedWikicats.includes(w))
@@ -254,21 +254,22 @@
 													
 							// present the summary of results
 							results = "<b>"+selectedWikicats.length+" wikicats</b><br>\n"
-							results += "<table style='margin: 5px' >"
+							results += "<table style='border: 1px solid'>"
 							fila=0
+							results += "<th style='text-align: center; border: 1px solid'> Wikicat <th style='text-align: center; border: 1px solid'> Wikicat"
 							selectedWikicats.forEach(function(w){
 								if (fila++ % 2 == 0 ) {
-									results += "<tr><td>"
+									results += "<tr style='border: 1px solid'><td style='padding-right:10px; padding-left:10px; border: 1px solid'>"
 								}
 								else {
-									results += "<td>"
+									results += "<td style='padding-right:10px; padding-left:10px; border: 1px solid'>"
 								}
 								wr = result[w]
-								results += w+" ("+wr["db"]+" from <span style='color: blue; font-weight: bold; text-decoration: underline;' name='"+w+"'  class='wiki wikicat'>DBpedia</span>) ("
+								results += w+" ("+wr["db"]+" from <span style='color: blue; font-weight: bold; text-decoration: underline;' name='"+w+"'  class='wiki wikicat'>DBpedia</span>, "
 								results += wr["wk"]+" from <span style='color: blue; font-weight: bold; text-decoration: underline;' name='"+w+"'  class='wiki wikidata'>Wikidata</span>)";
 							});
-							results += "</table>"
-							results += "<p style='color: black'>Identified "+result['totalDB']+" files from DBpedia and "+result['totalWK']+" files from Wikidata. Distinct files: "+result['totalUrls']
+							results += "</table><p>"
+							results += "<p style='color: black'>Identified "+result['totalDB']+" URLs from DBpedia and "+result['totalWK']+" from Wikidata. Distinct URLs: "+result['totalUrls']
 							
 							$("#div_selectedWikicatsList").html(results)
 							$("#div_selectedWikicatsList").show()
