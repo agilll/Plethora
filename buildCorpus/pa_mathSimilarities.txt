@@ -1,0 +1,101 @@
+pa_mathSimilarities
+-------------------
+
+CONTENTS:-
+--------
+
+1. Objectives
+2. Components
+3. Description
+4. Modules
+5. Usage
+6. References
+
+
+1. OBJECTIVES:-
+-------------
+
+The aim of this class is to provide simple math functions that could be inherited for
+measuring text similarities.
+
+
+2. COMPONENTS:-
+-------------
+
+This file contains a class mathSimilarity() that has five (5) math similarity functions:
+- cosine_similarity()
+- jaccard_similarity()
+- euclidean_distance()
+- manhattan_distance()
+- minkowski_distance()
+
+Beside other two (2) functions:
+- nth_root()
+- square_rooted()
+
+
+3. DESCRIPTION:-
+--------------
+
+- cosine_similarity(x, y): Cosine similarity metric finds the normalized dot product of the two attributes.
+By determining the cosine similarity, we would effectively try to find the cosine of the angle between the two
+objects. The cosine of 0° is 1, and it is less than 1 for any other angle. takes two parameters x and y, which
+are lists, measures the cosine similarity between them, and returns the value as a float. For two identical lists,
+cosine similarity = 1.
+
+- jaccard_similarity(x, y): Jaccard similarity is the cardinality of the intersection of sets divided by the
+cardinality of the union of the sets. The function takes two parameters x and y, which are lists, measures the
+Jaccard similarity between them, and returns the value as a float. For two identical lists, Jaccard similarity = 1.
+
+- euclidean_distance(x, y): The Euclidean distance between two points is the length of the path connecting them.
+The function takes two parameters x and y, which are lists, measures the euclidean distance
+between them, and returns the value as a float. For two identical lists, euclidean distance = 0.
+The euclidean distance measures the dissimilarity, so the more the value, the less the similarity.
+
+- manhattan_distance(x, y): Manhattan distance is a metric in which the distance between two points is the sum of the
+absolute differences of their Cartesian coordinates. It is the total sum of the difference between the x-coordinates
+and y-coordinates. The function takes two parameters x and y, which are lists, measures the manhattan distance
+between them, and returns the value as a float. For two identical lists, manhattan distance = 0.
+The manhattan distance measures the dissimilarity, so the more the value, the less the similarity.
+
+- minkowski_distance(x, y, p_value): The Minkowski distance is a generalized metric form of Euclidean distance and Manhattan
+distance. The function takes three parameters x, y and p-value,  x and y are lists, p-value takes a real number
+(The case where p = 1 is equivalent to the Manhattan distance and the case where p = 2 is equivalent to the Euclidean
+distance. It is typically set to a value between 1 and 2), measures the Minkowski distance between them, and returns
+the value as a float. For two identical lists, Minkowski distance = 0. The Minkowski distance measures the dissimilarity,
+so the more the value, the less the similarity.
+
+- nth_root(value, n_root): This function returns the nth root of an value. It is used in this class by the minkowski_distance()
+function.
+
+- square_rooted(x): This function returns 3 rounded square rooted value. It is used in this class by the cosine_similarity()
+function.
+
+To know more about the similarity measures, see [1]
+
+Note: These functions could be used by the text similarities calculations in pa_similarities.py
+
+
+4. MODULES:-
+----------
+
+- math
+- decimal
+
+No installation is required
+
+
+5. USAGE:-
+--------
+
+- To use this class, you need to import in your file:
+from pa_mathSimilarities import mathSimilarity as _mathSimilarity
+
+- To create an object:
+measures = _mathSimilarity()
+
+
+6. REFERENCES:-
+-------------
+
+[1] https://dataaspirant.com/2015/04/11/five-most-popular-similarity-measures-implementation-in-python/
