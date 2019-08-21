@@ -1,0 +1,78 @@
+pa_similarities
+---------------
+
+
+CONTENTS:-
+--------
+
+1. Objectives
+2. Components
+3. Description
+4. Modules
+5. Usage
+6. References
+
+
+1. OBJECTIVES:-
+-------------
+
+The aim of this class is to measure text similarity/ dissimilarity between text documents
+
+
+2. COMPONENTS:-
+-------------
+
+This file contains a class similarityFunctions() that has four (4) text similarity functions:
+- spacySimilarity()
+- doc2VecSimilarity()
+- jaccardSimilarity()
+- euclideanDistance()
+
+
+3. DESCRIPTION:-
+--------------
+
+- jaccardSimilarity(original_text_tokens, corpus_text_tokens): This function takes two parameters, two
+lists of tokens. The lists are converted to sets, to remove redundant tokens.
+Then the Jaccard similarity is calculated by dividing the cardinality of the intersection of sets by the
+cardinality of the union of the sets.
+
+- euclideanDistance(original_text, corpus_text): This functions takes two parameters, two pieces of text.
+The two parameters are stored in the list "list_of_text". To tokenize the texts, build a vocabulary of known
+words, and encode new documents using that vocabulary, we create a CountVectorizer() object [1].
+
+- spacySimilarity(original_text, corpus_text):
+
+- doc2VecSimilarity(original_text_tokens, corpus_text_tokens, trained_model):
+
+
+4. MODULES:-
+----------
+
+- spacy
+To install: pip install spacy
+
+- gensim.models.doc2vec Doc2Vec
+
+- sklearn.feature_extraction.text CountVectorizer
+- sklearn.metrics.pairwise euclidean_distances
+- sklearn.metrics.pairwise cosine_similarity
+
+- from pa_mathSimilarities import mathSimilarity as _mathSimilarity
+
+
+
+5. USAGE:-
+--------
+
+- To use this class, you need to import in your file:
+from pa_similarities import similarityFunctions as _similarityFunctions
+
+- To create an object:
+similarity = _similarityFunctions()
+
+
+6. REFERENCES:-
+-------------
+
+[1] https://machinelearningmastery.com/prepare-text-data-machine-learning-scikit-learn/
