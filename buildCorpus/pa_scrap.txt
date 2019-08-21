@@ -1,0 +1,132 @@
+pa_scrap.py
+-----------
+
+
+CONTENTS:-
+--------
+
+1. Objectives
+2. Components
+3. Description
+4. Modules
+5. Usage
+6. References
+
+
+1. OBJECTIVES:-
+-------------
+
+The aim of this class is to scrap html pages to clean text.
+Cleaning is done using BeautifulSoup library. Beautiful Soup is a Python library for pulling data out of HTML
+and XML files.
+To know more about the library, see the official documentation [1].
+
+
+2. COMPONENTS:-
+-------------
+
+This file contains a class scrapFunctions() that has six (6) functions:
+- scrapPage()
+- urlToHtml()
+- urlToText()
+- htmlToText()
+- urlListToHtml()
+- htmlFolderToText()
+
+
+3. DESCRIPTION:-
+--------------
+
+- scrapPage(url): This function takes one parameter, a URL.
+A request is done, if it's not successful, the function will return an error message
+with the URL.
+
+The HTML contents are extracted from the response object, and saved in the variable "html".
+
+We then create a BeautifulSoup object from the extracted html using:
+soup = BeautifulSoup(html, "html5lib")
+
+With this object "soup", we can extract any html element, such as the title <title>, paragraphs <p>,
+divs <div>, links <a>, css <style>, etc...
+
+To get an item with a single occurrence, or call the first element of this type, i.e. <title>:
+soup.title.string
+
+To get all the elements of a type, i.e. <p> tags, you need to go through all of them:
+for p in soup.find_all("p"):
+  # do something
+
+To get an element by it's id, i.e. <div>:
+soup.find('div', id="mw-navigation")
+
+To get an element(s) by it's class name, i.e. <a>:
+for link in soup.find_all("a", {'class': 'mw-jump-link'}):
+  # do something
+
+To remove an element, i.e. <style>, use decompose() function:
+soup.style.decompose()
+
+To remove all html tags, and get their components, use get_text() function:
+soup.get_text()
+
+After cleaning the html, we need to name our page. We use the page title as the page name,
+after replacing any special characters with a dash "-" sign.
+
+The function returns the page name, and the cleaned plain text.
+
+Note: This function will be removed later, as we will make use of the other functions to get the same
+result.
+
+- urlToHtml(url): This function takes one parameter, a URL.
+It extracts the html contents out of it, saves it to an html file, and returns the html contents.
+
+- urlToText(url): This function takes one parameter, a URL.
+It extracts the html, clean the text, save it to text file, and returns the page name and the cleaned
+text.
+
+- htmlToText(html): This function takes one parameter, html contents.
+It cleans the text, save it to text file, and returns the page name and the cleaned text.
+
+p.s. Regarding the urlToHtml() function, we could call the urlToHtml() to get the html, and then call
+the htmlToText() to clean the html to plain text, within the function.
+In this case, both the html and the txt files will be saved.
+
+- urlListToHtml(urlsList): This function takes one parameter, a list of URLs.
+It makes use of the urlToHtml() function to extract the URL's html, and saves them into html files.
+
+- htmlFolderToText(folderPath): This function takes one parameter, a folder path.
+It reads all html files in that folder, clean them, save them to text file.
+It makes use of the htmlToText() function to extract clean the html, and saves them into txt files.
+
+
+4. MODULES:-
+----------
+
+- requests
+To install: pip install requests
+
+- re
+To install: pip install regex
+
+- BeautifulSoup
+To install: pip install beautifulsoup4
+
+- glob
+To install: pip install glob3
+
+
+5. USAGE:-
+--------
+
+- To use this class, you need to import in your file the functions you need:
+from pa_scrap import scrapFunctions as _scrapFunctions, urlToHtml as _urlToHtml, urlToText as _urlToText,
+htmlToText as _htmlToText, urlListToHtml as _urlListToHtml, htmlFolderToText as _htmlFolderToText
+
+- To create an object:
+scrap = _scrapFunctions()
+
+
+6. REFERENCES:-
+-------------
+
+[1] https://www.crummy.com/software/BeautifulSoup/bs4/doc/
