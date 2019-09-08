@@ -5,9 +5,6 @@ import csv
 import nltk
 from nltk.tokenize import RegexpTokenizer
 
-import sys
-sys.path.append('../') # to search px_DB_Manager and px_aux in the parent folder
-
 from px_DB_Manager import getCategoriesInText as _getCategoriesInText
 from px_aux import saveFile as _saveFile
 	

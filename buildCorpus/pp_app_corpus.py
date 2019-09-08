@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+# it is only executed if this is the main program
 if __name__ == '__main__':
 	import os
 	
@@ -11,11 +12,15 @@ if __name__ == '__main__':
 	app = Flask(__name__, template_folder=template_dir)
 
 
-
+# this program has been launched in the Plethora/buildCorpus folder
+# this is to search px_DB_Manager and px_aux in the Plethora folder
+import sys
+sys.path.append('../') 
 
 # functions to be executed when Flask request are received 
-from pp_routesCorpus2 import buildCorpus2
 from pp_routesCorpus import getWikicatsFromText, getWikicatUrls
+from pp_routesCorpus2 import buildCorpus2
+
 
 from aux import INITIAL_TEXT as _INITIAL_TEXT
 initialTextFile = open(_INITIAL_TEXT, "r")

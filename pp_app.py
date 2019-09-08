@@ -48,10 +48,30 @@ import uuid
 from gensim.models.callbacks import CallbackAny2Vec
 
 import time
+from shutil import copyfile
+
+# this program has been launched in the Plethora folder
+# but in the buildCorpus functionalty, it reads teh aux module in the buildCorpus folder
+# this is to search aux in the Plethora/buildCorpus folder
+import sys
+sys.path.append('buildCorpus')
 
 
-# El directorio donde están los modelos entrenados de Word2Vec
+# El directorio donde están los ejemplos de modelos entrenados de Word2Vec y Doc2Vec que se proporcionan para empezar
+MODELS_EXAMPLES = './MODELS_EXAMPLES/'
+
+# El directorio donde deben estar los modelos entrenados de Word2Vec y Doc2Vec que se usarán en la herramienta
 MODELS_FOLDER = './MODELS/'
+if not os.path.exists(MODELS_FOLDER):
+	os.makedirs(MODELS_FOLDER)
+	
+# copiar los modelos de ejemplo al directorio de modelos 
+for filename in os.listdir(MODELS_EXAMPLES):
+	if not os.path.exists(MODELS_FOLDER+filename):
+		copyfile(MODELS_EXAMPLES+filename, MODELS_FOLDER+filename)
+	
+	
+# el directorio donde está el fichero de entidades de los textos de entrenamiento
 DB_ENTITIES_FOLDER = "./DBentities/"
 
 # El fichero con el texto T por defecto de la demo
@@ -319,9 +339,10 @@ app.add_url_rule("/recalculateEntities", "recalculateEntities", recalculateEntit
 
 # app.add_url_rule("/getEntityFile", "getEntityFile", getEntityFile)
 
-
-from buildCorpus.pp_routesCorpus2 import buildCorpus2
+# import corpus building functions
 from buildCorpus.pp_routesCorpus import getWikicatsFromText, getWikicatUrls
+from buildCorpus.pp_routesCorpus2 import buildCorpus2
+
 
 
 app.add_url_rule("/getWikicatsFromText", "getWikicatsFromText", getWikicatsFromText, methods=["POST"])
@@ -958,6 +979,8 @@ def AlgorithmA2():
 
 # Arranca el servidor HTTP escuchando en el puerto 5000
 
+# __name__ es el nombre de este módulo, mientras que __main__ es el nombre del programa principal
+# resultado: sólo se ejecuta si este módulo se ha lanzado como programa principal
 if __name__ == '__main__':
 	app.run(debug=True, host='0.0.0.0', threaded=True)
 
