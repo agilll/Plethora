@@ -11,9 +11,6 @@ import shutil
 from px_DB_Manager import getCategoriesInText as _getCategoriesInText
 from px_aux import saveFile as _saveFile, URL_DB as _URL_DB, URL_WK as _URL_WK
 
-import sys
-sys.path.append('buildCorpus') # to search aux in the buildCorpus folder
-
 from aux import CORPUS_FOLDER as _CORPUS_FOLDER, WIKICAT_LIST_FILENAME as _WIKICAT_LIST_FILENAME, SELECTED_WIKICAT_LIST_FILENAME as _SELECTED_WIKICAT_LIST_FILENAME 
 from aux import hasFieldPT as _hasFieldPT  # function to check if object has  ["pt"]["value"] field
 	
