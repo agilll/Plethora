@@ -3,6 +3,8 @@
 # it can be launched standalone, using a Flask server started here and calling localhost:5000/corpus
 # or from the main tool with its Flask server
 
+ # argument '-d' prints button labels with routes associated, to be easier to understand flow among interface and python modules
+ 
 # it depends on px_DB_Manager and px_aux modules of the main tool, as well as the 
 
 import sys
