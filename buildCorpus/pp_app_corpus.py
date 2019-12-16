@@ -26,8 +26,8 @@ if __name__ == '__main__':
 sys.path.append('../') 
 
 # functions to be executed when Flask request are received 
-from pp_routesCorpus import getWikicatsFromText, getWikicatUrls
-from pp_routesCorpus2 import buildCorpus2
+from routesCorpus import getWikicatsFromText, getWikicatUrls
+from routesCorpus2 import buildCorpus2
 
 
 from aux import INITIAL_TEXT as _INITIAL_TEXT
