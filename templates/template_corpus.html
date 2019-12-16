@@ -11,7 +11,7 @@
 	<!-- Bootstrap CSS CDN: Bootstrap decoration -->
 	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
 	<!-- Our Custom CSS -->
-	<link rel="stylesheet" href="js/style.css">
+	<link rel="stylesheet" href="css/style.css">
 
 	<style>
 	.loader {
@@ -38,6 +38,22 @@
 		margin-right: auto;
 	}
 </style>
+	
+	<script>
+		var GET_WIKICATS = "Get Wikicats";
+		var BUILD_CORPUS = "Build Corpus"
+		var debug = "{{ parDebug }}";
+		
+		function setDebug () {
+			if (debug == "True") {
+				GET_WIKICATS = "Get Wikicats (/getWikicatsFromText)";
+				BUILD_CORPUS = "Build Corpus (/buildCorpus2)"
+			}
+			
+			$("#submit_corpusGetWikicatList").attr("value", GET_WIKICATS);
+			$("#submit_buildCorpus2").attr("value", BUILD_CORPUS);
+		}
+	</script>
 </head>
 
 <body style="margin: 10px;" >
@@ -56,7 +72,7 @@
 	
 		<!-- Starting of the interface HTML page  -->
 		
-		<h1 style="color:  #0066cc">Builder Corpus Tool</h1>
+		<h1 style="color:  #0066cc">Corpus Builder Tool</h1>
 		<h3 style="color: #0066cc">Origin Text</h3>
 	
 		<!--  Central content if Tools->Build Corpus is selected -->
@@ -78,8 +94,10 @@
 			<div id='div_wikicatsList'></div>
 			<p style="margin-bottom:1cm;"></p>
 			
-			<input style="background-color: #0066cc; color: white" id="submit_buildCorpus2" type="button" value="Build Corpus v2 (Abdullah)"></input>
-			&nbsp;&nbsp;&nbsp;&nbsp;<span id="spanOverwriteCorpus"> Overwrite <input id="overwriteCorpus" name="overwriteCorpus" type="checkbox"></input></span>
+			<input style="background-color: #0066cc; color: white" id="submit_buildCorpus2" type="button" value="Build Corpus"></input>
+			&nbsp;&nbsp;&nbsp;&nbsp;
+			<span id="spanOverwriteCorpus">  <input id="overwriteCorpus" name="overwriteCorpus" type="checkbox"></input>
+			Overwrite (Selected=erase all previous corpus data, Non selected=aggregate new files)</span>
 			
 			<h4 style="color: #0066cc" id='legendSelectedWikicatsList'><hr>Results from selected Wikicats</h4>
 			<div id='div_selectedWikicatsList'></div>
@@ -105,6 +123,8 @@
 			// Here it starts what is executed when finishing to load the page  
 					
 			$(document).ready(function () {
+				
+				setDebug();
 	
 				$("#spinner").modal({show: false, backdrop: 'static'});
 	
@@ -133,10 +153,10 @@
 							else {
 								
 								formerSelectedWikicats =  result["formerSelectedWikicats"]
-								console.log("Wikicats seleccionadas")
+								console.log("Wikicats selected in the past")
 								console.log(formerSelectedWikicats)
 								
-								wikicatList = result["wikicats"]   // ths is the list of wikicats
+								wikicatList = result["wikicats"]   // this is the list of wikicats in text
 								results = "<b>"+wikicatList.length+" wikicats</b><br>\n"
 								results += "<table>"
 								fila=0
@@ -227,7 +247,12 @@
 				});
 				
 				
+				
+				
+				
 				// to build corpus starting from selected wikicats
+				// Flask "/buildCorpus2" is requested
+				// receives ???? to present on the interface
 				$("#submit_buildCorpus2").click(function(event) {
 					var overwriteCorpus = $("input[name='overwriteCorpus']:checked").val() == "on" ? true : false;
 					
@@ -278,7 +303,7 @@
 				});
 							
 				
-				// to get the urls corresponding to the wikicats, coming from teh DBpedia or coming from the Wikidata
+				// to get the urls corresponding to the wikicats, coming from the DBpedia or coming from the Wikidata
 				$("#div_selectedWikicatsList").on('click', '.wiki', function() {
 					wikicat = $(this).attr("name")
 					$("#spinner").modal("show");

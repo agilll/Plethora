@@ -10,10 +10,10 @@ How to use it:
 
 Input: a text  (initialText.txt)
 
-It creates a KORPUS folder with results:
+It creates a KORPUS folder (inside the one of the tool) with results:
 - Identifies DB entities in text
-- Shows their Wikicats and ask the user for selection
-- Finds the URLs that have such wikicats
+- Shows their wikicats and ask the user for selection
+- Finds the URLs that have associated such wikicats
 - Fetchs such URLs and clean them (remove mark up)
 - Assesses if each text is related to the initial one. If related, adds it to the corpus
 

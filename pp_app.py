@@ -374,9 +374,9 @@ def availableModels():
 
 
 # esto sólo se usa para servir el style.js
-@app.route('/js/<path:path>')
+@app.route('/css/<path:path>')
 def send_js(path):
-    return send_from_directory('js', path)
+    return send_from_directory('css', path)
 
 
 

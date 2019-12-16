@@ -1,4 +1,4 @@
-pa_scrap.py
+scrap.py
 -----------
 
 
@@ -119,7 +119,7 @@ To install: pip install glob3
 --------
 
 - To use this class, you need to import in your file the functions you need:
-from pa_scrap import scrapFunctions as _scrapFunctions, urlToHtml as _urlToHtml, urlToText as _urlToText,
+from scrap import scrapFunctions as _scrapFunctions, urlToHtml as _urlToHtml, urlToText as _urlToText,
 htmlToText as _htmlToText, urlListToHtml as _urlListToHtml, htmlFolderToText as _htmlFolderToText
 
 - To create an object:

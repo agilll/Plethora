@@ -1,0 +1,91 @@
+textSimilarities
+---------------
+
+CONTENTS:-
+--------
+
+1. Objectives
+2. Components
+3. Description
+4. Modules
+5. Usage
+6. References
+
+1. OBJECTIVES:-
+-------------
+
+The aim of this class is to measure text similarity/dissimilarity between text documents
+
+2. COMPONENTS:-
+-------------
+
+This file contains a class textSimilarityFunctions() that has four (5) text similarity functions:
+- spacyTextSimilarity()
+- doc2VecTextSimilarity()
+- jaccardTextSimilarity()
+- euclideanTextSimilarity()
+- WikicatsAndSubjectsSimilarity()
+
+3. DESCRIPTION:-
+--------------
+
+- jaccardTextSimilarity (original_text, candidate_text): This function takes two parameters, two texts. They are tokenized to lists of tokens.
+Then the Jaccard similarity is calculated between the lists.
+
+- euclideanTextSimilarity (original_text, candidate_text): This function takes two parameters, two pieces of text.
+The two parameters are stored in the list "list_of_text". To tokenize the texts, build a vocabulary of known
+words, and encode new documents using that vocabulary, we create a CountVectorizer() object [1].
+
+- spacyTextSimilarity (original_text, candidate_text):
+
+- doc2VecTextSimilarity (original_text, candidate_text, trained_model):
+
+- WikicatsAndSubjectsSimilarity (original_text, candidate_text): jaccard similarity over wikicats and subjects
+
+4. MODULES:-
+----------
+
+- spacy: some of these downloads are necessary
+To install: pip install spacy
+
+# Download NLP English pre-trained statistical models
+
+# To download the core small package:
+# Description: English multi-task CNN trained on OntoNotes. Assigns context-specific token vectors, POS tags, dependency parse and named entities
+# python -m spacy download en_core_web_sm
+
+# To download the core medium package:
+# Description: English multi-task CNN trained on OntoNotes, with GloVe vectors trained on Common Crawl. Assigns word vectors, context-specific token vectors, POS tags, dependency parse and named entities.
+# python -m spacy download en_core_web_md
+
+# To download the core large package:
+# python -m spacy download en_core_web_lg
+
+# To download the vectors large package:
+# python -m spacy download en_vectors_web_lg
+
+# To download the best-matching default model and create shortcut link
+# python -m spacy download en
+
+- gensim.models.doc2vec Doc2Vec
+
+- sklearn.feature_extraction.text CountVectorizer
+- sklearn.metrics.pairwise euclidean_distances
+- sklearn.metrics.pairwise cosine_similarity
+
+- from ourSimilarityListsFunctions import ourSimilarityListsFunctions as _ourSimilarityListsFunctions
+
+5. USAGE:-
+--------
+
+- To use this class, you need to import in your file:
+from textSimilarities import textSimilarityFunctions as _textSimilarityFunctions
+
+- To create an object:
+similarity = _textSimilarityFunctions()
+
+
+6. REFERENCES:-
+-------------
+
+[1] https://machinelearningmastery.com/prepare-text-data-machine-learning-scikit-learn/
