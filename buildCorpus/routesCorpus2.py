@@ -55,7 +55,7 @@ def buildCorpus2():
 		
 	# process all results to return
 	
-	print("Number of URLs for every wikicat (DB,WK): ", end='')
+	print("Number of URLs for every wikicat: ", end='')
 	
 	for wikicat in selectedWikicats:
 		
@@ -77,13 +77,13 @@ def buildCorpus2():
 		_saveFile(_URLs_FOLDER+"/_Wikicat_"+wikicat+"_WK_Urls.txt", content) # save all results from WK for this wikicat
 		fullList.extend(wkUrls)
 
-		longs1 = "(" + str(len(dbUrls)) + "," + str(len(wkUrls)) + ")"
+		longs1 = "(DB=" + str(len(dbUrls)) + ", WK=" + str(len(wkUrls)) + ")"
 		print(wikicat, longs1, end=', ')
 		result[wikicat] = {"db": len(dbUrls), "wk": len(wkUrls)}  # add results for this wikicat
 
 
 	listWithoutDuplicates = list(set(fullList))  # remove duplicates URLs
-	print("\nSummary of URLs numbers (DB,WK,total without duplicates):", numUrlsDB, numUrlsWK, len(listWithoutDuplicates))
+	print("\n\nSummary of URLs numbers: DB=", numUrlsDB, ", WK= ", numUrlsWK, ", total without duplicates=", len(listWithoutDuplicates))
 	
 	# returns number of results
 	result["totalDB"] = numUrlsDB
@@ -103,7 +103,7 @@ def buildCorpus2():
 	# Create a new csv file if not exists
 	with open(_SIMILARITIES_CSV_FILENAME, 'w+') as writeFile:
 		# Name columns
-		fieldnames = ['Page Title', 'URL', 'Jaccard Similarity', 'Euclidean Distance', 'Spacy', 'Doc2Vec Euclidean Distance',
+		fieldnames = ['Page Title', 'URL', 'Euclidean Distance', 'Spacy', 'Doc2Vec Euclidean Distance',
 		'Doc2Vec Cosine Similarity', 'Trained Doc2Vec Euclidean Distance', 'Trained Doc2Vec Cosine Similarity',
 		'Wikicats Jaccard Similarity', 'Subjects Jaccard Similarity']
 
@@ -123,26 +123,22 @@ def buildCorpus2():
 		os.makedirs(_SCRAPPED_TEXT_PAGES_FOLDER)
 
 
-	unretrieved_pages = []  # a list for unsuccessful pages retrieval
-	discarded_list = []     # a list to save discarded pages' URLs
+	unretrieved_pages_list = []  # a list for unsuccessful pages retrieval
+	discarded_pages_list = []     # a list to save discarded pages' URLs
 
-	# Create a new file or overwrite it if another already exists
-	discarded_list_page = open(_DISCARDED_PAGES_FILENAME, "w+")
+	similarity = _textSimilarityFunctions()    # Create a textSimilarityFunctions object to measure text similarities
 
-	# Create a textSimilarityFunctions object
-	similarity = _textSimilarityFunctions()
-
+	scrap = _scrapFunctions()   # Create a scrapFunctions object to clean pages
+		
 	# Scrap pages, Measure text similarity, and save pages with a minimum similarity
 	for idx, page in enumerate(listWithoutDuplicates, start=1):
-		scrap = _scrapFunctions()
-
-		# Retrieves the page title and the scraped page content
+		# Retrieves the URL, and get the page title and the scraped page content
 		try:
 			pageName, pageContent = scrap.scrapPage(page)
 			print(pageName, " (", idx, "of", len(listWithoutDuplicates), ")")
 		except Exception as e:
 			print(e)
-			unretrieved_pages.append(page)
+			unretrieved_pages_list.append(page)
 			continue
 
 
@@ -151,10 +147,6 @@ def buildCorpus2():
 
 		# Perform the similarity check on the text before saving it
 		# Compare original text with pageContent
-
-		# Send the initial text tokens and the scrapped page text tokens to measure the jaccard similarity
-		jaccard_similarity = similarity.jaccardTextSimilarity(originalText, pageContent)
-		print("Jaccard similarity = "+str(jaccard_similarity))
 
 		# Measure text similarity based on a doc2vec model
 		doc2vec_cosineSimilarity, doc2vec_euclideanDistance = similarity.doc2VecTextSimilarity(originalText, pageContent, _LEE_D2V_MODEL)
@@ -174,7 +166,6 @@ def buildCorpus2():
 		spacy_similarity = similarity.spacyTextSimilarity(originalText, pageContent)
 		print("Spacy similarity = "+str(spacy_similarity))
 
-
 		# Measure wikicats similarity
 		wikicats_jaccard_similarity, subjects_jaccard_similarity = similarity.WikicatsAndSubjectsSimilarity(originalText, pageContent)
 		print("Wikicats jaccard similarity = "+str(wikicats_jaccard_similarity))
@@ -184,7 +175,7 @@ def buildCorpus2():
 		# Save similarity to a CSV file
 		with open(_SIMILARITIES_CSV_FILENAME, 'a') as writeFile:
 			writer = csv.writer(writeFile, delimiter=';')
-			writer.writerow([pageName, page, jaccard_similarity, euclidean_distance, spacy_similarity, doc2vec_euclideanDistance,
+			writer.writerow([pageName, page, euclidean_distance, spacy_similarity, doc2vec_euclideanDistance,
 			doc2vec_cosineSimilarity, doc2vec_trained_euclideanDistance, doc2vec_trained_cosineSimilarity, wikicats_jaccard_similarity,
 			subjects_jaccard_similarity])
 
@@ -196,7 +187,7 @@ def buildCorpus2():
 		# I'm not sure yet about it
 
 		# Filter pages with at least s similarity
-		if(jaccard_similarity >= min_jaccard_similarity):
+		if(wikicats_jaccard_similarity >= min_jaccard_similarity):
 			print("page accepted\n")
 
 			# Save to text file
@@ -205,19 +196,15 @@ def buildCorpus2():
 			print("page discarded\n")
 
 			# Save URL to discarded list
-			discarded_list.append(page)
+			discarded_pages_list.append(page)
 
-			discarded_list_page = open(_DISCARDED_PAGES_FILENAME, "a")
-			discarded_list_page.write(page+"\n")
+	# Save the discarded_pages_list to a file
+	_saveFile(_DISCARDED_PAGES_FILENAME, '\n'.join(discarded_pages_list))
+	print(str(len(discarded_pages_list)) + " discarded pages")
 
-
-	discarded_list_page.close()
-	print(str(len(discarded_list)) + " discarded pages")
-
-	# Save the unretrieved_pages list to a file
-	print(str(len(unretrieved_pages)) + " unretrieved pages")
-	_saveFile(_UNRETRIEVED_PAGES_FILENAME, str(unretrieved_pages))
-
+	# Save the unretrieved_pages_list to a file
+	print(str(len(unretrieved_pages_list)) + " unretrieved pages")
+	_saveFile(_UNRETRIEVED_PAGES_FILENAME, '\n'.join(unretrieved_pages_list))
 
 	return jsonify(result);
 
