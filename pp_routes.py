@@ -6,6 +6,7 @@ import pickle
 from flask import request, jsonify
 from os.path import isfile
 from requests_futures.sessions import FuturesSession
+from smart_open import open as _Open
 
 
 
@@ -138,7 +139,7 @@ def setStoredQA():
 		print(request.values)
 		QAsString = request.values.get("value")
 		listQATuplas = re.findall("(.*)\|(.*)", QAsString)
-		pickle.dump(listQATuplas, open( "storedQA.p", "wb" ))
+		pickle.dump(listQATuplas, _Open( "storedQA.p", "wb" ))
 		return jsonify(listQATuplas);
 
 #############################################################################################################################################
@@ -156,7 +157,7 @@ def getTrainingTexts():
 	for f in os.listdir(_TEXTS_FOLDER):
 		#if f.endswith("w"):
 		if f == _DEFAULT_TRAINING_TEXTS:
-			with open(_TEXTS_FOLDER+"/"+f, "rt", encoding='utf8') as content_file:
+			with _Open(_TEXTS_FOLDER+"/"+f, "rt", encoding='utf8') as content_file:
 				content = content_file.read()
 				content_file.close()
 			result[f] = {'text': content, 'data': _historicalDBpediaDataMod}
@@ -192,7 +193,7 @@ def getFile():
 	from px_aux import ORIGINAL_TEXTS_FOLDER as _ORIGINAL_TEXTS_FOLDER
 	
 	fich = request.values.get('file')
-	content_file =  open(_ORIGINAL_TEXTS_FOLDER+"/"+fich, "rt", encoding='utf8')
+	content_file =  _Open(_ORIGINAL_TEXTS_FOLDER+"/"+fich, "rt", encoding='utf8')
 	content = content_file.read()
 	content_file.close()
 	
@@ -254,11 +255,11 @@ def getEntityFile():
 	sfile = _ORIGINAL_TEXTS_FOLDER+"/"+fich
 	pfile = sfile+".p"
 	
-	content_file =  open(sfile, "rt", encoding='utf8')
+	content_file =  _Open(sfile, "rt", encoding='utf8')
 	content = content_file.read()
 	content_file.close()
 	
-	fileDataMod = pickle.load(open(pfile, "rb" ))
+	fileDataMod = pickle.load(_Open(pfile, "rb" ))
 	
 	result = {'text':content, 'data':fileDataMod}
 	return jsonify(result)

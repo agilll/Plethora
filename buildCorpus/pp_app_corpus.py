@@ -8,6 +8,7 @@
 # it depends on px_DB_Manager and px_aux modules of the main tool, as well as the 
 
 import sys
+from smart_open import open as _Open
 
 # only executed if this is the main program, that is, if we launch the corpus tool directly from the 'buildCorpus' folder
 # not executed if we launch the corpus tool from the main tool
@@ -33,7 +34,7 @@ from routesCorpus2 import buildCorpus2
 
 
 from aux import INITIAL_TEXT as _INITIAL_TEXT
-initialTextFile = open(_INITIAL_TEXT, "r")
+initialTextFile = _Open(_INITIAL_TEXT, "r")
 initialText = initialTextFile.read()
 
 # Flask routes binding for interface requests

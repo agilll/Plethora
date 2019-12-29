@@ -91,7 +91,9 @@
 				<input style="background-color: #0066cc; color: white" type="button" id="clearAllWikicats" value="Clear All"> &nbsp;&nbsp;
 				<input style="background-color: #0066cc; color: white" type="button" id="selectAllWikicats" value="Select All">
 			</h4>
-			<div id='div_wikicatsList'></div>
+			
+			<div id='div_wikicatsList'></div>  <!-- To show wikicats identified in text -->
+			
 			<p style="margin-bottom:1cm;"></p>
 			
 			<input style="background-color: #0066cc; color: white" id="submit_buildCorpus2" type="button" value="Build Corpus"></input>
@@ -151,13 +153,12 @@
 								results = "<b style='color: red'>"+result["error"]+"</b>"
 							}
 							else {
-								
 								formerSelectedWikicats =  result["formerSelectedWikicats"]
 								console.log("Wikicats selected in the past")
 								console.log(formerSelectedWikicats)
 								
 								wikicatList = result["wikicats"]   // this is the list of wikicats in text
-								results = "<b>"+wikicatList.length+" wikicats</b><br>\n"
+								results = "<b>"+wikicatList.length+" wikicats</b> (click on anyone to see its wikicat components)<br>\n"
 								results += "<table>"
 								fila=0
 								wikicatList.forEach(function(w){
@@ -168,10 +169,15 @@
 										results += "<td style='padding-left:20px'>"
 									}
 									
+									results += "<input type='checkbox' name='checkboxWikicatList' value='"+w+"'";
+									
 									if (formerSelectedWikicats.includes(w))
-										results += "<input type='checkbox' name='checkboxWikicatList' value='"+w+"' checked> "+w;
+										results += "checked>";
 									else
-										results += "<input type='checkbox' name='checkboxWikicatList' value='"+w+"' > "+w;
+									    results += ">";
+										
+									results += " <span onclick='alert(\""+result[w]+"\")'>"+w+"</span>";
+									
 								});
 								results += "</table>"
 								$("#submit_buildCorpus2").show()

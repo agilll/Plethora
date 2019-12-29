@@ -2,6 +2,7 @@ import requests
 import re
 from bs4 import BeautifulSoup
 import glob
+from smart_open import open as _Open
 
 class scrapFunctions():
 	from px_aux import saveFile as _saveFile
@@ -13,7 +14,7 @@ class scrapFunctions():
 		try:
 			request = requests.get(page)
 		except:
-			print("connection broken: " + page)
+			print("Connection broken: " + page)
 			return
 
 
@@ -105,6 +106,8 @@ class scrapFunctions():
 			pass
 
 		return pageName, cleanedText
+
+
 
 
 	# Takes a url and saves it to html file, and returns the html content
@@ -360,7 +363,7 @@ class scrapFunctions():
 		list_of_files = glob.glob(folderPath+"*.html")
 
 		for html_file in list_of_files:
-			file = open(html_file, "r")
+			file = _Open(html_file, "r")
 			html = file.read()
 
 			pageName, cleanedText = htmlToText(html)

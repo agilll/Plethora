@@ -24,7 +24,7 @@ This file contains a class textSimilarityFunctions() that has four (5) text simi
 - doc2VecTextSimilarity()
 - jaccardTextSimilarity()
 - euclideanTextSimilarity()
-- WikicatsAndSubjectsSimilarity()
+- fullWikicatsAndSubjectsSimilarity()
 
 3. DESCRIPTION:-
 --------------
@@ -40,7 +40,7 @@ words, and encode new documents using that vocabulary, we create a CountVectoriz
 
 - doc2VecTextSimilarity (original_text, candidate_text, trained_model):
 
-- WikicatsAndSubjectsSimilarity (original_text, candidate_text): jaccard similarity over wikicats and subjects
+- fullWikicatsAndSubjectsSimilarity (original_text, candidate_text): jaccard similarity over wikicats and subjects (complete matching between wk and sb))
 
 4. MODULES:-
 ----------

@@ -1,6 +1,7 @@
 import os
 import pickle
 from pycorenlp import StanfordCoreNLP
+from smart_open import open as _Open
 
 
 # a dictionary with Stanford POS terms (currently not used)  
@@ -65,7 +66,7 @@ SCRIPT_STEP3 = "./ps_3UpdateTextsEntities.py"
 
 # to save some ASCII content in a file 
 def saveFile (f, content):
-	out = open(f, 'w')
+	out = _Open(f, 'w')
 	out.write(content)
 	out.close()
 	return
@@ -77,7 +78,7 @@ def saveFile (f, content):
 # type ="w" if filename is '.w', implying that it is necessary highlight the field entityName 
 def getContentMarked (filename, type):
 
-	file = open(filename, 'r')
+	file = _Open(filename, 'r')
 	content = file.read()
 	
 	pfilename = filename+".p"
@@ -86,7 +87,7 @@ def getContentMarked (filename, type):
 		print("Does not exist "+pfilename)
 		return content
 	
-	pfile = open(pfilename, 'rb')
+	pfile = _Open(pfilename, 'rb')
 	dics = pickle.load(pfile)
 
 	dicOffsets = dics["byOffset"]

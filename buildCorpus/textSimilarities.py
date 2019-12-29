@@ -3,8 +3,12 @@ from sklearn.metrics.pairwise import euclidean_distances
 from sklearn.metrics.pairwise import cosine_similarity
 import spacy
 
+from smart_open import open as _Open
+
+from aux import CORPUS_FOLDER as _CORPUS_FOLDER
 from ourSimilarityListsFunctions import ourSimilarityListsFunctions as _ourSimilarityListsFunctions
-from aux import myTokenizer as _myTokenizer
+from aux import myTokenizer as _myTokenizer, getWikicatComponents as _getWikicatComponents, NmaxElements as _NmaxElements, NmaxElements3T as _NmaxElements3T
+
 from px_DB_Manager import getCategoriesInText as _getCategoriesInText
 		
 class textSimilarityFunctions():
@@ -39,10 +43,10 @@ class textSimilarityFunctions():
 	
 	def doc2VecTextSimilarity (self, original_text, candidate_text, trained_model):
 		from gensim.models.doc2vec import Doc2Vec
-		
+
 		original_text_tokens = _myTokenizer(original_text)
 		candidate_text_tokens = _myTokenizer(candidate_text)
-		
+
 		# Load the model
 		model = Doc2Vec.load(trained_model)
 
@@ -120,8 +124,9 @@ class textSimilarityFunctions():
 
 	#############################################################################################################################################
 
-	# Wikicats and subjects similarity between two texts, using ourSimilarityListsFunctions
-	def WikicatsAndSubjectsSimilarity (self, original_text, candidate_text):
+	# Full Wikicats and subjects similarity between two texts, using ourSimilarityListsFunctions
+	# it measures complete matching between wikicats/subjects
+	def fullWikicatsAndSubjectsSimilarity (self, original_text, candidate_text):
 		original_text_categories = _getCategoriesInText(original_text)
 		candidate_text_categories = _getCategoriesInText(candidate_text)
 	
@@ -164,4 +169,84 @@ class textSimilarityFunctions():
 		return wikicats_jaccard_similarity, subjects_jaccard_similarity
 
 
+#############################################################################################################################################
+
+	# Shared Wikicats and subjects similarity between two texts, using ourSimilarityListsFunctions
+	# it measures shared matching between wikicats/subjects (similarity among components of wikicat name)
+	def sharedWikicatsAndSubjectsSimilarity (self, original_text, candidate_text):
+		
+		len_orig_text = len(original_text)
+		filename_wk = _CORPUS_FOLDER+"/"+str(len_orig_text)+"_wk.txt"
+		filename_sb = _CORPUS_FOLDER+"/"+str(len_orig_text)+"_sb.txt"
+		
+		try:  # try to read orginal text wikicats and subjects from local store
+			with _Open(filename_wk) as fp:
+				original_text_wikicats = fp.read().splitlines()
+			with _Open(filename_sb) as fp:
+				original_text_subjects = fp.read().splitlines()
+		except:  # fetch wikicats and subjects if not in local store
+			original_text_categories = _getCategoriesInText(original_text)  # function _getCategoriesInText from px_DB_Manager
+			
+			if ("error" in original_text_categories):
+				print("\nError in _getCategoriesInText(original_text):", original_text_categories["error"])
+				return (0,0)
+			
+			original_text_wikicats = original_text_categories["wikicats"]
+			original_text_subjects = original_text_categories["subjects"]
+			
+		candidate_text_categories = _getCategoriesInText(candidate_text)
+		if ("error" in candidate_text_categories):
+			print("\nError in _getCategoriesInText(candidate_text):", candidate_text_categories["error"])
+			return (0,0)
+		candidate_text_wikicats = candidate_text_categories["wikicats"]
+		candidate_text_subjects = candidate_text_categories["subjects"]
+		
+		try:
+			# change every original wikicat by the pair (wikicat, list of wikicat components)    NONSENSE to compute this all times
+			original_text_wikicats = list(map(lambda x: (x, _getWikicatComponents(x)), original_text_wikicats))
+				
+			# change every candidate wikicat by the pair (wikicat, list of wikicat components)
+			candidate_text_wikicats = list(map(lambda x: (x, _getWikicatComponents(x)), candidate_text_wikicats))
+						
+			sims = []
+			for (wko,wkocl) in original_text_wikicats:
+				for (wkc,wkccl) in candidate_text_wikicats:		
+					wkc_jaccard_similarity = self.measures.oJaccardSimilarity(wkocl, wkccl)
+					sims.append((wko, wkc, wkc_jaccard_similarity))
+			
+			N=10
+			greatests = _NmaxElements3T(sims, N)
+			greatests_nums = list(map(lambda x: x[2], greatests))
+				
+			wikicats_jaccard_similarity = sum(greatests_nums) / len(greatests_nums)
+		except Exception as e:
+			print("Exception while computing Jaccard wikicats similarity in sharedWikicatsAndSubjectsSimilarity:", e)
+			wikicats_jaccard_similarity = 0
+			
+		
+		
+		try:
+			# change every original subject by the pair (subject, list of subject components)    NONSENSE to compute this all times
+			original_text_subjects = list(map(lambda x: (x, _getWikicatComponents(x)), original_text_subjects))
+				
+			# change every candidate subject by the pair (subject, list of subject components)
+			candidate_text_subjects = list(map(lambda x: (x, _getWikicatComponents(x)), candidate_text_subjects))
+			
+			sims = []
+			for (sbo,sbocl) in original_text_subjects:
+				for (sbc,sbccl) in candidate_text_subjects:		
+					sbc_jaccard_similarity = self.measures.oJaccardSimilarity(sbocl, sbccl)
+					sims.append((sbo, sbc, sbc_jaccard_similarity))
+			
+			N=10
+			greatests = _NmaxElements3T(sims, N)
+			greatests_nums = list(map(lambda x: x[2], greatests))
+				
+			subjects_jaccard_similarity = sum(greatests_nums) / len(greatests_nums)
+		except Exception as e:
+			print("Exception while computing Jaccard subjects similarity in sharedWikicatsAndSubjectsSimilarity:", e)
+			subjects_jaccard_similarity = 0
+			
+	
+		return wikicats_jaccard_similarity, subjects_jaccard_similarity
 

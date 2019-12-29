@@ -15,19 +15,22 @@ def getCategoriesInText(texto):
 	result = {}
 	
 	try:
-		annotateTextRequest = requests.get(_URL_DB_SL_annotate, params={"text": texto, "confidence": 0.5, "support": 1}, headers={"Accept": "application/json"})
+		objParams = {"text": texto, "confidence": 0.5, "support": 1}
+		# annotateTextRequest = requests.get(_URL_DB_SL_annotate, params=objParams, headers={"Accept": "application/json"})
+		annotateTextRequest = requests.post(_URL_DB_SL_annotate, data=objParams, headers={"Accept": "application/json"})
 	except Exception as e:
-		print("Problem querying DB-SL")
-		result["error"] = "Problem with DB-SL --> "+str(e)
+		print("Problem querying DB-SL", str(e))
+		result["error"] = "Problem querying DB-SL --> "+str(e)
 		return result;
 	
-	dbpediaManager = DBManager()
 	try:
 		dbpediaText = annotateTextRequest.json()
 	except Exception as e:
-		print(annotateTextRequest.content)
-		result["error"] = "Problem with DB-SL: the query does not return the expected JSON --> "+str(e)
+		print("Problem jsoning DB-SL response:", annotateTextRequest.content)
+		result["error"] = "Problem with json DB-SL response: the query does not return the expected JSON --> "+str(e)
 		return result;
+	
+	dbpediaManager = DBManager()
 	
 	try:
 		dbpediaManager.scanEntities(dbpediaText)

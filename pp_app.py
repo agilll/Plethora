@@ -31,6 +31,7 @@ from requests.utils import quote
 import operator
 from nltk.tokenize import RegexpTokenizer
 import re
+from smart_open import open as _Open
 
 from collections import OrderedDict
 
@@ -99,7 +100,7 @@ DEFAULT_ANSWER = "Xerxes I"
 app = Flask(__name__)
 
 # leemos la información de la DBpedia sobre las entidades de los textos de entrenamiento
-historicalDBpediaDataMod = pickle.load(open(DB_ENTITIES_FOLDER+DBPEDIA_INFO_ABOUT_TRAINING, "rb" ))
+historicalDBpediaDataMod = pickle.load(_Open(DB_ENTITIES_FOLDER+DBPEDIA_INFO_ABOUT_TRAINING, "rb" ))
 dbManagerHistorical = _DBManager()
 dbManagerHistorical.setDictionaries(historicalDBpediaDataMod)
 
@@ -108,7 +109,7 @@ listQATuplas = []
 
 # leemos listQATuplas del fichero donde las almacenamos
 try:
-	listQATuplas = pickle.load(open( "storedQA.p", "rb" ))
+	listQATuplas = pickle.load(_Open( "storedQA.p", "rb" ))
 except:
 	pass
 
@@ -298,7 +299,7 @@ fecha = "Fecha lanzamiento del proceso = " + time.strftime("%c")
 demo = DemoDoc()
 
 # leemos el texto por defecto de la demo
-defaultTextFile = open(DEFAULT_TEXT, "r")
+defaultTextFile = _Open(DEFAULT_TEXT, "r")
 defaultText = defaultTextFile.read()
 
 

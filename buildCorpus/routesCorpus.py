@@ -7,47 +7,74 @@ from flask import request, jsonify
 from os.path import isfile
 from requests_futures.sessions import FuturesSession
 import shutil
+from smart_open import open as _Open
 
 from px_DB_Manager import getCategoriesInText as _getCategoriesInText
 from px_aux import saveFile as _saveFile, URL_DB as _URL_DB, URL_WK as _URL_WK
 
-from aux import CORPUS_FOLDER as _CORPUS_FOLDER, WIKICAT_LIST_FILENAME as _WIKICAT_LIST_FILENAME, SELECTED_WIKICAT_LIST_FILENAME as _SELECTED_WIKICAT_LIST_FILENAME 
+from aux import CORPUS_FOLDER as _CORPUS_FOLDER
 from aux import hasFieldPT as _hasFieldPT  # function to check if object has  ["pt"]["value"] field
+from aux import getWikicatComponents as _getWikicatComponents
 	
 	
 # QUERY (/getWikicatsFromText) to attend the query to get wikicats from a text   
 # receives: the text
 # returns:
-# result[wikicats]: list of wikicats (and stores them in the file $CORPUS_FOLDER/$WIKICAT_LIST_FILENAME)
-# result[formerSelectedWikicats]: list of wikicats selected in the past, to be identified in the interface
+# result["wikicats"]: list of wikicats (and stores them in the file $CORPUS_FOLDER/length_wk.txt)
+# result["len_text"]: text length, to be returned to save selected wikicats
+# result[wk] = [component list] for every wikicat
+# result["formerSelectedWikicats"]: list of wikicats selected in the past, to be identified in the interface
 def getWikicatsFromText():
 	if request.method == "POST":		
 		originalText = request.values.get("text")
-		
-		result = _getCategoriesInText(originalText)  # function _getCategoriesInText from px_DB_Manager
-		
-		if ("error" in result):
-			return jsonify(result);
-		
-		content = ""
-		for w in result["wikicats"]:
-			content += w+"\n"
-		
-		if not os.path.exists(_CORPUS_FOLDER):
+		len_text = len(originalText)  # length of the received text
+				
+		if not os.path.exists(_CORPUS_FOLDER):  # create DB folder if not exists
 			os.makedirs(_CORPUS_FOLDER)
+			
+		filename = _CORPUS_FOLDER+"/"+str(len_text)+".txt"   # save the received text with length.txt filename
+		_saveFile(filename, originalText)
 		
-		_saveFile(_CORPUS_FOLDER+"/"+_WIKICAT_LIST_FILENAME, content)
-
-		# this is the file with the  Wikicats selected in the past
-		fileSelectedWikicats = _CORPUS_FOLDER+"/"+_SELECTED_WIKICAT_LIST_FILENAME
+		filename_wk = _CORPUS_FOLDER+"/"+str(len_text)+"_wk.txt"   # filename for wikicats
+		filename_sb = _CORPUS_FOLDER+"/"+str(len_text)+"_sb.txt"   # filename for subjects
+				
+		result = {}
+		
+		try:  # open wikicats files if exists
+			with _Open(filename_wk) as fp:
+				result["wikicats"] = fp.read().splitlines()
+		except:  # fetch wikicats if not exists
+			result = _getCategoriesInText(originalText)  # function _getCategoriesInText from px_DB_Manager
+		
+			if ("error" in result):   # return error if could not fetch wikicats 
+				return jsonify(result);
+			
+			content = ""    # create one line per wikicat to save
+			for w in result["wikicats"]:
+				content += w+"\n"
+			
+			_saveFile(filename_wk, content)  # save file (length_wk.txt) with wikicats
+			
+			content = ""    # create one line per subject to save
+			for s in result["subjects"]:
+				content += s+"\n"
+			
+			_saveFile(filename_sb, content)  # save file (length_wk.txt) with wikicats
+			
+		
+		for w in result["wikicats"]:    # compute wikicats components and add to result
+			wlc = _getWikicatComponents(w)
+			result[w] = wlc
+		
+		filename_selected = _CORPUS_FOLDER+"/"+str(len_text)+"_wk_selected.txt"   # try to open previously selected wikicats file
 		
 		try:
-			with open(fileSelectedWikicats) as fp:
-				wkList = fp.read().splitlines()
+			with _Open(filename_selected) as fp:
+				wkSelectedList = fp.read().splitlines()
 		except:
-			wkList = []
+			wkSelectedList = []
 		
-		result["formerSelectedWikicats"] = wkList
+		result["formerSelectedWikicats"] = wkSelectedList
 		
 		return jsonify(result);
 	
