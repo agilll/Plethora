@@ -111,6 +111,8 @@ def buildCorpus2():
 	scrap = _scrapFunctions()   # Create a scrapFunctions object to clean pages
 	unretrieved_pages_list = []  # a list for unsuccessful pages retrieval
 		
+	downloaded = 0  # number of files downloaded from Internet
+	
 	# download not locally stored pages and save them
 	for idx, page in enumerate(listWithoutDuplicates, start=1):
 		
@@ -120,16 +122,15 @@ def buildCorpus2():
 		pageFinalName = page[1+page.rindex("/"):]
 		fileName = _SCRAPPED_TEXT_PAGES_FOLDER+"/"+pageFinalName+".txt"
 				
-		try:  # open and read local file if already exists
-			candidateTextFile = _Open(fileName, "r")
+		if (os.path.exists(fileName)):
 			print("File already available:", fileName)
-		except:  # fetch file if not exists	
-			# Retrieves the URL, and get the page title and the scraped page content
-			try:
+		else:  # fetch file if not exists	
+			try:  # Retrieves the URL, and get the page title and the scraped page content
 				pageName, pageContent = scrap.scrapPage(page)
+				downloaded += 1
 				# Save to text file
 				_saveFile(fileName, pageContent)
-				print("File downloaded and save it:", fileName)
+				print("File", str(downloaded), "downloaded and saved it:", fileName)
 			except Exception as e:
 				print(page, ":", e)
 				unretrieved_pages_list.append(page)
@@ -138,7 +139,7 @@ def buildCorpus2():
 	print(str(len(unretrieved_pages_list)) + " unretrieved pages")
 	_saveFile(_UNRETRIEVED_PAGES_FILENAME, '\n'.join(unretrieved_pages_list))
 	
-	print("All files downloaded!!)")
+	print(str(downloaded), "files downloaded!!)")
 	
 	similarity = _textSimilarityFunctions()    # Create a textSimilarityFunctions object to measure text similarities
 	
@@ -162,7 +163,7 @@ def buildCorpus2():
 		
 		print("(", idx, "of", len(listWithoutDuplicates), ") -- ", page)
 						
-		# Add file extension '.txt' to page name for saving it   !!!!!!!!!!
+		# Add file extension '.txt' to page name for saving it   !!!!!!!!!
 		pageFinalName = page[1+page.rindex("/"):]
 		fileName = _SCRAPPED_TEXT_PAGES_FOLDER+"/"+pageFinalName+".txt"
 				

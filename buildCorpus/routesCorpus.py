@@ -16,7 +16,14 @@ from aux import CORPUS_FOLDER as _CORPUS_FOLDER
 from aux import hasFieldPT as _hasFieldPT  # function to check if object has  ["pt"]["value"] field
 from aux import getWikicatComponents as _getWikicatComponents
 	
+# to reject simple wikicats, with only one component
+def filterSimpleWikicats (wikicat):
+	if (len(_getWikicatComponents(wikicat)) == 1):
+		return False
+	else:
+		return True
 	
+
 # QUERY (/getWikicatsFromText) to attend the query to get wikicats from a text   
 # receives: the text
 # returns:
@@ -35,34 +42,44 @@ def getWikicatsFromText():
 		filename = _CORPUS_FOLDER+"/"+str(len_text)+".txt"   # save the received text with length.txt filename
 		_saveFile(filename, originalText)
 		
-		filename_wk = _CORPUS_FOLDER+"/"+str(len_text)+"_wk.txt"   # filename for wikicats
-		filename_sb = _CORPUS_FOLDER+"/"+str(len_text)+"_sb.txt"   # filename for subjects
+		filename_wk = _CORPUS_FOLDER+"/"+str(len_text)+"_wk.txt"   # filename for wikicats (length_wk.txt)
+		filename_sb = _CORPUS_FOLDER+"/"+str(len_text)+"_sb.txt"   # filename for subjects (length_sb.txt)
 				
 		result = {}
 		
 		try:  # open wikicats files if exists
 			with _Open(filename_wk) as fp:
-				result["wikicats"] = fp.read().splitlines()
+				listaWikicats = fp.read().splitlines()
+				listaWikicats = list(filter(filterSimpleWikicats, listaWikicats))
+				result["wikicats"] = listaWikicats
 		except:  # fetch wikicats if not exists
 			result = _getCategoriesInText(originalText)  # function _getCategoriesInText from px_DB_Manager
 		
 			if ("error" in result):   # return error if could not fetch wikicats 
 				return jsonify(result);
 			
-			content = ""    # create one line per wikicat to save
-			for w in result["wikicats"]:
+			listaWikicats = list(filter(filterSimpleWikicats, result["wikicats"])) # filter simple wikicats
+			
+			result["wikicats"] = listaWikicats  # update result wikicats
+			
+			content = ""    # create one line per wikicat to save in wikicat file
+			for w in listaWikicats:
 				content += w+"\n"
 			
 			_saveFile(filename_wk, content)  # save file (length_wk.txt) with wikicats
 			
+			listaSubjects = list(filter(filterSimpleWikicats, result["subjects"]))  # filter simple subjects
+			
+			result["subjects"] = listaSubjects # update subjects
+			
 			content = ""    # create one line per subject to save
-			for s in result["subjects"]:
+			for s in listaSubjects:
 				content += s+"\n"
 			
 			_saveFile(filename_sb, content)  # save file (length_wk.txt) with wikicats
 			
 		
-		for w in result["wikicats"]:    # compute wikicats components and add to result
+		for w in listaWikicats:    # compute wikicats components and add to result
 			wlc = _getWikicatComponents(w)
 			result[w] = wlc
 		
