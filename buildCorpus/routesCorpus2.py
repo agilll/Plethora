@@ -118,12 +118,17 @@ def buildCorpus2():
 		
 		print("(", idx, "of", len(listWithoutDuplicates), ") -- ", page)
 						
-		pageWithoutHTTP = page[2+page.rindex("//"):]
-		pageChanged =  pageWithoutHTTP.replace("/", "..")
+		pageWithoutHTTP = page[2+page.find("//"):]
+		domFolder = pageWithoutHTTP[:pageWithoutHTTP.find("/")]
+		if (not os.path.exists(_SCRAPPED_TEXT_PAGES_FOLDER+"/"+domFolder)):
+			os.makedirs(_SCRAPPED_TEXT_PAGES_FOLDER+"/"+domFolder)
+		
+		onlyPage = pageWithoutHTTP[1+pageWithoutHTTP.find("/"):]
+		onlyPageChanged =  onlyPage.replace("/", "..")
 		
 		# Add file extension '.txt' to page name for saving it   !!!!!!!!!!
 		# pageFinalName = page[1+page.rindex("/"):]
-		fileName = _SCRAPPED_TEXT_PAGES_FOLDER+"/"+pageChanged+".txt"
+		fileName = _SCRAPPED_TEXT_PAGES_FOLDER+"/"+domFolder+"/"+onlyPageChanged+".txt"
 				
 		if (os.path.exists(fileName)):
 			print("File already available:", fileName)
@@ -167,9 +172,11 @@ def buildCorpus2():
 		print("(", idx, "of", len(listWithoutDuplicates), ") -- ", page)
 						
 		# Add file extension '.txt' to page name for saving it   !!!!!!!!!
-		pageWithoutHTTP = page[2+page.rindex("//"):]
-		pageChanged =  pageWithoutHTTP.replace("/", "..")
-		fileName = _SCRAPPED_TEXT_PAGES_FOLDER+"/"+pageChanged+".txt"
+		pageWithoutHTTP = page[2+page.find("//"):]
+		domFolder = pageWithoutHTTP[:pageWithoutHTTP.find("/")]
+		onlyPage = pageWithoutHTTP[1+pageWithoutHTTP.find("/"):]
+		onlyPageChanged =  onlyPage.replace("/", "..")
+		fileName = _SCRAPPED_TEXT_PAGES_FOLDER+"/"+domFolder+"/"+onlyPageChanged+".txt"
 				
 		try:  # open and read local file if already exists
 			candidateTextFile = _Open(fileName, "r")
