@@ -118,9 +118,12 @@ def buildCorpus2():
 		
 		print("(", idx, "of", len(listWithoutDuplicates), ") -- ", page)
 						
+		pageWithoutHTTP = page[2+page.rindex("//"):]
+		pageChanged =  pageWithoutHTTP.replace("/", "..")
+		
 		# Add file extension '.txt' to page name for saving it   !!!!!!!!!!
-		pageFinalName = page[1+page.rindex("/"):]
-		fileName = _SCRAPPED_TEXT_PAGES_FOLDER+"/"+pageFinalName+".txt"
+		# pageFinalName = page[1+page.rindex("/"):]
+		fileName = _SCRAPPED_TEXT_PAGES_FOLDER+"/"+pageChanged+".txt"
 				
 		if (os.path.exists(fileName)):
 			print("File already available:", fileName)
@@ -164,8 +167,9 @@ def buildCorpus2():
 		print("(", idx, "of", len(listWithoutDuplicates), ") -- ", page)
 						
 		# Add file extension '.txt' to page name for saving it   !!!!!!!!!
-		pageFinalName = page[1+page.rindex("/"):]
-		fileName = _SCRAPPED_TEXT_PAGES_FOLDER+"/"+pageFinalName+".txt"
+		pageWithoutHTTP = page[2+page.rindex("//"):]
+		pageChanged =  pageWithoutHTTP.replace("/", "..")
+		fileName = _SCRAPPED_TEXT_PAGES_FOLDER+"/"+pageChanged+".txt"
 				
 		try:  # open and read local file if already exists
 			candidateTextFile = _Open(fileName, "r")
