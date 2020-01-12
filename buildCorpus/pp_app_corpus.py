@@ -1,17 +1,32 @@
-# -*- coding: utf-8 -*-
 # this is the main program of the corpus builder tool
 # it can be launched standalone, using a Flask server started here and calling localhost:5000/corpus
-# or from the main tool with its Flask server
+# or from the main tool with its Flask server, selecting the corresponding option
 
- # argument '-d' prints button labels with routes associated, to be easier to understand flow among interface and python modules
+# argument '-d' makes button labels in the interface to show calls (routes) associated in the server,
+# to be easier to understand the flow among interface and python server modules
  
 # it depends on px_DB_Manager and px_aux modules of the main tool, as well as the 
 
 import sys
-from smart_open import open as _Open
+from smart_open import open as SOpen
 
-# only executed if this is the main program, that is, if we launch the corpus tool directly from the 'buildCorpus' folder
-# not executed if we launch the corpus tool from the main tool
+# this program has been launched in the Plethora/buildCorpus folder
+# this is to search px_DB_Manager and px_aux in the Plethora folder
+# such modules are not needed here, but in routesCorpus and routesCorpus2 modules loaded next
+sys.path.append('../')
+
+# functions to be executed when Flask requests are received 
+from routesCorpus import getWikicatsFromText as _getWikicatsFromText, getWikicatUrls as _getWikicatUrls
+from routesCorpus2 import buildCorpus2 as _buildCorpus2
+from aux import INITIAL_TEXT as _INITIAL_TEXT
+
+# load the initial text shown at the beginning of the interface
+initialTextFile = SOpen(_INITIAL_TEXT, "r")
+initialText = initialTextFile.read()
+
+
+# the following is only executed if this is the main program, that is, if we launch the corpus tool directly from the 'buildCorpus' folder
+# not executed if we launch the corpus tool from the main tool, as the 'app' object is already available from the main tool
 if __name__ == '__main__':
 	import os
 	
@@ -23,26 +38,19 @@ if __name__ == '__main__':
 	# Create the Flask app to manage the HTTP request  
 	app = Flask(__name__, template_folder=template_dir)
 
-
-# this program has been launched in the Plethora/buildCorpus folder
-# this is to search px_DB_Manager and px_aux in the Plethora folder
-sys.path.append('../') 
-
-# functions to be executed when Flask request are received 
-from routesCorpus import getWikicatsFromText, getWikicatUrls
-from routesCorpus2 import buildCorpus2
+	# only to serve style.js from the js folder of the main tool (also done in the main tool, so only necessary if standalone)
+	@app.route('/css/<path:path>')
+	def send_js(path):
+		return send_from_directory('../css', path)
+	
 
 
-from aux import INITIAL_TEXT as _INITIAL_TEXT
-initialTextFile = _Open(_INITIAL_TEXT, "r")
-initialText = initialTextFile.read()
+# Flask routes binding for interface requests (not done in the main tool, so always necessary)
+app.add_url_rule("/getWikicatsFromText", "getWikicatsFromText", _getWikicatsFromText, methods=["POST"])  # to send a text and request the wikicats in it
+app.add_url_rule("/buildCorpus2", "buildCorpus2", _buildCorpus2, methods=["POST"])   # to send some wikicats and request to build the corpus
+app.add_url_rule("/getWikicatUrls", "getWikicatUrls", _getWikicatUrls) # what is this used for??
 
-# Flask routes binding for interface requests
-app.add_url_rule("/getWikicatsFromText", "getWikicatsFromText", getWikicatsFromText, methods=["POST"])  # to send a text and request the wikicats in it
-app.add_url_rule("/buildCorpus2", "buildCorpus2", buildCorpus2, methods=["POST"])   # to send some wikicats and request to build the corpus
-app.add_url_rule("/getWikicatUrls", "getWikicatUrls", getWikicatUrls) # ??
-
-# this is the main entry point of the corpus builder tool
+# this is the main entry point of the corpus builder tool (not done in the main tool, so always necessary)
 @app.route('/corpus',  methods=["GET", "POST"])
 def hello_world():
 	arguments = len(sys.argv) - 1;
@@ -52,17 +60,9 @@ def hello_world():
 	return render_template('./template_corpus.html', parDefaultText=initialText, parDebug=debug) # parDebug=True prints button labels with routes associated
 
 
+# start web server listening port 5000 by default if we have launched the corpus tool standalone
 
-
-# start web server listening port 5000 by default
-
-# only executed if this is the main program, that is, if we launch the corpus tool directly from the 'buildCorpus' folder
-# not executed if we launch the corpus tool from the main tool
+# the following is only executed if this is the main program, that is, if we launch the corpus tool directly from the 'buildCorpus' folder
+# not executed if we launch the corpus tool from the main tool, as the 'app' object is already available from the main tool
 if __name__ == '__main__':
-	
-	# only to serve style.js from the js folder of the main tool
-	@app.route('/css/<path:path>')
-	def send_js(path):
-		return send_from_directory('../css', path)
-
 	app.run(debug=True, host='0.0.0.0', threaded=True)
