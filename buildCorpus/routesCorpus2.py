@@ -31,10 +31,10 @@ from textSimilarities import textSimilarityFunctions as _textSimilarityFunctions
 # returns: the results, mainly the number of files identified for each wikicat
 def buildCorpus2():
 
-	originalText = request.values.get("text")
+	originalText = request.values.get("text")  # get parameter with original text
 	len_text = len(originalText)
 	
-	selectedWikicats = json.loads(request.values.get("wikicats"))
+	selectedWikicats = json.loads(request.values.get("wikicats"))   # get parameter with selected wikicats
 	print("Number of wikicats:", len(selectedWikicats))
 	numUrlsDB = 0
 	numUrlsWK = 0
@@ -45,16 +45,24 @@ def buildCorpus2():
 		content += w+"\n"
 	_saveFile(_CORPUS_FOLDER+"/"+str(len_text)+"_wk_selected.txt", content)
 
-	# get the URLs associated to any of those wikicats (this function is below)
-	# this could be stored locally 
+
+	# create a folder to store a file per wikicat, with the URLs linked to such wikicat
+	# it must be done before calling the getUrlsLinked2Wikicats function, that it stores there files if fetched
+
+	if not os.path.exists(_URLs_FOLDER):
+		os.makedirs(_URLs_FOLDER)
+
+
+	# now get the URLs associated to any of those wikicats (this function is below)
+	# it reads from a local file if exists, otherwise it connects to Internet to fetch them and store them locally
+
 	urlsObjects = getUrlsLinked2Wikicats(selectedWikicats)
+
+	# it receives a dictionary entry for each wikicat   urlsObjects[wikicat] = {"db": urlsDB, "wk": urlsWK}
+	# urlsDB and urlsWK are lists of URLs
 
 	result = {}  # object to store the results to be returned to the request
 	fullList = [] # to aggregate the full list of URLs for all wikicats
-
-	# create folder to store a file per wikicat, with the URLs linked to such wikicat
-	if not os.path.exists(_URLs_FOLDER):
-		os.makedirs(_URLs_FOLDER)
 		
 	# process all results to return
 	
@@ -63,6 +71,7 @@ def buildCorpus2():
 	for wikicat in selectedWikicats:
 		
 		# first, the results from DB
+
 		dbUrls = urlsObjects[wikicat]["db"]   # get the set of DB URLs
 		numUrlsDB += len(dbUrls)
 		
@@ -87,7 +96,7 @@ def buildCorpus2():
 	result["totalDB"] = numUrlsDB
 	result["totalWK"] = numUrlsWK
 	result["totalUrls"] = len(listWithoutDuplicates)
-	# return jsonify(result);  # uncomment to modify interface without processing files
+	# return jsonify(result);  # uncomment to return to the interface without processing files
 	
 	# the result are only the numbers of discovered URLs
 	
@@ -97,7 +106,7 @@ def buildCorpus2():
 	###  We've got the first set of relevant URLs.
 	###  Let's start the analysis of their contents 
 
-	overwriteCorpus = json.loads(request.values.get("overwriteCorpus"))  # read the flag overwriteCorpus from request
+	overwriteCorpus = json.loads(request.values.get("overwriteCorpus"))  # read the flag parameter overwriteCorpus from request
 
 	if overwriteCorpus:
 		shutil.rmtree(_SCRAPPED_TEXT_PAGES_FOLDER)  # if overwriteCorpus, remove current corpus  (and the URLs?????)
@@ -111,18 +120,26 @@ def buildCorpus2():
 	scrap = _scrapFunctions()   # Create a scrapFunctions object to clean pages
 	unretrieved_pages_list = []  # a list for unsuccessful pages retrieval
 		
-	downloaded = 0  # number of files downloaded from Internet
+	downloaded = 0  # number of files downloaded from Internet in this session
 	
+	lenOfListWithoutDuplicates  = len(listWithoutDuplicates)  # length of full list to process
+
 	# download not locally stored pages and save them
 	for idx, page in enumerate(listWithoutDuplicates, start=1):
 		
-		print("(", idx, "of", len(listWithoutDuplicates), ") -- ", page)
+		print("(", idx, "of", lenOfListWithoutDuplicates, ") -- ", page)
+
+		# scrapped pages will be stored classified by domain, in specific folders
 						
-		pageWithoutHTTP = page[2+page.find("//"):]
+		pageWithoutHTTP = page[2+page.find("//"):]		# get the domain of this page
 		domFolder = pageWithoutHTTP[:pageWithoutHTTP.find("/")]
-		if (not os.path.exists(_SCRAPPED_TEXT_PAGES_FOLDER+"/"+domFolder)):
+
+		if (not os.path.exists(_SCRAPPED_TEXT_PAGES_FOLDER+"/"+domFolder)):	# create this domain folder if not exists 
 			os.makedirs(_SCRAPPED_TEXT_PAGES_FOLDER+"/"+domFolder)
 		
+		# the pagename will be the name of the file, with the following change
+		# dir1/dir2/page --> dir1..dir2..page.txt
+
 		onlyPage = pageWithoutHTTP[1+pageWithoutHTTP.find("/"):]
 		onlyPageChanged =  onlyPage.replace("/", "..")
 		
@@ -134,7 +151,7 @@ def buildCorpus2():
 			print("File already available:", fileName)
 		else:  # fetch file if not exists	
 			try:  # Retrieves the URL, and get the page title and the scraped page content
-				pageName, pageContent = scrap.scrapPage(page)
+				pageName, pageContent = scrap.scrapPage(page)  # pageName result is not used
 				downloaded += 1
 				# Save to text file
 				_saveFile(fileName, pageContent)
@@ -148,10 +165,13 @@ def buildCorpus2():
 	_saveFile(_UNRETRIEVED_PAGES_FILENAME, '\n'.join(unretrieved_pages_list))
 	
 	print(str(downloaded), "files downloaded!!)")
+
+	# all the pages not already available have been now fetched and cleaned
+
 	
 	similarity = _textSimilarityFunctions()    # Create a textSimilarityFunctions object to measure text similarities
 	
-	# Create a new csv file if not exists
+	# Create a new csv file if not exists. POR QUE MANTENER LO QUE HABIA si vamos a calcularlos todos otra vez?
 	with _Open(_SIMILARITIES_CSV_FILENAME, 'w+') as writeFile:
 		# Name columns
 		fieldnames = ['URL', 'Euclidean Distance', 'Spacy', 'Doc2Vec Euclidean Distance',
@@ -164,14 +184,17 @@ def buildCorpus2():
 		# Write the column headers
 		writer.writeheader()
 	
-	discarded_pages_list = []     # a list to save discarded pages' URLs
-		
+
+
+	discarded_pages_list = []     # a list to save discarded pages' URLs		
+
+
 	# Scrap pages, Measure text similarity, and save pages with a minimum similarity
 	for idx, page in enumerate(listWithoutDuplicates, start=1):
 		
-		print("(", idx, "of", len(listWithoutDuplicates), ") -- ", page)
+		print("(", idx, "of", lenOfListWithoutDuplicates, ") -- ", page)
 						
-		# Add file extension '.txt' to page name for saving it   !!!!!!!!!
+		# Build filename for this page
 		pageWithoutHTTP = page[2+page.find("//"):]
 		domFolder = pageWithoutHTTP[:pageWithoutHTTP.find("/")]
 		onlyPage = pageWithoutHTTP[1+pageWithoutHTTP.find("/"):]
@@ -183,10 +206,12 @@ def buildCorpus2():
 			pageContent = candidateTextFile.read()
 			print("Reading file:", fileName)
 		except:  # file that could not be downloaded
-			print("Unavailable file:", fileName)
+			print("Unavailable file, not in the store:", fileName)
 			continue
 
-		# Compare original text with pageContent
+
+		# Compare original text with the text of this candidate (in pageContent)
+		# several criteria are now computed. THEIR RELEVANCE SHOULD BE STUDIED AS SOON AS POSSIBLE 
 
 		# Measure text similarity based on the Lee doc2vec model
 		doc2vec_cosineSimilarity, doc2vec_euclideanDistance = similarity.doc2VecTextSimilarity(originalText, pageContent, _LEE_D2V_MODEL)
@@ -225,14 +250,14 @@ def buildCorpus2():
 			shared_subjects_jaccard_similarity])
 
 
-		# Minimum similarity for a page to be accepted by a jaccard similarity
-		min_jaccard_similarity = 0.04
+		# Minimum similarity for a page to be accepted.
+		# WE MUST DECIDE THE MOST RELEVANT CRITERIUM TO DECIDE ON IT
+		# currently, we used shared_wikicats_jaccard_similarity
 
-		# Minimum doc2vec similarity or Maximum distance
-		# I'm not sure yet about it
+		min_similarity = 0.04
 
-		# Filter pages with at least s similarity
-		if(shared_wikicats_jaccard_similarity >= min_jaccard_similarity):
+		# Filter pages to keep only the ones with at least such similarity
+		if(shared_wikicats_jaccard_similarity >= min_similarity):
 			print("page accepted\n")
 		else:
 			print("page discarded\n")
@@ -253,14 +278,22 @@ def buildCorpus2():
 
 
 # aux function to get all the URLs associated to any wikicat from a set of wikicats
-# It queries DB and WK and parses the results
+# If there is a file for a wikicat, it is read for returning contents
+# Otherwise, it connects to Internet to query DB and WK and parse the results to return, after storing them locally
+# it returns a dictionary entry for each wikicat   urlsObjects[wikicat] = {"db": urlsDB, "wk": urlsWK}
+# urlsDB and urlsWK are lists of URLs
+
 def getUrlsLinked2Wikicats (selectedWikicats):
 	requestObjects = {} # dictionary to store request objects 
 	
 	_session = FuturesSession()  # to manage asynchronous requests 
+
+	# first phase, reading files or start requests for DBpedia and Wikidata foreach wikicat
 					
 	for wikicat in selectedWikicats:
 		
+		# first, read or fetch Wikicat results for DBpedia
+
 		filename_db = _URLs_FOLDER+"/_Wikicat_"+wikicat+"_DB_Urls.txt"
 		
 		try:  # try to read wikicats of original text from local store
@@ -292,8 +325,12 @@ def getUrlsLinked2Wikicats (selectedWikicats):
 			requestObjects[wikicat] = {"db": requestDB}  # store the request DB object for this wikicat
 			time.sleep(4)  # delay to avoid server reject for too many queries
 		
+
+		# now, read or fetch Wikicat results for Wikidata
 		
-		filename_wk = _URLs_FOLDER+"/_Wikicat_"+wikicat+"_WK_Urls.txt"
+		filename_wk = _URLs_FOLDER+"/_Wikicat_"+wikicat+"_WK_Urls.txt"	
+
+		# it uses update with the objects dictionary, as the wikicat key has been already created for DBpedia	
 		
 		try:  # try to read wikicats and subjects of original text from local store
 			with _Open(filename_wk) as fp:
@@ -330,14 +367,17 @@ def getUrlsLinked2Wikicats (selectedWikicats):
 		
 	print("\nAll queries launched\n")
 	
-	# Now, for every wikicat, we have:
+	# End of the first phase. Now, for every wikicat, we have:
 	# requestObjects[wikicat] = {"dburls": URLs} or  {"db": requestDB}
 	#                       and {"wkurls": URLS} or  {"wk": requestWK} 
 	
+
+
+
 	# let's build an object {"db": urlsDB, "wk": urlsWK} for each wikicat (each field is a URL list)
 	urlsObjects = {}
 	
-	# now, read the results received from all queries
+	# Second phase. Now, read the results received from all queries
 	
 	for wikicat in selectedWikicats:
 		

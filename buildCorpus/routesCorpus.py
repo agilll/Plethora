@@ -53,43 +53,41 @@ def getWikicatsFromText():
 				listaWikicats = list(filter(filterSimpleWikicats, listaWikicats))
 				result["wikicats"] = listaWikicats
 		except:  # fetch wikicats if not exists
-			result = _getCategoriesInText(originalText)  # function _getCategoriesInText from px_DB_Manager
+			result = _getCategoriesInText(originalText)  # function getCategoriesInText from px_DB_Manager.py
 		
 			if ("error" in result):   # return error if could not fetch wikicats 
 				return jsonify(result);
 			
-			listaWikicats = list(filter(filterSimpleWikicats, result["wikicats"])) # filter simple wikicats
+			listaWikicats = list(filter(filterSimpleWikicats, result["wikicats"])) # remove simple wikicats with function located above
+			result["wikicats"] = listaWikicats  # update result wikicats for return
 			
-			result["wikicats"] = listaWikicats  # update result wikicats
-			
-			content = ""    # create one line per wikicat to save in wikicat file
+			content = ""    # create one line per wikicat to save in wikicats file
 			for w in listaWikicats:
 				content += w+"\n"
 			
 			_saveFile(filename_wk, content)  # save file (length_wk.txt) with wikicats
 			
-			listaSubjects = list(filter(filterSimpleWikicats, result["subjects"]))  # filter simple subjects
-			
-			result["subjects"] = listaSubjects # update subjects
+			listaSubjects = list(filter(filterSimpleWikicats, result["subjects"]))  # remove simple subjects with function located above
+			result["subjects"] = listaSubjects # update result subjects to return
 			
 			content = ""    # create one line per subject to save
 			for s in listaSubjects:
 				content += s+"\n"
 			
-			_saveFile(filename_sb, content)  # save file (length_wk.txt) with wikicats
+			_saveFile(filename_sb, content)  # save file (length_sb.txt) with subjects
 			
 		
 		for w in listaWikicats:    # compute wikicats components and add to result
-			wlc = _getWikicatComponents(w)
+			wlc = _getWikicatComponents(w)   # function getWikicatComponets from aux.py
 			result[w] = wlc
 		
-		filename_selected = _CORPUS_FOLDER+"/"+str(len_text)+"_wk_selected.txt"   # try to open previously selected wikicats file
+		filename_selected = _CORPUS_FOLDER+"/"+str(len_text)+"_wk_selected.txt"   # previously selected wikicats file for this text
 		
-		try:
+		try:  # try to open previously selected wikicats file if exists
 			with _Open(filename_selected) as fp:
 				wkSelectedList = fp.read().splitlines()
 		except:
-			wkSelectedList = []
+			wkSelectedList = []    # no previously selected wkicats
 		
 		result["formerSelectedWikicats"] = wkSelectedList
 		
