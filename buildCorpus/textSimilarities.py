@@ -194,15 +194,16 @@ class textSimilarityFunctions():
 			original_text_wikicats = original_text_categories["wikicats"]
 			original_text_subjects = original_text_categories["subjects"]
 			
-		candidate_text_categories = _getCategoriesInText(candidate_text)
+		candidate_text_categories = _getCategoriesInText(candidate_text)    # STORE LOCAL
 		if ("error" in candidate_text_categories):
 			print("\nError in _getCategoriesInText(candidate_text):", candidate_text_categories["error"])
 			return (0,0)
+		
 		candidate_text_wikicats = candidate_text_categories["wikicats"]
 		candidate_text_subjects = candidate_text_categories["subjects"]
 		
 		try:
-			# change every original wikicat by the pair (wikicat, list of wikicat components)    NONSENSE to compute this all times
+			# change every original wikicat by the pair (wikicat, list of wikicat components)    NONSENSE to compute this every time
 			original_text_wikicats = list(map(lambda x: (x, _getWikicatComponents(x)), original_text_wikicats))
 				
 			# change every candidate wikicat by the pair (wikicat, list of wikicat components)
@@ -217,36 +218,40 @@ class textSimilarityFunctions():
 			N=10
 			greatests = _NmaxElements3T(sims, N)
 			greatests_nums = list(map(lambda x: x[2], greatests))
-				
-			wikicats_jaccard_similarity = sum(greatests_nums) / len(greatests_nums)
+			
+			if len(greatests_nums) == 0:
+				wikicats_jaccard_similarity =0
+			else:
+				wikicats_jaccard_similarity = sum(greatests_nums) / len(greatests_nums)
 		except Exception as e:
 			print("Exception while computing Jaccard wikicats similarity in sharedWikicatsAndSubjectsSimilarity:", e)
+			exit()
 			wikicats_jaccard_similarity = 0
 			
+		return wikicats_jaccard_similarity, 0
 		
-		
-		try:
-			# change every original subject by the pair (subject, list of subject components)    NONSENSE to compute this all times
-			original_text_subjects = list(map(lambda x: (x, _getWikicatComponents(x)), original_text_subjects))
-				
-			# change every candidate subject by the pair (subject, list of subject components)
-			candidate_text_subjects = list(map(lambda x: (x, _getWikicatComponents(x)), candidate_text_subjects))
-			
-			sims = []
-			for (sbo,sbocl) in original_text_subjects:
-				for (sbc,sbccl) in candidate_text_subjects:		
-					sbc_jaccard_similarity = self.measures.oJaccardSimilarity(sbocl, sbccl)
-					sims.append((sbo, sbc, sbc_jaccard_similarity))
-			
-			N=10
-			greatests = _NmaxElements3T(sims, N)
-			greatests_nums = list(map(lambda x: x[2], greatests))
-				
-			subjects_jaccard_similarity = sum(greatests_nums) / len(greatests_nums)
-		except Exception as e:
-			print("Exception while computing Jaccard subjects similarity in sharedWikicatsAndSubjectsSimilarity:", e)
-			subjects_jaccard_similarity = 0
-			
-	
-		return wikicats_jaccard_similarity, subjects_jaccard_similarity
+		# try:
+		# 	# change every original subject by the pair (subject, list of subject components)    NONSENSE to compute this every time
+		# 	original_text_subjects = list(map(lambda x: (x, _getWikicatComponents(x)), original_text_subjects))
+		# 		
+		# 	# change every candidate subject by the pair (subject, list of subject components)
+		# 	candidate_text_subjects = list(map(lambda x: (x, _getWikicatComponents(x)), candidate_text_subjects))
+		# 	
+		# 	sims = []
+		# 	for (sbo,sbocl) in original_text_subjects:
+		# 		for (sbc,sbccl) in candidate_text_subjects:		
+		# 			sbc_jaccard_similarity = self.measures.oJaccardSimilarity(sbocl, sbccl)
+		# 			sims.append((sbo, sbc, sbc_jaccard_similarity))
+		# 	
+		# 	N=10
+		# 	greatests = _NmaxElements3T(sims, N)
+		# 	greatests_nums = list(map(lambda x: x[2], greatests))
+		# 		
+		# 	subjects_jaccard_similarity = sum(greatests_nums) / len(greatests_nums)
+		# except Exception as e:
+		# 	print("Exception while computing Jaccard subjects similarity in sharedWikicatsAndSubjectsSimilarity:", e)
+		# 	subjects_jaccard_similarity = 0
+		# 	
+		# 
+		# return wikicats_jaccard_similarity, subjects_jaccard_similarity
 

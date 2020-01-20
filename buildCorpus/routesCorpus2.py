@@ -164,7 +164,7 @@ def buildCorpus2():
 	print(str(len(unretrieved_pages_list)) + " unretrieved pages")
 	_saveFile(_UNRETRIEVED_PAGES_FILENAME, '\n'.join(unretrieved_pages_list))
 	
-	print(str(downloaded), "files downloaded!!)")
+	print("** ALL PAGES AVAILABLE AND CLEANED.", str(downloaded), "new files downloaded!!)")
 
 	# all the pages not already available have been now fetched and cleaned
 
@@ -365,7 +365,7 @@ def getUrlsLinked2Wikicats (selectedWikicats):
 			requestObjects[wikicat].update({"wk": requestWK})  # store the request WK object for this wikicat
 			time.sleep(4)  # delay to avoid server reject for too many queries
 		
-	print("\nAll queries launched\n")
+	print("\n** ALL PENDING QUERIES LAUNCHED\n")
 	
 	# End of the first phase. Now, for every wikicat, we have:
 	# requestObjects[wikicat] = {"dburls": URLs} or  {"db": requestDB}
@@ -482,6 +482,6 @@ def getUrlsLinked2Wikicats (selectedWikicats):
 		# store results for this wikicat		
 		urlsObjects[wikicat] = {"db": urlsDB, "wk": urlsWK}
 		
-	print("\nReceived results for all the queries\n")
+	print("\n** RECEIVED ALL RESULTS FOR PENDING QUERIES\n")
 	
 	return urlsObjects  # return results to buildCorpus function

@@ -61,16 +61,22 @@ def NmaxElements(list1, N):
 
 def NmaxElements3T(list1, N):
 	final_list = []
-	
-	for i in range(0, N):
-		max1 = ("","",0)
-		
-		for j in range(len(list1)):
-			if list1[j][2] > max1[2]:
-				max1 = list1[j];
-				
-		list1.remove(max1);
-		final_list.append(max1)
+	try:
+		for i in range(0, N):
+			max1 = ("","",0)
+			
+			for j in range(len(list1)):
+				if list1[j][2] > max1[2]:
+					max1 = list1[j];
+					
+			if max1 != ("","",0):
+				list1.remove(max1);
+			else:
+				return final_list
+			final_list.append(max1)
+	except Exception as e:
+		print("Exception while computing NmaxElements3T:", e)
+		print(list1)
 	
 	return final_list
 			
