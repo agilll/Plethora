@@ -14,14 +14,8 @@ from px_aux import saveFile as _saveFile, URL_DB as _URL_DB, URL_WK as _URL_WK
 
 from aux import CORPUS_FOLDER as _CORPUS_FOLDER
 from aux import hasFieldPT as _hasFieldPT  # function to check if object has  ["pt"]["value"] field
-from aux import getWikicatComponents as _getWikicatComponents
+from aux import getWikicatComponents as _getWikicatComponents, filterSimpleWikicats as _filterSimpleWikicats
 	
-# to reject simple wikicats, with only one component
-def filterSimpleWikicats (wikicat):
-	if (len(_getWikicatComponents(wikicat)) == 1):
-		return False
-	else:
-		return True
 	
 
 # QUERY (/getWikicatsFromText) to attend the query to get wikicats from a text   
@@ -42,15 +36,15 @@ def getWikicatsFromText():
 		filename = _CORPUS_FOLDER+"/"+str(len_text)+".txt"   # save the received text with length.txt filename
 		_saveFile(filename, originalText)
 		
-		filename_wk = _CORPUS_FOLDER+"/"+str(len_text)+"_wk.txt"   # filename for wikicats (length_wk.txt)
-		filename_sb = _CORPUS_FOLDER+"/"+str(len_text)+"_sb.txt"   # filename for subjects (length_sb.txt)
+		filename_wk = _CORPUS_FOLDER+"/"+str(len_text)+".wk"   # filename for wikicats (length.wk)
+		filename_sb = _CORPUS_FOLDER+"/"+str(len_text)+".sb"   # filename for subjects (length.sb)
 				
 		result = {}
 		
 		try:  # open wikicats files if exists
 			with _Open(filename_wk) as fp:
 				listaWikicats = fp.read().splitlines()
-				listaWikicats = list(filter(filterSimpleWikicats, listaWikicats))
+				listaWikicats = list(filter(_filterSimpleWikicats, listaWikicats))
 				result["wikicats"] = listaWikicats
 		except:  # fetch wikicats if not exists
 			result = _getCategoriesInText(originalText)  # function getCategoriesInText from px_DB_Manager.py
@@ -58,7 +52,7 @@ def getWikicatsFromText():
 			if ("error" in result):   # return error if could not fetch wikicats 
 				return jsonify(result);
 			
-			listaWikicats = list(filter(filterSimpleWikicats, result["wikicats"])) # remove simple wikicats with function located above
+			listaWikicats = list(filter(_filterSimpleWikicats, result["wikicats"])) # remove simple wikicats with function located above
 			result["wikicats"] = listaWikicats  # update result wikicats for return
 			
 			content = ""    # create one line per wikicat to save in wikicats file
@@ -67,7 +61,7 @@ def getWikicatsFromText():
 			
 			_saveFile(filename_wk, content)  # save file (length_wk.txt) with wikicats
 			
-			listaSubjects = list(filter(filterSimpleWikicats, result["subjects"]))  # remove simple subjects with function located above
+			listaSubjects = list(filter(_filterSimpleWikicats, result["subjects"]))  # remove simple subjects with function located above
 			result["subjects"] = listaSubjects # update result subjects to return
 			
 			content = ""    # create one line per subject to save
@@ -81,7 +75,7 @@ def getWikicatsFromText():
 			wlc = _getWikicatComponents(w)   # function getWikicatComponets from aux.py
 			result[w] = wlc
 		
-		filename_selected = _CORPUS_FOLDER+"/"+str(len_text)+"_wk_selected.txt"   # previously selected wikicats file for this text
+		filename_selected = _CORPUS_FOLDER+"/"+str(len_text)+".selected.wk"   # previously selected wikicats file for this text
 		
 		try:  # try to open previously selected wikicats file if exists
 			with _Open(filename_selected) as fp:

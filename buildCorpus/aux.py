@@ -80,7 +80,17 @@ def NmaxElements3T(list1, N):
 	
 	return final_list
 			
-			
+
+
+# to reject simple wikicats, with only one component
+def filterSimpleWikicats (wikicat):
+	if (len(getWikicatComponents(wikicat)) == 1):
+		return False
+	else:
+		return True
+	
+
+
 
 
 # Tokenize text, and returns a list of words (lowercase) after removing the stopwords

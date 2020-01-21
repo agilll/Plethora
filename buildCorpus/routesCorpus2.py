@@ -33,6 +33,8 @@ def buildCorpus2():
 
 	originalText = request.values.get("text")  # get parameter with original text
 	len_text = len(originalText)
+	fileNameOriginal = _CORPUS_FOLDER+"/"+str(len_text)+".txt"
+	fileNameOriginalWikicats = _CORPUS_FOLDER+"/"+str(len_text)+".wk" 
 	
 	selectedWikicats = json.loads(request.values.get("wikicats"))   # get parameter with selected wikicats
 	print("Number of wikicats:", len(selectedWikicats))
@@ -43,7 +45,7 @@ def buildCorpus2():
 	content = ""
 	for w in selectedWikicats:
 		content += w+"\n"
-	_saveFile(_CORPUS_FOLDER+"/"+str(len_text)+"_wk_selected.txt", content)
+	_saveFile(_CORPUS_FOLDER+"/"+str(len_text)+".selected.wk", content)
 
 
 	# create a folder to store a file per wikicat, with the URLs linked to such wikicat
@@ -124,7 +126,7 @@ def buildCorpus2():
 	
 	lenOfListWithoutDuplicates  = len(listWithoutDuplicates)  # length of full list to process
 
-	# download not locally stored pages and save them
+	# download not locally stored pages, scrap them, and save them
 	for idx, page in enumerate(listWithoutDuplicates, start=1):
 		
 		print("(", idx, "of", lenOfListWithoutDuplicates, ") -- ", page)
@@ -171,12 +173,12 @@ def buildCorpus2():
 	
 	similarity = _textSimilarityFunctions()    # Create a textSimilarityFunctions object to measure text similarities
 	
-	# Create a new csv file if not exists. POR QUE MANTENER LO QUE HABIA si vamos a calcularlos todos otra vez?
+	# Create a new csv file if not exists. QUE SIGNIFICA W+ ?
 	with _Open(_SIMILARITIES_CSV_FILENAME, 'w+') as writeFile:
 		# Name columns
 		fieldnames = ['URL', 'Euclidean Distance', 'Spacy', 'Doc2Vec Euclidean Distance',
 		'Doc2Vec Cosine Similarity', 'Trained Doc2Vec Euclidean Distance', 'Trained Doc2Vec Cosine Similarity',
-		'Wikicats Jaccard Similarity', 'Subjects Jaccard Similarity']
+		'Wikicats Jaccard Similarity']
 
 		# Create csv headers
 		writer = csv.DictWriter(writeFile, fieldnames=fieldnames, delimiter=";")
@@ -189,7 +191,7 @@ def buildCorpus2():
 	discarded_pages_list = []     # a list to save discarded pages' URLs		
 
 
-	# Scrap pages, Measure text similarity, and save pages with a minimum similarity
+	# Measure text similarity, and discard pages (discarded_pages_list) without a minimum similarity
 	for idx, page in enumerate(listWithoutDuplicates, start=1):
 		
 		print("(", idx, "of", lenOfListWithoutDuplicates, ") -- ", page)
@@ -199,7 +201,9 @@ def buildCorpus2():
 		domFolder = pageWithoutHTTP[:pageWithoutHTTP.find("/")]
 		onlyPage = pageWithoutHTTP[1+pageWithoutHTTP.find("/"):]
 		onlyPageChanged =  onlyPage.replace("/", "..")
-		fileName = _SCRAPPED_TEXT_PAGES_FOLDER+"/"+domFolder+"/"+onlyPageChanged+".txt"
+		fileNameCandidateBase = _SCRAPPED_TEXT_PAGES_FOLDER+"/"+domFolder+"/"+onlyPageChanged
+		fileNameCandidate = fileNameCandidateBase+".txt"
+		fileNameCandidateWikicats = fileNameCandidateBase+".wk"
 				
 		try:  # open and read local file if already exists
 			candidateTextFile = _Open(fileName, "r")
@@ -237,17 +241,15 @@ def buildCorpus2():
 		#print("Subjects full jaccard similarity = "+str(subjects_jaccard_similarity))
 		
 		# Measure wikicats similarity (requires shared matching)
-		shared_wikicats_jaccard_similarity, shared_subjects_jaccard_similarity = similarity.sharedWikicatsAndSubjectsSimilarity(originalText, pageContent)
+		shared_wikicats_jaccard_similarity = similarity.sharedWikicatsSimilarity(originalText, fileNameOriginalWikicats, pageContent, fileNameCandidateWikicats)
 		print("Wikicats shared jaccard similarity = "+str(shared_wikicats_jaccard_similarity))
-		print("Subjects shared jaccard similarity = "+str(shared_subjects_jaccard_similarity))
 
 
 		# Save similarity to a CSV file
 		with _Open(_SIMILARITIES_CSV_FILENAME, 'a') as writeFile:
 			writer = csv.writer(writeFile, delimiter=';')
 			writer.writerow([page, euclidean_distance, spacy_similarity, doc2vec_euclideanDistance,
-			doc2vec_cosineSimilarity, doc2vec_trained_euclideanDistance, doc2vec_trained_cosineSimilarity, shared_wikicats_jaccard_similarity,
-			shared_subjects_jaccard_similarity])
+			doc2vec_cosineSimilarity, doc2vec_trained_euclideanDistance, doc2vec_trained_cosineSimilarity, shared_wikicats_jaccard_similarity])
 
 
 		# Minimum similarity for a page to be accepted.

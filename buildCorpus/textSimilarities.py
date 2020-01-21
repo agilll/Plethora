@@ -1,3 +1,5 @@
+import time
+
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import euclidean_distances
 from sklearn.metrics.pairwise import cosine_similarity
@@ -8,11 +10,15 @@ from smart_open import open as _Open
 from aux import CORPUS_FOLDER as _CORPUS_FOLDER
 from ourSimilarityListsFunctions import ourSimilarityListsFunctions as _ourSimilarityListsFunctions
 from aux import myTokenizer as _myTokenizer, getWikicatComponents as _getWikicatComponents, NmaxElements as _NmaxElements, NmaxElements3T as _NmaxElements3T
+from aux import filterSimpleWikicats as _filterSimpleWikicats
 
 from px_DB_Manager import getCategoriesInText as _getCategoriesInText
+from px_aux import saveFile as _saveFile
 		
 class textSimilarityFunctions():
-
+	
+	pause = 5   # to sleep after querying DBpedia, to avoid reject by too many queries
+	
 	# Load the nlp large package for spacy metrics
 	# It is better to load it once at the class initialization, to save loading time each time it is used
 	nlp = spacy.load('en_core_web_lg')
@@ -171,36 +177,54 @@ class textSimilarityFunctions():
 
 #############################################################################################################################################
 
-	# Shared Wikicats and subjects similarity between two texts, using ourSimilarityListsFunctions
-	# it measures shared matching between wikicats/subjects (similarity among components of wikicat name)
-	def sharedWikicatsAndSubjectsSimilarity (self, original_text, candidate_text):
-		
-		len_orig_text = len(original_text)
-		filename_wk = _CORPUS_FOLDER+"/"+str(len_orig_text)+"_wk.txt"
-		filename_sb = _CORPUS_FOLDER+"/"+str(len_orig_text)+"_sb.txt"
-		
-		try:  # try to read orginal text wikicats and subjects from local store
-			with _Open(filename_wk) as fp:
+	# Shared Wikicats similarity between two texts, using ourSimilarityListsFunctions
+	# it measures shared matching between wikicats (similarity among components of wikicat name)
+	def sharedWikicatsSimilarity (self, original_text, fileNameOriginalWikicats, candidate_text, fileNameCandidateWikicats):
+				
+		try:  # try to read original text wikicats from local store
+			with _Open(fileNameOriginalWikicats) as fp:
 				original_text_wikicats = fp.read().splitlines()
-			with _Open(filename_sb) as fp:
-				original_text_subjects = fp.read().splitlines()
-		except:  # fetch wikicats and subjects if not in local store
+				print("File already available:", fileNameOriginalWikicats)
+		except:  # fetch original text wikicats if not in local store
 			original_text_categories = _getCategoriesInText(original_text)  # function _getCategoriesInText from px_DB_Manager
 			
 			if ("error" in original_text_categories):
 				print("\nError in _getCategoriesInText(original_text):", original_text_categories["error"])
-				return (0,0)
+				return 0
 			
-			original_text_wikicats = original_text_categories["wikicats"]
-			original_text_subjects = original_text_categories["subjects"]
+			print("Wikicats downloaded for", fileNameOriginalWikicats)
+			original_text_wikicats = list(filter(_filterSimpleWikicats, original_text_categories["wikicats"])) # remove simple wikicats with function located above
 			
-		candidate_text_categories = _getCategoriesInText(candidate_text)    # STORE LOCAL
-		if ("error" in candidate_text_categories):
-			print("\nError in _getCategoriesInText(candidate_text):", candidate_text_categories["error"])
-			return (0,0)
+			content = ""    # create one line per wikicat to save in wikicats file
+			for w in original_text_wikicats:
+				content += w+"\n"
+			
+			_saveFile(fileNameOriginalWikicats, content)  # save file with original text wikicats
 		
-		candidate_text_wikicats = candidate_text_categories["wikicats"]
-		candidate_text_subjects = candidate_text_categories["subjects"]
+		try:  # try to read candidate text wikicats from local store
+			with _Open(fileNameCandidateWikicats) as fp:
+				candidate_text_wikicats = fp.read().splitlines()
+				print("File already available:", fileNameCandidateWikicats)
+		except:  # fetch candidate text wikicats if not in local store
+			candidate_text_categories = _getCategoriesInText(candidate_text)  # function _getCategoriesInText from px_DB_Manager
+			
+			if ("error" in candidate_text_categories):
+				self.pause += 1
+				print("\nError in _getCategoriesInText(candidate_text):", candidate_text_categories["error"], ", increasing pause to", self.pause)
+				time.sleep(self.pause+10)
+				return 0
+			
+			print("Wikicats downloaded for", fileNameCandidateWikicats)
+			candidate_text_wikicats = list(filter(_filterSimpleWikicats, candidate_text_categories["wikicats"])) # remove simple wikicats with function located above
+			
+			content = ""    # create one line per wikicat to save in wikicats file
+			for w in candidate_text_wikicats:
+				content += w+"\n"
+			
+			_saveFile(fileNameCandidateWikicats, content)  # save file with original text wikicats
+			time.sleep(self.pause)
+			
+			
 		
 		try:
 			# change every original wikicat by the pair (wikicat, list of wikicat components)    NONSENSE to compute this every time
@@ -224,34 +248,62 @@ class textSimilarityFunctions():
 			else:
 				wikicats_jaccard_similarity = sum(greatests_nums) / len(greatests_nums)
 		except Exception as e:
-			print("Exception while computing Jaccard wikicats similarity in sharedWikicatsAndSubjectsSimilarity:", e)
+			print("Exception while computing Jaccard wikicats similarity in sharedWikicatsSimilarity:", e)
 			exit()
 			wikicats_jaccard_similarity = 0
 			
-		return wikicats_jaccard_similarity, 0
+		return wikicats_jaccard_similarity
 		
-		# try:
-		# 	# change every original subject by the pair (subject, list of subject components)    NONSENSE to compute this every time
-		# 	original_text_subjects = list(map(lambda x: (x, _getWikicatComponents(x)), original_text_subjects))
-		# 		
-		# 	# change every candidate subject by the pair (subject, list of subject components)
-		# 	candidate_text_subjects = list(map(lambda x: (x, _getWikicatComponents(x)), candidate_text_subjects))
-		# 	
-		# 	sims = []
-		# 	for (sbo,sbocl) in original_text_subjects:
-		# 		for (sbc,sbccl) in candidate_text_subjects:		
-		# 			sbc_jaccard_similarity = self.measures.oJaccardSimilarity(sbocl, sbccl)
-		# 			sims.append((sbo, sbc, sbc_jaccard_similarity))
-		# 	
-		# 	N=10
-		# 	greatests = _NmaxElements3T(sims, N)
-		# 	greatests_nums = list(map(lambda x: x[2], greatests))
-		# 		
-		# 	subjects_jaccard_similarity = sum(greatests_nums) / len(greatests_nums)
-		# except Exception as e:
-		# 	print("Exception while computing Jaccard subjects similarity in sharedWikicatsAndSubjectsSimilarity:", e)
-		# 	subjects_jaccard_similarity = 0
-		# 	
-		# 
-		# return wikicats_jaccard_similarity, subjects_jaccard_similarity
+		
+	# CURRENTLY NOT USED	
+	# Shared subjects similarity between two texts, using ourSimilarityListsFunctions
+	# it measures shared matching between subjects (similarity among components of subject name)
+	def sharedSubjectsSimilarity (self, original_text, candidate_text):
+		
+		len_orig_text = len(original_text)
+		filename_sb = _CORPUS_FOLDER+"/"+str(len_orig_text)+"_sb.txt"
+		
+		try:  # try to read original text subjects from local store
+			with _Open(filename_sb) as fp:
+				original_text_subjects = fp.read().splitlines()
+		except:  # fetch subjects if not in local store
+			original_text_categories = _getCategoriesInText(original_text)  # function _getCategoriesInText from px_DB_Manager
+			
+			if ("error" in original_text_categories):
+				print("\nError in _getCategoriesInText(original_text):", original_text_categories["error"])
+				return 0
+			
+			original_text_subjects = original_text_categories["subjects"]
+			
+		candidate_text_categories = _getCategoriesInText(candidate_text)    # STORE LOCAL
+		if ("error" in candidate_text_categories):
+			print("\nError in _getCategoriesInText(candidate_text):", candidate_text_categories["error"])
+			return 0
+		
+		candidate_text_subjects = candidate_text_categories["subjects"]
+		
+		try:
+			# change every original subject by the pair (subject, list of subject components)    NONSENSE to compute this every time
+			original_text_subjects = list(map(lambda x: (x, _getWikicatComponents(x)), original_text_subjects))
+				
+			# change every candidate subject by the pair (subject, list of subject components)
+			candidate_text_subjects = list(map(lambda x: (x, _getWikicatComponents(x)), candidate_text_subjects))
+			
+			sims = []
+			for (sbo,sbocl) in original_text_subjects:
+				for (sbc,sbccl) in candidate_text_subjects:		
+					sbc_jaccard_similarity = self.measures.oJaccardSimilarity(sbocl, sbccl)
+					sims.append((sbo, sbc, sbc_jaccard_similarity))
+			
+			N=10
+			greatests = _NmaxElements3T(sims, N)
+			greatests_nums = list(map(lambda x: x[2], greatests))
+				
+			subjects_jaccard_similarity = sum(greatests_nums) / len(greatests_nums)
+		except Exception as e:
+			print("Exception while computing Jaccard subjects similarity in sharedSubjectsSimilarity:", e)
+			subjects_jaccard_similarity = 0
+			
+		
+		return subjects_jaccard_similarity
 
