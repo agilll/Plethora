@@ -209,9 +209,8 @@ class textSimilarityFunctions():
 			candidate_text_categories = _getCategoriesInText(candidate_text)  # function _getCategoriesInText from px_DB_Manager
 			
 			if ("error" in candidate_text_categories):
-				self.pause += 1
-				print("\nError in _getCategoriesInText(candidate_text):", candidate_text_categories["error"], ", increasing pause to", self.pause)
-				time.sleep(self.pause+10)
+				print("\nError in _getCategoriesInText(candidate_text):", candidate_text_categories["error"])
+				time.sleep(60)
 				return 0
 			
 			print("Wikicats downloaded for", fileNameCandidateWikicats)

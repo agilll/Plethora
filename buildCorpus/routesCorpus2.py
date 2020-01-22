@@ -147,17 +147,17 @@ def buildCorpus2():
 		
 		# Add file extension '.txt' to page name for saving it   !!!!!!!!!!
 		# pageFinalName = page[1+page.rindex("/"):]
-		fileName = _SCRAPPED_TEXT_PAGES_FOLDER+"/"+domFolder+"/"+onlyPageChanged+".txt"
+		fileNameCandidate = _SCRAPPED_TEXT_PAGES_FOLDER+"/"+domFolder+"/"+onlyPageChanged+".txt"
 				
-		if (os.path.exists(fileName)):
-			print("File already available:", fileName)
+		if (os.path.exists(fileNameCandidate)):
+			print("File already available:", fileNameCandidate)
 		else:  # fetch file if not exists	
 			try:  # Retrieves the URL, and get the page title and the scraped page content
 				pageName, pageContent = scrap.scrapPage(page)  # pageName result is not used
 				downloaded += 1
 				# Save to text file
-				_saveFile(fileName, pageContent)
-				print("File", str(downloaded), "downloaded and saved it:", fileName)
+				_saveFile(fileNameCandidate, pageContent)
+				print("File", str(downloaded), "downloaded and saved it:", fileNameCandidate)
 			except Exception as e:
 				print(page, ":", e)
 				unretrieved_pages_list.append(page)
@@ -206,11 +206,11 @@ def buildCorpus2():
 		fileNameCandidateWikicats = fileNameCandidateBase+".wk"
 				
 		try:  # open and read local file if already exists
-			candidateTextFile = _Open(fileName, "r")
+			candidateTextFile = _Open(fileNameCandidate, "r")
 			pageContent = candidateTextFile.read()
-			print("Reading file:", fileName)
+			print("Reading file:", fileNameCandidate)
 		except:  # file that could not be downloaded
-			print("Unavailable file, not in the store:", fileName)
+			print("Unavailable file, not in the store:", fileNameCandidate)
 			continue
 
 
