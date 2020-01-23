@@ -218,27 +218,33 @@ def buildCorpus2():
 		# several criteria are now computed. THEIR RELEVANCE SHOULD BE STUDIED AS SOON AS POSSIBLE 
 
 		# Measure text similarity based on the Lee doc2vec model
-		doc2vec_cosineSimilarity, doc2vec_euclideanDistance = similarity.doc2VecTextSimilarity(originalText, pageContent, _LEE_D2V_MODEL)
-		print("Lee Doc2Vec CS = "+str(doc2vec_cosineSimilarity))
-		print("Lee Doc2Vec ED = "+str(doc2vec_euclideanDistance))
-
-		# Measure text similarity based on the trained doc2vec model with our training corpus
-		doc2vec_trained_cosineSimilarity, doc2vec_trained_euclideanDistance = similarity.doc2VecTextSimilarity(originalText, pageContent, _OWN_D2V_MODEL)
-		print("Trained Doc2Vec CS = "+str(doc2vec_trained_cosineSimilarity))
-		print("Trained Doc2Vec ED = "+str(doc2vec_trained_euclideanDistance))
-
-		# Measure the euclidean distance using SKLEARN
-		euclidean_distance = similarity.euclideanTextSimilarity(originalText, pageContent)
-		print("Euclidean distance = "+str(euclidean_distance))
-
-		# Measure the spaCy distance
-		spacy_similarity = similarity.spacyTextSimilarity(originalText, pageContent)
-		print("Spacy similarity = "+str(spacy_similarity))
+		
+		# doc2vec_cosineSimilarity, doc2vec_euclideanDistance = similarity.doc2VecTextSimilarity(originalText, pageContent, _LEE_D2V_MODEL)
+		# print("Lee Doc2Vec CS = "+str(doc2vec_cosineSimilarity))
+		# print("Lee Doc2Vec ED = "+str(doc2vec_euclideanDistance))
+		# 
+		# # Measure text similarity based on the trained doc2vec model with our training corpus
+		# doc2vec_trained_cosineSimilarity, doc2vec_trained_euclideanDistance = similarity.doc2VecTextSimilarity(originalText, pageContent, _OWN_D2V_MODEL)
+		# print("Trained Doc2Vec CS = "+str(doc2vec_trained_cosineSimilarity))
+		# print("Trained Doc2Vec ED = "+str(doc2vec_trained_euclideanDistance))
+		# 
+		# # Measure the euclidean distance using SKLEARN
+		# euclidean_distance = similarity.euclideanTextSimilarity(originalText, pageContent)
+		# print("Euclidean distance = "+str(euclidean_distance))
+		# 
+		# # Measure the spaCy distance
+		# spacy_similarity = similarity.spacyTextSimilarity(originalText, pageContent)
+		# print("Spacy similarity = "+str(spacy_similarity))
 
 		# Measure wikicats similarity (requires complete matching)
 		#wikicats_jaccard_similarity, subjects_jaccard_similarity = similarity.fullWikicatsAndSubjectsSimilarity(originalText, pageContent)
 		#print("Wikicats full jaccard similarity = "+str(wikicats_jaccard_similarity))
 		#print("Subjects full jaccard similarity = "+str(subjects_jaccard_similarity))
+		
+		doc2vec_cosineSimilarity, doc2vec_euclideanDistance = 0,0
+		doc2vec_trained_cosineSimilarity, doc2vec_trained_euclideanDistance = 0,0
+		euclidean_distance = 0
+		spacy_similarity = 0
 		
 		# Measure wikicats similarity (requires shared matching)
 		shared_wikicats_jaccard_similarity = similarity.sharedWikicatsSimilarity(originalText, fileNameOriginalWikicats, pageContent, fileNameCandidateWikicats)

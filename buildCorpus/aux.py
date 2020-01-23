@@ -12,7 +12,7 @@ OWN_D2V_MODEL = MODELS_FOLDER+"/model_d2v_own-t.model"
 # initial text for corpus building
 INITIAL_TEXT = 'initialText.txt'
 
-CORPUS_FOLDER = "KORPUS"
+CORPUS_FOLDER = "/Users/agil/Google Drive/KORPUS"
 
 # these are the files and folders created in the building of corpus
 
