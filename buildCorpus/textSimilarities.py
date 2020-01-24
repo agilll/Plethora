@@ -17,7 +17,8 @@ from px_aux import saveFile as _saveFile
 		
 class textSimilarityFunctions():
 	
-	pause = 5   # to sleep after querying DBpedia, to avoid reject by too many queries
+	pause = 4   # to sleep after querying DBpedia, to avoid reject by too many queries
+	delay = 10
 	
 	# Load the nlp large package for spacy metrics
 	# It is better to load it once at the class initialization, to save loading time each time it is used
@@ -210,9 +211,17 @@ class textSimilarityFunctions():
 			
 			if ("error" in candidate_text_categories):
 				print("\nError in _getCategoriesInText(candidate_text):", candidate_text_categories["error"])
-				time.sleep(60)
+				self.pause += 1
+				self.delay += 5
+				time.sleep(self.delay)
 				return 0
 			
+			if self.pause > 4:
+				self.pause -= 1
+			
+			if self.delay > 10:
+				self.delay -= 5
+				
 			print("Wikicats downloaded for", fileNameCandidateWikicats)
 			candidate_text_wikicats = list(filter(_filterSimpleWikicats, candidate_text_categories["wikicats"])) # remove simple wikicats with function located above
 			
