@@ -173,18 +173,18 @@ def buildCorpus2():
 	
 	similarity = _textSimilarityFunctions()    # Create a textSimilarityFunctions object to measure text similarities
 	
-	# Create a new csv file if not exists. QUE SIGNIFICA W+ ?
-	with _Open(_SIMILARITIES_CSV_FILENAME, 'w+') as writeFile:
-		# Name columns
-		fieldnames = ['URL', 'Euclidean Distance', 'Spacy', 'Doc2Vec Euclidean Distance',
-		'Doc2Vec Cosine Similarity', 'Trained Doc2Vec Euclidean Distance', 'Trained Doc2Vec Cosine Similarity',
-		'Wikicats Jaccard Similarity']
-
-		# Create csv headers
-		writer = csv.DictWriter(writeFile, fieldnames=fieldnames, delimiter=";")
-
-		# Write the column headers
-		writer.writeheader()
+	# # Create a new csv file if not exists. QUE SIGNIFICA W+ ?
+	# with _Open(_SIMILARITIES_CSV_FILENAME, 'w+') as writeFile:
+	# 	# Name columns
+	# 	fieldnames = ['URL', 'Euclidean Distance', 'Spacy', 'Doc2Vec Euclidean Distance',
+	# 	'Doc2Vec Cosine Similarity', 'Trained Doc2Vec Euclidean Distance', 'Trained Doc2Vec Cosine Similarity',
+	# 	'Wikicats Jaccard Similarity']
+	# 
+	# 	# Create csv headers
+	# 	writer = csv.DictWriter(writeFile, fieldnames=fieldnames, delimiter=";")
+	# 
+	# 	# Write the column headers
+	# 	writer.writeheader()
 	
 
 
@@ -251,11 +251,11 @@ def buildCorpus2():
 		print("Wikicats shared jaccard similarity = "+str(shared_wikicats_jaccard_similarity))
 
 
-		# Save similarity to a CSV file
-		with _Open(_SIMILARITIES_CSV_FILENAME, 'a') as writeFile:
-			writer = csv.writer(writeFile, delimiter=';')
-			writer.writerow([page, euclidean_distance, spacy_similarity, doc2vec_euclideanDistance,
-			doc2vec_cosineSimilarity, doc2vec_trained_euclideanDistance, doc2vec_trained_cosineSimilarity, shared_wikicats_jaccard_similarity])
+		# # Save similarity to a CSV file
+		# with _Open(_SIMILARITIES_CSV_FILENAME, 'a') as writeFile:
+		# 	writer = csv.writer(writeFile, delimiter=';')
+		# 	writer.writerow([page, euclidean_distance, spacy_similarity, doc2vec_euclideanDistance,
+		# 	doc2vec_cosineSimilarity, doc2vec_trained_euclideanDistance, doc2vec_trained_cosineSimilarity, shared_wikicats_jaccard_similarity])
 
 
 		# Minimum similarity for a page to be accepted.
