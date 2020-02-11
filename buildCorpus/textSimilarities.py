@@ -134,7 +134,7 @@ class textSimilarityFunctions():
 	# Full Wikicats and subjects similarity between two texts, using ourSimilarityListsFunctions
 	# it measures complete matching between wikicats/subjects
 	def fullWikicatsAndSubjectsSimilarity (self, original_text, candidate_text):
-		original_text_categories = _getCategoriesInText(original_text)
+		original_text_categories = _getCategoriesInText(original_text)  # this should be avoided
 		candidate_text_categories = _getCategoriesInText(candidate_text)
 	
 		try:
@@ -196,11 +196,7 @@ class textSimilarityFunctions():
 			print("Wikicats downloaded for", fileNameOriginalWikicats)
 			original_text_wikicats = list(filter(_filterSimpleWikicats, original_text_categories["wikicats"])) # remove simple wikicats with function located above
 			
-			content = ""    # create one line per wikicat to save in wikicats file
-			for w in original_text_wikicats:
-				content += w+"\n"
-			
-			_saveFile(fileNameOriginalWikicats, content)  # save file with original text wikicats
+			_saveFile(fileNameOriginalWikicats, '\n'.join(original_text_wikicats))  # save file with original text wikicats, one per line
 		
 		try:  # try to read candidate text wikicats from local store
 			with _Open(fileNameCandidateWikicats) as fp:
@@ -225,11 +221,7 @@ class textSimilarityFunctions():
 			print("Wikicats downloaded for", fileNameCandidateWikicats)
 			candidate_text_wikicats = list(filter(_filterSimpleWikicats, candidate_text_categories["wikicats"])) # remove simple wikicats with function located above
 			
-			content = ""    # create one line per wikicat to save in wikicats file
-			for w in candidate_text_wikicats:
-				content += w+"\n"
-			
-			_saveFile(fileNameCandidateWikicats, content)  # save file with original text wikicats
+			_saveFile(fileNameCandidateWikicats, '\n'.join(candidate_text_wikicats))  # save file with original text wikicats,one per line
 			time.sleep(self.pause)
 			
 			

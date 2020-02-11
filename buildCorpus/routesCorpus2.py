@@ -32,21 +32,16 @@ from textSimilarities import textSimilarityFunctions as _textSimilarityFunctions
 def buildCorpus2():
 
 	originalText = request.values.get("text")  # get parameter with original text
-	len_text = len(originalText)
-	fileNameOriginal = _CORPUS_FOLDER+"/"+str(len_text)+".txt"
-	fileNameOriginalWikicats = _CORPUS_FOLDER+"/"+str(len_text)+".wk" 
+	len_text = len(originalText)                                   	
+	fileNameOriginalWikicats = _CORPUS_FOLDER+"/"+str(len_text)+".wk" # to send to compute wikicats shared jaccard
 	
 	selectedWikicats = json.loads(request.values.get("wikicats"))   # get parameter with selected wikicats
-	print("Number of wikicats:", len(selectedWikicats))
+	print("Number of selected wikicats:", len(selectedWikicats))
 	numUrlsDB = 0
 	numUrlsWK = 0
 
-	# store the selected wikicats in the file $CORPUS_FOLDER/length_wk_selected.txt
-	content = ""
-	for w in selectedWikicats:
-		content += w+"\n"
-	_saveFile(_CORPUS_FOLDER+"/"+str(len_text)+".selected.wk", content)
-
+	# store the selected wikicats in the file $CORPUS_FOLDER/length.selected.wk
+	_saveFile(_CORPUS_FOLDER+"/"+str(len_text)+".selected.wk", '\n'.join(selectedWikicats))
 
 	# create a folder to store a file per wikicat, with the URLs linked to such wikicat
 	# it must be done before calling the getUrlsLinked2Wikicats function, that it stores there files if fetched
@@ -56,7 +51,7 @@ def buildCorpus2():
 
 
 	# now get the URLs associated to any of those wikicats (this function is below)
-	# it reads from a local file if exists, otherwise it connects to Internet to fetch them and store them locally
+	# it reads from local files if exist, otherwise it connects to Internet to fetch them and store them locally
 
 	urlsObjects = getUrlsLinked2Wikicats(selectedWikicats)
 
@@ -91,7 +86,7 @@ def buildCorpus2():
 		result[wikicat] = {"db": len(dbUrls), "wk": len(wkUrls)}  # add results for this wikicat
 
 
-	listWithoutDuplicates = list(set(fullList))  # remove duplicates URLs
+	listWithoutDuplicates = list(set(fullList))  # remove duplicated URLs
 	print("\n\nSummary of URLs numbers: DB=", numUrlsDB, ", WK= ", numUrlsWK, ", total without duplicates=", len(listWithoutDuplicates))
 	
 	# returns number of results
@@ -173,7 +168,7 @@ def buildCorpus2():
 	
 	similarity = _textSimilarityFunctions()    # Create a textSimilarityFunctions object to measure text similarities
 	
-	# # Create a new csv file if not exists. QUE SIGNIFICA W+ ?
+	# # Create a new csv file if not exists. QUE SIGNIFICA W+ ? Temporalmente desactivado hasta que este claro lo que guardar
 	# with _Open(_SIMILARITIES_CSV_FILENAME, 'w+') as writeFile:
 	# 	# Name columns
 	# 	fieldnames = ['URL', 'Euclidean Distance', 'Spacy', 'Doc2Vec Euclidean Distance',
@@ -210,7 +205,7 @@ def buildCorpus2():
 			pageContent = candidateTextFile.read()
 			print("Reading file:", fileNameCandidate)
 		except:  # file that could not be downloaded
-			print("Unavailable file, not in the store:", fileNameCandidate)
+			print("ERROR buildCorpus2(): Unavailable file, not in the store, but it should be:", fileNameCandidate)
 			continue
 
 
@@ -237,14 +232,10 @@ def buildCorpus2():
 		# print("Spacy similarity = "+str(spacy_similarity))
 
 		# Measure wikicats similarity (requires complete matching)
-		#wikicats_jaccard_similarity, subjects_jaccard_similarity = similarity.fullWikicatsAndSubjectsSimilarity(originalText, pageContent)
-		#print("Wikicats full jaccard similarity = "+str(wikicats_jaccard_similarity))
-		#print("Subjects full jaccard similarity = "+str(subjects_jaccard_similarity))
+		# wikicats_jaccard_similarity, subjects_jaccard_similarity = similarity.fullWikicatsAndSubjectsSimilarity(originalText, pageContent)
+		# print("Wikicats full jaccard similarity = "+str(wikicats_jaccard_similarity))
+		# print("Subjects full jaccard similarity = "+str(subjects_jaccard_similarity))
 		
-		doc2vec_cosineSimilarity, doc2vec_euclideanDistance = 0,0
-		doc2vec_trained_cosineSimilarity, doc2vec_trained_euclideanDistance = 0,0
-		euclidean_distance = 0
-		spacy_similarity = 0
 		
 		# Measure wikicats similarity (requires shared matching)
 		shared_wikicats_jaccard_similarity = similarity.sharedWikicatsSimilarity(originalText, fileNameOriginalWikicats, pageContent, fileNameCandidateWikicats)
@@ -262,7 +253,7 @@ def buildCorpus2():
 		# WE MUST DECIDE THE MOST RELEVANT CRITERIUM TO DECIDE ON IT
 		# currently, we used shared_wikicats_jaccard_similarity
 
-		min_similarity = 0.04
+		min_similarity = 0.2  # review this threshold
 
 		# Filter pages to keep only the ones with at least such similarity
 		if(shared_wikicats_jaccard_similarity >= min_similarity):
@@ -303,6 +294,7 @@ def getUrlsLinked2Wikicats (selectedWikicats):
 		# first, read or fetch Wikicat results for DBpedia
 
 		filename_db = _URLs_FOLDER+"/_Wikicat_"+wikicat+"_DB_Urls.txt"
+		requestDone = 0  # to control if some request has been done, and if so, set a delay to not overload servers
 		
 		try:  # try to read wikicats of original text from local store
 			with _Open(filename_db) as fp:
@@ -313,6 +305,7 @@ def getUrlsLinked2Wikicats (selectedWikicats):
 			fullWikicat = "Wikicat"+wikicat
 		
 			# asynchronous query to dbpedia
+			# request only URLs being primaruy topic of some dbpedia entity
 			queryDB = """
 			PREFIX yago: <http://dbpedia.org/class/yago/>
 			SELECT ?url ?der ?pt WHERE {
@@ -327,11 +320,11 @@ def getUrlsLinked2Wikicats (selectedWikicats):
 				print("Starting DB query for: ", wikicat)
 				requestDB = _session.post(_URL_DB, data={"query": queryDB}, headers={"accept": "application/json"})
 			except Exception as exc:
-				print("\n*** Error querying DB for", wikicat, ":", exc)
+				print("\n*** ERROR getUrlsLinked2Wikicats(): Error querying DB for", wikicat, ":", exc)
 				requestDB = None
 				
 			requestObjects[wikicat] = {"db": requestDB}  # store the request DB object for this wikicat
-			time.sleep(4)  # delay to avoid server reject for too many queries
+			requestDone = 1
 		
 
 		# now, read or fetch Wikicat results for Wikidata
@@ -367,15 +360,18 @@ def getUrlsLinked2Wikicats (selectedWikicats):
 				print("Starting WK query for: ", wikicat)
 				requestWK = _session.post(_URL_WK, data={"query": queryWK}, headers={"accept": "application/json"})
 			except Exception as exc:
-				print("\n***Error querying WK for", wikicat, ":", exc)
+				print("\n*** ERROR getUrlsLinked2Wikicats(): Error querying WK for", wikicat, ":", exc)
 				requestWK = None	
 			
 			requestObjects[wikicat].update({"wk": requestWK})  # store the request WK object for this wikicat
+			requestDone = 1
+			
+		if requestDone == 1:
 			time.sleep(4)  # delay to avoid server reject for too many queries
 		
 	print("\n** ALL PENDING QUERIES LAUNCHED\n")
 	
-	# End of the first phase. Now, for every wikicat, we have:
+	# End of the first phase. All queries launched. Now, for every wikicat, we have:
 	# requestObjects[wikicat] = {"dburls": URLs} or  {"db": requestDB}
 	#                       and {"wkurls": URLS} or  {"wk": requestWK} 
 	
@@ -397,7 +393,7 @@ def getUrlsLinked2Wikicats (selectedWikicats):
 			requestDB = requestObjects[wikicat]["db"]   # no local DB results, get the request DB object for this wikicat
 
 			if requestDB == None:  # error starting DB query, return []
-				print("\n***Error querying DB for", wikicat, ": the query could not be started")
+				print("\n*** ERROR getUrlsLinked2Wikicats(): Error querying DB for", wikicat, ": the query could not be started")
 				urlsDB = []
 			else:
 				try:
@@ -420,18 +416,15 @@ def getUrlsLinked2Wikicats (selectedWikicats):
 					except:
 						raise Exception("no [results][bindings] in the answer")
 					
-					bindingsDBwithPT = list(filter(_hasFieldPT, bindingsDB)) # remove bindings with no pt field (isPrimaryTopicOf)
+					# remove bindings with no pt field (isPrimaryTopicOf), because they don't correspond to DBpedia entities ???
+					bindingsDBwithPT = list(filter(_hasFieldPT, bindingsDB)) 
 					urlsDB = list(map(lambda x: x["pt"]["value"], bindingsDBwithPT))  # keep only the URL in x["pt"]["value"]
 					
 					if len(urlsDB) > 0:
-						content = ""
-						for url in urlsDB:
-							content += url+"\n"
-	
-						_saveFile(_URLs_FOLDER+"/_Wikicat_"+wikicat+"_DB_Urls.txt", content)  # save all results from DB for this wikicat
+						_saveFile(_URLs_FOLDER+"/_Wikicat_"+wikicat+"_DB_Urls.txt", '\n'.join(urlsDB))  # save all results from DB for this wikicat
 		
 				except Exception as exc:
-					print("\n***Error querying DB for", wikicat,":", exc)
+					print("\n*** ERROR getUrlsLinked2Wikicats(): Error querying DB for", wikicat,":", exc)
 					urlsDB = []
 	
 		# end for DB, we already have urlsDB
@@ -449,7 +442,7 @@ def getUrlsLinked2Wikicats (selectedWikicats):
 			
 			
 			if requestWK == None:  # error starting WK query, return []
-				print("\n***Error querying WK for", wikicat, ": the query could not be started")
+				print("\n*** ERROR getUrlsLinked2Wikicats(): Error querying WK for", wikicat, ": the query could not be started")
 				urlsWK = []
 			else:
 				try:
@@ -475,14 +468,10 @@ def getUrlsLinked2Wikicats (selectedWikicats):
 					urlsWK = list(map(addWKPrefix, bindingsWK))   # add WK prefix to x["title"]["value"], changing space by '_'
 	
 					if len(urlsWK) > 0:
-						content = ""
-						for url in urlsWK:
-							content += url+"\n"
-			
-						_saveFile(_URLs_FOLDER+"/_Wikicat_"+wikicat+"_WK_Urls.txt", content) # save all results from WK for this wikicat
+						_saveFile(_URLs_FOLDER+"/_Wikicat_"+wikicat+"_WK_Urls.txt", '\n'.join(urlsWK)) # save all results from WK for this wikicat
 		
 				except Exception as exc:
-					print("\n***Error querying WK for", wikicat,":", exc)
+					print("\n*** ERROR getUrlsLinked2Wikicats(): Error querying WK for", wikicat,":", exc)
 					urlsWK = []
 
 		# end for WK, we already have urlsWK

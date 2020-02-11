@@ -14,19 +14,20 @@ def getCategoriesInText(texto):
 	
 	result = {}
 	
+	# make a query to DB-SL with texto
 	try:
 		objParams = {"text": texto, "confidence": 0.5, "support": 1}
 		# annotateTextRequest = requests.get(_URL_DB_SL_annotate, params=objParams, headers={"Accept": "application/json"})
 		annotateTextRequest = requests.post(_URL_DB_SL_annotate, data=objParams, headers={"Accept": "application/json"})
 	except Exception as e:
-		print("Problem querying DB-SL", str(e))
+		print("ERROR getCategoriesInText(): Problem querying DB-SL", str(e))
 		result["error"] = "Problem querying DB-SL --> "+str(e)
 		return result;
 	
 	try:
 		dbpediaText = annotateTextRequest.json()
 	except Exception as e:
-		print("Problem jsoning DB-SL response:", annotateTextRequest.content)
+		print("ERROR getCategoriesInText(): Problem jsoning DB-SL response:", annotateTextRequest.content)
 		result["error"] = "Problem with json DB-SL response: the query does not return the expected JSON --> "+str(e)
 		return result;
 	
@@ -35,12 +36,14 @@ def getCategoriesInText(texto):
 	try:
 		dbpediaManager.scanEntities(dbpediaText)
 	except Exception as e:
+		print("ERROR getCategoriesInText(): Problem scanning DB-SL response: error in scanEntities --> "+str(e))
 		result["error"] = "Problem with DB-SL: error in scanEntities --> "+str(e)
 		return result;
 	
 	entities = dbpediaManager.getEntitiesAfterOffset(0)
 
 	if entities == []:
+		print("ERROR getCategoriesInText(): DBpedia does not answer to the query of types")
 		result["error"] = "DBpedia does not answer to the query of types"
 		return result;
 	else:
@@ -65,7 +68,7 @@ def getCategoriesInText(texto):
 
 
 
-
+# this is not used?
 # to get types from a text
 # receives: the text
 # returns: a dictionary result:
@@ -80,7 +83,7 @@ def getTypesInText(texto):
 	try:
 		annotateTextRequest = requests.get(_URL_DB_SL_annotate, params={"text": texto, "confidence": 0.5, "support": 1}, headers={"Accept": "application/json"})
 	except Exception as e:
-		print("Problem querying DB-SL")
+		print("ERROR getTypesInText(): Problem querying DB-SL")
 		result["error"] = "Problem with DB-SL --> "+str(e)
 		return result;
 	
@@ -88,7 +91,7 @@ def getTypesInText(texto):
 	try:
 		dbpediaText = annotateTextRequest.json()
 	except Exception as e:
-		print(annotateTextRequest.content)
+		print("ERROR getTypesInText(): "+str(e)+": "+annotateTextRequest.content)
 		result["error"] = "Problem with DB-SL: the query does not return the expected JSON --> "+str(e)
 		return result;
 	
@@ -96,6 +99,7 @@ def getTypesInText(texto):
 	entities = dbpediaManager.getEntitiesAfterOffset(0)
 
 	if entities == []:
+		print("ERROR getTypesInText(): DBpedia does not answer to the query of types")
 		result["error"] = "DBpedia does not answer to the query of types"
 		return result;
 	else:
@@ -117,9 +121,9 @@ def getTypesInText(texto):
 
 
 # This is a class to store information about the entities detected in a text by the DBpedia SpotLight
-# this info is enhanced by new queries to DBpedia
-# such information is classified in three dictionaries, according to three differeny indices
-# used in pp_routesCorpus.py
+# this info is enhanced by two new queries to DBpedia: to get types and to get person props
+# such information is classified in three dictionaries, according to three different indices
+# used in routesCorpus.py
 
 # These two special cases are treated this way:
 # two different surfaceForms leading to the same URL  --> two entities in the list stored in such byUri URL key 
@@ -202,7 +206,7 @@ class DBManager:
 		try:
 			dbsl_entities = dbsl_output["Resources"]
 		except:
-			print("Error scanning, no Resources") 
+			print("ERROR scanEntities(): problem scanning, no Resources") 
 			return
 		
 		# obtains all URIs corresponding to the entities identified by the DB-SL
@@ -240,7 +244,7 @@ class DBManager:
 		# wait for query1 to complete 
 		response1 = requestTypes.result()
 		if response1.status_code != 200:
-			print("Error querying types to DBpedia. Answer HTTP code: ", response1.status_code)
+			print("ERROR scanEntities(): problem querying types to DBpedia. Answer HTTP code: ", response1.status_code)
 			return
 	
 		resultTypes = requestTypes.result().json()  # obtain the JSON result of the first one
@@ -248,7 +252,7 @@ class DBManager:
 		# wait for query2 to complete 
 		response2 = requestPersonProps.result()
 		if response2.status_code != 200:
-			print("Error querying person props to DBpedia. Answer HTTP code: ", response2.status_code)
+			print("ERROR scanEntities(): problem querying person props to DBpedia. Answer HTTP code: ", response2.status_code)
 			return
 		
 		resultPersonProps = requestPersonProps.result().json()   # obtain the JSON result of the first one
