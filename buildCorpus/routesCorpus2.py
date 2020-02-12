@@ -11,7 +11,7 @@ from smart_open import open as _Open
 from px_DB_Manager import getCategoriesInText as _getCategoriesInText
 from px_aux import saveFile as _saveFile, URL_DB as _URL_DB, URL_WK as _URL_WK
 from aux import hasFieldPT as _hasFieldPT  # function to check if object has  ["pt"]["value"] field
-	
+from aux import filterSimpleWikicats as _filterSimpleWikicats	
 from aux import CORPUS_FOLDER as _CORPUS_FOLDER
 from aux import URLs_FOLDER as _URLs_FOLDER, DISCARDED_PAGES_FILENAME as _DISCARDED_PAGES_FILENAME,  SCRAPPED_TEXT_PAGES_FOLDER as _SCRAPPED_TEXT_PAGES_FOLDER
 from aux import UNRETRIEVED_PAGES_FILENAME as _UNRETRIEVED_PAGES_FILENAME, SIMILARITIES_CSV_FILENAME as _SIMILARITIES_CSV_FILENAME
@@ -100,12 +100,13 @@ def buildCorpus2():
 	
 	
 	
-	###  We've got the first set of relevant URLs.
+	###  We've got the first set of relevant URLs, available in listWithoutDuplicates, and stored in the URLs folder
 	###  Let's start the analysis of their contents 
 
 	overwriteCorpus = json.loads(request.values.get("overwriteCorpus"))  # read the flag parameter overwriteCorpus from request
 
 	if overwriteCorpus:
+		print("Deleting current scrapped texts...")
 		shutil.rmtree(_SCRAPPED_TEXT_PAGES_FOLDER)  # if overwriteCorpus, remove current corpus  (and the URLs?????)
 
 	if not os.path.exists(_SCRAPPED_TEXT_PAGES_FOLDER):  # create new corpus folder if necessary
@@ -121,6 +122,8 @@ def buildCorpus2():
 	
 	lenOfListWithoutDuplicates  = len(listWithoutDuplicates)  # length of full list to process
 
+	print("Downloading and cleaning candidate texts...")
+	
 	# download not locally stored pages, scrap them, and save them
 	for idx, page in enumerate(listWithoutDuplicates, start=1):
 		
@@ -145,7 +148,7 @@ def buildCorpus2():
 		fileNameCandidate = _SCRAPPED_TEXT_PAGES_FOLDER+"/"+domFolder+"/"+onlyPageChanged+".txt"
 				
 		if (os.path.exists(fileNameCandidate)):
-			print("File already available:", fileNameCandidate)
+			print("File already available in local DB:", fileNameCandidate)
 		else:  # fetch file if not exists	
 			try:  # Retrieves the URL, and get the page title and the scraped page content
 				pageName, pageContent = scrap.scrapPage(page)  # pageName result is not used
@@ -158,10 +161,11 @@ def buildCorpus2():
 				unretrieved_pages_list.append(page)
 			
 	# Save the unretrieved_pages_list to a file
+	print("")
 	print(str(len(unretrieved_pages_list)) + " unretrieved pages")
 	_saveFile(_UNRETRIEVED_PAGES_FILENAME, '\n'.join(unretrieved_pages_list))
 	
-	print("** ALL PAGES AVAILABLE AND CLEANED.", str(downloaded), "new files downloaded!!)")
+	print("ALL PAGES AVAILABLE AND CLEANED.", str(downloaded), "new files downloaded!!)")
 
 	# all the pages not already available have been now fetched and cleaned
 
@@ -185,7 +189,53 @@ def buildCorpus2():
 
 	discarded_pages_list = []     # a list to save discarded pages' URLs		
 
+	print("")
+	print("Identifying wikicats for candidate texts with DBpedia SpotLight...")
+	downloaded = 0
+	
+	for idx, page in enumerate(listWithoutDuplicates, start=1):
+		print("\n(", idx, "of", lenOfListWithoutDuplicates, ") -- ", page)
+						
+		# Build filename for this page
+		pageWithoutHTTP = page[2+page.find("//"):]
+		domFolder = pageWithoutHTTP[:pageWithoutHTTP.find("/")]
+		onlyPage = pageWithoutHTTP[1+pageWithoutHTTP.find("/"):]
+		onlyPageChanged =  onlyPage.replace("/", "..")
+		fileNameCandidateBase = _SCRAPPED_TEXT_PAGES_FOLDER+"/"+domFolder+"/"+onlyPageChanged
+		fileNameCandidate = fileNameCandidateBase+".txt"
+		fileNameCandidateWikicats = fileNameCandidateBase+".wk"
+				
+		try:  # try to read candidate text wikicats from local store
+			with _Open(fileNameCandidateWikicats) as fp:
+				print("File already available in local DB:", fileNameCandidateWikicats)
+		except:  # fetch candidate text wikicats if not in local store
+			
+			try:  # open and read candidate file
+				candidateTextFile = _Open(fileNameCandidate, "r")
+				candidate_text = candidateTextFile.read()
+				print("Reading file:", fileNameCandidate)
+			except:  # file that could not be downloaded
+				print("ERROR buildCorpus2(): Unavailable file, not in the store, but it should be:", fileNameCandidate)
+				continue
+			
+			candidate_text_categories = _getCategoriesInText(candidate_text)  # function _getCategoriesInText from px_DB_Manager
+			
+			if ("error" in candidate_text_categories):
+				print("\n ERROR buildCorpus2(): Problem in _getCategoriesInText(candidate_text):", candidate_text_categories["error"])
+				continue
+				
+			print("Wikicats downloaded for", fileNameCandidateWikicats)
+			candidate_text_wikicats = list(filter(_filterSimpleWikicats, candidate_text_categories["wikicats"])) # remove simple wikicats with function located above
+			
+			_saveFile(fileNameCandidateWikicats, '\n'.join(candidate_text_wikicats))  # save file with original text wikicats,one per line
+			downloaded += 1
 
+	print("")
+	print("ALL WIKICATs COMPUTED.", str(downloaded), "new files created!!)")
+		
+		
+	print("\n Computing similarities...")
+		
 	# Measure text similarity, and discard pages (discarded_pages_list) without a minimum similarity
 	for idx, page in enumerate(listWithoutDuplicates, start=1):
 		

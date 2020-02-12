@@ -47,7 +47,8 @@ POSoptions = {
 # endpoints of Stanford, DBpedia (SPARQL queries), DBpedia SpotLight, and WikiData
 URL_Stanford = "http://localhost:9000"
 URL_DB = "https://dbpedia.org/sparql"
-URL_DB_SL_annotate = "http://model.dbpedia-spotlight.org/en/annotate"
+#URL_DB_SL_annotate = "http://model.dbpedia-spotlight.org/en/annotate"
+URL_DB_SL_annotate = "http://localhost:2222/rest/annotate"
 URL_WK = "https://query.wikidata.org/sparql"
 
 # folders and filenames involved in corpus construction

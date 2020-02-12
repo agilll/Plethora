@@ -17,7 +17,8 @@ from px_aux import saveFile as _saveFile
 		
 class textSimilarityFunctions():
 	
-	pause = 4   # to sleep after querying DBpedia, to avoid reject by too many queries
+	pause = 0   # to sleep after querying DBpedia, to avoid reject by too many queries
+	pause_min = 0
 	delay = 10
 	
 	# Load the nlp large package for spacy metrics
@@ -185,12 +186,12 @@ class textSimilarityFunctions():
 		try:  # try to read original text wikicats from local store
 			with _Open(fileNameOriginalWikicats) as fp:
 				original_text_wikicats = fp.read().splitlines()
-				print("File already available:", fileNameOriginalWikicats)
+				print("File already available in local DB:", fileNameOriginalWikicats)
 		except:  # fetch original text wikicats if not in local store
 			original_text_categories = _getCategoriesInText(original_text)  # function _getCategoriesInText from px_DB_Manager
 			
 			if ("error" in original_text_categories):
-				print("\nError in _getCategoriesInText(original_text):", original_text_categories["error"])
+				print("\nERROR sharedWikicatsSimilarity(): Error in _getCategoriesInText(original_text):", original_text_categories["error"])
 				return 0
 			
 			print("Wikicats downloaded for", fileNameOriginalWikicats)
@@ -201,18 +202,18 @@ class textSimilarityFunctions():
 		try:  # try to read candidate text wikicats from local store
 			with _Open(fileNameCandidateWikicats) as fp:
 				candidate_text_wikicats = fp.read().splitlines()
-				print("File already available:", fileNameCandidateWikicats)
+				print("File already available in local DB:", fileNameCandidateWikicats)
 		except:  # fetch candidate text wikicats if not in local store
 			candidate_text_categories = _getCategoriesInText(candidate_text)  # function _getCategoriesInText from px_DB_Manager
 			
 			if ("error" in candidate_text_categories):
-				print("\nError in _getCategoriesInText(candidate_text):", candidate_text_categories["error"])
+				print("\nERROR sharedWikicatsSimilarity(): Problem in _getCategoriesInText(candidate_text):", candidate_text_categories["error"])
 				self.pause += 1
 				self.delay += 5
 				time.sleep(self.delay)
 				return 0
 			
-			if self.pause > 4:
+			if self.pause > self.pause_min:
 				self.pause -= 1
 			
 			if self.delay > 10:
@@ -248,7 +249,7 @@ class textSimilarityFunctions():
 			else:
 				wikicats_jaccard_similarity = sum(greatests_nums) / len(greatests_nums)
 		except Exception as e:
-			print("Exception while computing Jaccard wikicats similarity in sharedWikicatsSimilarity:", e)
+			print("ERROR sharedWikicatsSimilarity(): Exception while computing Jaccard wikicats similarity: ", e)
 			exit()
 			wikicats_jaccard_similarity = 0
 			
