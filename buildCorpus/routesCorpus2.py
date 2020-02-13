@@ -288,7 +288,7 @@ def buildCorpus2():
 		
 		
 		# Measure wikicats similarity (requires shared matching)
-		shared_wikicats_jaccard_similarity = similarity.sharedWikicatsSimilarity(originalText, fileNameOriginalWikicats, pageContent, fileNameCandidateWikicats)
+		shared_wikicats_jaccard_similarity = similarity.sharedWikicatsSimilarity(selectedWikicats, pageContent, fileNameCandidateWikicats)
 		print("Wikicats shared jaccard similarity = "+str(shared_wikicats_jaccard_similarity))
 
 

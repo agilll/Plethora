@@ -44,6 +44,8 @@ def hasFieldPT(x):
 		return False
 	
 
+
+# no longer used
 # function to get the N greatest elements in a list
 def NmaxElements(list1, N):
 	final_list = []
@@ -80,7 +82,7 @@ def NmaxElements3T(list1, N):
 		print(list1)
 	
 	return final_list
-			
+###################### 			
 
 
 # to reject simple wikicats, with only one component

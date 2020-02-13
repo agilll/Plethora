@@ -180,24 +180,8 @@ class textSimilarityFunctions():
 #############################################################################################################################################
 
 	# Shared Wikicats similarity between two texts, using ourSimilarityListsFunctions
-	# it measures shared matching between wikicats (similarity among components of wikicat name)
-	def sharedWikicatsSimilarity (self, original_text, fileNameOriginalWikicats, candidate_text, fileNameCandidateWikicats):
-				
-		try:  # try to read original text wikicats from local store
-			with _Open(fileNameOriginalWikicats) as fp:
-				original_text_wikicats = fp.read().splitlines()
-				print("File already available in local DB:", fileNameOriginalWikicats)
-		except:  # fetch original text wikicats if not in local store
-			original_text_categories = _getCategoriesInText(original_text)  # function _getCategoriesInText from px_DB_Manager
-			
-			if ("error" in original_text_categories):
-				print("\nERROR sharedWikicatsSimilarity(): Error in _getCategoriesInText(original_text):", original_text_categories["error"])
-				return 0
-			
-			print("Wikicats downloaded for", fileNameOriginalWikicats)
-			original_text_wikicats = list(filter(_filterSimpleWikicats, original_text_categories["wikicats"])) # remove simple wikicats with function located above
-			
-			_saveFile(fileNameOriginalWikicats, '\n'.join(original_text_wikicats))  # save file with original text wikicats, one per line
+	# it measures shared matching between wikicats (similarity among components of two wikicat names)
+	def sharedWikicatsSimilarity (self, original_text_wikicats, candidate_text, fileNameCandidateWikicats):
 		
 		try:  # try to read candidate text wikicats from local store
 			with _Open(fileNameCandidateWikicats) as fp:
@@ -225,33 +209,31 @@ class textSimilarityFunctions():
 			_saveFile(fileNameCandidateWikicats, '\n'.join(candidate_text_wikicats))  # save file with original text wikicats,one per line
 			time.sleep(self.pause)
 			
-			
+		# the wikicats lists for both texts are now available	
 		
 		try:
 			# change every original wikicat by the pair (wikicat, list of wikicat components)    NONSENSE to compute this every time
-			original_text_wikicats = list(map(lambda x: (x, _getWikicatComponents(x)), original_text_wikicats))
+			pairs_original_text_wikicats = list(map(lambda x: (x, _getWikicatComponents(x)), original_text_wikicats))
 				
 			# change every candidate wikicat by the pair (wikicat, list of wikicat components)
-			candidate_text_wikicats = list(map(lambda x: (x, _getWikicatComponents(x)), candidate_text_wikicats))
+			pairs_candidate_text_wikicats = list(map(lambda x: (x, _getWikicatComponents(x)), candidate_text_wikicats))
 						
-			sims = []
-			for (wko,wkocl) in original_text_wikicats:
-				for (wkc,wkccl) in candidate_text_wikicats:		
+			sum_sims = 0
+			for (wko,wkocl) in pairs_original_text_wikicats:
+				for (wkc,wkccl) in pairs_candidate_text_wikicats:		
 					wkc_jaccard_similarity = self.measures.oJaccardSimilarity(wkocl, wkccl)
-					sims.append((wko, wkc, wkc_jaccard_similarity))
+					sum_sims += wkc_jaccard_similarity
 			
-			N=10
-			greatests = _NmaxElements3T(sims, N)
-			greatests_nums = list(map(lambda x: x[2], greatests))
+			union_cardinality = len(set.union(original_text_wikicats, candidate_text_wikicats))
 			
-			if len(greatests_nums) == 0:
+			
+			if union_cardinality == 0:
 				wikicats_jaccard_similarity =0
 			else:
-				wikicats_jaccard_similarity = sum(greatests_nums) / len(greatests_nums)
+				wikicats_jaccard_similarity = sum_sims / union_cardinality
 		except Exception as e:
 			print("ERROR sharedWikicatsSimilarity(): Exception while computing Jaccard wikicats similarity: ", e)
-			exit()
-			wikicats_jaccard_similarity = 0
+			return 0
 			
 		return wikicats_jaccard_similarity
 		
