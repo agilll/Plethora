@@ -205,11 +205,9 @@ def buildCorpus2():
 		fileNameCandidate = fileNameCandidateBase+".txt"
 		fileNameCandidateWikicats = fileNameCandidateBase+".wk"
 				
-		try:  # try to read candidate text wikicats from local store
-			with _Open(fileNameCandidateWikicats) as fp:
-				print("File already available in local DB:", fileNameCandidateWikicats)
-		except:  # fetch candidate text wikicats if not in local store
-			
+		if (os.path.exists(fileNameCandidateWikicats)):
+			print("File already available in local DB:", fileNameCandidateWikicats)
+		else: # fetch candidate text wikicats if not in local store		
 			try:  # open and read candidate file
 				candidateTextFile = _Open(fileNameCandidate, "r")
 				candidate_text = candidateTextFile.read()

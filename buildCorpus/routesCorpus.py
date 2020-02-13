@@ -4,7 +4,6 @@ import re
 import time
 import pickle
 from flask import request, jsonify
-from os.path import isfile
 from requests_futures.sessions import FuturesSession
 import shutil
 from smart_open import open as _Open
