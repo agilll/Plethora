@@ -43,23 +43,21 @@ def getCategoriesInText(texto):
 	entities = dbpediaManager.getEntitiesAfterOffset(0)
 
 	if entities == []:
-		print("ERROR getCategoriesInText(): DBpedia does not answer to the query of types")
-		result["error"] = "DBpedia does not answer to the query of types"
-		return result;
-	else:
-		wikicats = []
-		for entity in entities:
-			wikicats.extend(entity["wikicats"])
-			
-		subjects = []
-		for entity in entities:
-			subjects.extend(entity["subjects"])
+		print("Warning getCategoriesInText(): No entities in text")
+
+	wikicats = []
+	for entity in entities:
+		wikicats.extend(entity["wikicats"])
+		
+	subjects = []
+	for entity in entities:
+		subjects.extend(entity["subjects"])
 			
 	wikicats = list(set(wikicats))  # removes duplicates
 	result["wikicats"] = wikicats
 	
 	subjects = list(set(subjects))  # removes duplicates
-	result["subjects"] = [s.split(':')[-1] for s in subjects]   # original format = http://dbpedia.org/resource/Category:Ionian_Revolt
+	result["subjects"] = [s.split(':')[-1] for s in subjects]   # original format = http://dbpedia.org/resource/Category:Ionian_Revolt, change to Ionian_Revolt
 	
 	return result;
 	
@@ -206,7 +204,7 @@ class DBManager:
 		try:
 			dbsl_entities = dbsl_output["Resources"]
 		except:
-			print("ERROR scanEntities(): problem scanning, no Resources") 
+			print("Warning scanEntities(): no Resources") 
 			return
 		
 		# obtains all URIs corresponding to the entities identified by the DB-SL

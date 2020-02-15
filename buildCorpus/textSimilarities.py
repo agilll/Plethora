@@ -17,10 +17,6 @@ from px_aux import saveFile as _saveFile
 		
 class textSimilarityFunctions():
 	
-	pause = 0   # to sleep after querying DBpedia, to avoid reject by too many queries
-	pause_min = 0
-	delay = 10
-	
 	# Load the nlp large package for spacy metrics
 	# It is better to load it once at the class initialization, to save loading time each time it is used
 	nlp = spacy.load('en_core_web_lg')
@@ -181,33 +177,19 @@ class textSimilarityFunctions():
 
 	# Shared Wikicats similarity between two texts, using ourSimilarityListsFunctions
 	# it measures shared matching between wikicats (similarity among components of two wikicat names)
-	def sharedWikicatsSimilarity (self, original_text_wikicats, candidate_text, fileNameCandidateWikicats):
+	def sharedWikicatsSimilarity (self, original_text_wikicats, fileNameCandidateWikicats):
 		
 		try:  # try to read candidate text wikicats from local store
 			with _Open(fileNameCandidateWikicats) as fp:
 				candidate_text_wikicats = fp.read().splitlines()
 				print("File already available in local DB:", fileNameCandidateWikicats)
 		except:  # fetch candidate text wikicats if not in local store
-			candidate_text_categories = _getCategoriesInText(candidate_text)  # function _getCategoriesInText from px_DB_Manager
+			print("Wikicats file not available:", fileNameCandidateWikicats)
+			input("ENTER to continue...")
 			
-			if ("error" in candidate_text_categories):
-				print("\nERROR sharedWikicatsSimilarity(): Problem in _getCategoriesInText(candidate_text):", candidate_text_categories["error"])
-				self.pause += 1
-				self.delay += 5
-				time.sleep(self.delay)
-				return 0
-			
-			if self.pause > self.pause_min:
-				self.pause -= 1
-			
-			if self.delay > 10:
-				self.delay -= 5
-				
-			print("Wikicats downloaded for", fileNameCandidateWikicats)
-			candidate_text_wikicats = list(filter(_filterSimpleWikicats, candidate_text_categories["wikicats"])) # remove simple wikicats with function located above
-			
-			_saveFile(fileNameCandidateWikicats, '\n'.join(candidate_text_wikicats))  # save file with original text wikicats,one per line
-			time.sleep(self.pause)
+		if len(candidate_text_wikicats) == 0:
+			printf("Wikicats file empty:",fileNameCandidateWikicats)
+			input("ENTER to continue...")
 			
 		# the wikicats lists for both texts are now available	
 		
@@ -224,16 +206,15 @@ class textSimilarityFunctions():
 					wkc_jaccard_similarity = self.measures.oJaccardSimilarity(wkocl, wkccl)
 					sum_sims += wkc_jaccard_similarity
 			
-			union_cardinality = len(set.union(original_text_wikicats, candidate_text_wikicats))
-			
+			union_cardinality = len(set.union(set(original_text_wikicats), set(candidate_text_wikicats)))
 			
 			if union_cardinality == 0:
-				wikicats_jaccard_similarity =0
+				wikicats_jaccard_similarity = 0
 			else:
 				wikicats_jaccard_similarity = sum_sims / union_cardinality
 		except Exception as e:
 			print("ERROR sharedWikicatsSimilarity(): Exception while computing Jaccard wikicats similarity: ", e)
-			return 0
+			return -1
 			
 		return wikicats_jaccard_similarity
 		

@@ -33,7 +33,6 @@ def buildCorpus2():
 
 	originalText = request.values.get("text")  # get parameter with original text
 	len_text = len(originalText)                                   	
-	fileNameOriginalWikicats = _CORPUS_FOLDER+"/"+str(len_text)+".wk" # to send to compute wikicats shared jaccard
 	
 	selectedWikicats = json.loads(request.values.get("wikicats"))   # get parameter with selected wikicats
 	print("Number of selected wikicats:", len(selectedWikicats))
@@ -43,11 +42,23 @@ def buildCorpus2():
 	# store the selected wikicats in the file $CORPUS_FOLDER/length.selected.wk
 	_saveFile(_CORPUS_FOLDER+"/"+str(len_text)+".selected.wk", '\n'.join(selectedWikicats))
 
-	# create a folder to store a file per wikicat, with the URLs linked to such wikicat
+	overwriteCorpus = json.loads(request.values.get("overwriteCorpus"))  # read the flag parameter overwriteCorpus from request
+	
+	if overwriteCorpus:   # if overwriteCorpus, remove current corpus  (URLs, scrapped pages and wikicats files)
+		print("Deleting current URLs lists...")
+		shutil.rmtree(_URLs_FOLDER)  
+		print("Deleting current scrapped texts...")
+		shutil.rmtree(_SCRAPPED_TEXT_PAGES_FOLDER) 
+	
+	
+	# create the folder to store a file per wikicat, with the URLs linked to such wikicat
 	# it must be done before calling the getUrlsLinked2Wikicats function, that it stores there files if fetched
 
 	if not os.path.exists(_URLs_FOLDER):
 		os.makedirs(_URLs_FOLDER)
+		
+	if not os.path.exists(_SCRAPPED_TEXT_PAGES_FOLDER):  # create the folder to store scrapped pages and wikicat files
+		os.makedirs(_SCRAPPED_TEXT_PAGES_FOLDER)
 
 
 	# now get the URLs associated to any of those wikicats (this function is below)
@@ -87,7 +98,8 @@ def buildCorpus2():
 
 
 	listWithoutDuplicates = list(set(fullList))  # remove duplicated URLs
-	print("\n\nSummary of URLs numbers: DB=", numUrlsDB, ", WK= ", numUrlsWK, ", total without duplicates=", len(listWithoutDuplicates))
+	lenOfListWithoutDuplicates  = len(listWithoutDuplicates)  # length of full list to process
+	print("\n\nSummary of URLs numbers: DB=", numUrlsDB, ", WK= ", numUrlsWK, ", total without duplicates=", lenOfListWithoutDuplicates)
 	
 	# returns number of results
 	result["totalDB"] = numUrlsDB
@@ -97,33 +109,23 @@ def buildCorpus2():
 	
 	# the result are only the numbers of discovered URLs
 	
-	
-	
+	input("\nENTER to start to download and clean URLs...")
 	
 	###  We've got the first set of relevant URLs, available in listWithoutDuplicates, and stored in the URLs folder
 	###  Let's start the analysis of their contents 
-
-	overwriteCorpus = json.loads(request.values.get("overwriteCorpus"))  # read the flag parameter overwriteCorpus from request
-
-	if overwriteCorpus:
-		print("Deleting current scrapped texts...")
-		shutil.rmtree(_SCRAPPED_TEXT_PAGES_FOLDER)  # if overwriteCorpus, remove current corpus  (and the URLs?????)
-
-	if not os.path.exists(_SCRAPPED_TEXT_PAGES_FOLDER):  # create new corpus folder if necessary
-		os.makedirs(_SCRAPPED_TEXT_PAGES_FOLDER)
-
-	
-	print("\n")
 	
 	scrap = _scrapFunctions()   # Create a scrapFunctions object to clean pages
 	unretrieved_pages_list = []  # a list for unsuccessful pages retrieval
 		
-	downloaded = 0  # number of files downloaded from Internet in this session
-	
-	lenOfListWithoutDuplicates  = len(listWithoutDuplicates)  # length of full list to process
 
-	print("Downloading and cleaning candidate texts...")
+
+	print("\n Downloading and cleaning candidate texts...")
+		
+	nowDownloaded = 0  # number of files downloaded from Internet in this iteration
 	
+	listEnoughContent = [] # list of pages with sufficient content to proceed  ( > 100 bytes)
+	listNotEnoughContent = [] # list of pages with insufficient content to proceed
+		
 	# download not locally stored pages, scrap them, and save them
 	for idx, page in enumerate(listWithoutDuplicates, start=1):
 		
@@ -132,10 +134,10 @@ def buildCorpus2():
 		# scrapped pages will be stored classified by domain, in specific folders
 						
 		pageWithoutHTTP = page[2+page.find("//"):]		# get the domain of this page
-		domFolder = pageWithoutHTTP[:pageWithoutHTTP.find("/")]
+		domainFolder = pageWithoutHTTP[:pageWithoutHTTP.find("/")]
 
-		if (not os.path.exists(_SCRAPPED_TEXT_PAGES_FOLDER+"/"+domFolder)):	# create this domain folder if not exists 
-			os.makedirs(_SCRAPPED_TEXT_PAGES_FOLDER+"/"+domFolder)
+		if (not os.path.exists(_SCRAPPED_TEXT_PAGES_FOLDER+"/"+domainFolder)):	# create this domain folder if not exists 
+			os.makedirs(_SCRAPPED_TEXT_PAGES_FOLDER+"/"+domainFolder)
 		
 		# the pagename will be the name of the file, with the following change
 		# dir1/dir2/page --> dir1..dir2..page.txt
@@ -145,17 +147,26 @@ def buildCorpus2():
 		
 		# Add file extension '.txt' to page name for saving it   !!!!!!!!!!
 		# pageFinalName = page[1+page.rindex("/"):]
-		fileNameCandidate = _SCRAPPED_TEXT_PAGES_FOLDER+"/"+domFolder+"/"+onlyPageChanged+".txt"
+		fileNameCandidate = _SCRAPPED_TEXT_PAGES_FOLDER+"/"+domainFolder+"/"+onlyPageChanged+".txt"
 				
 		if (os.path.exists(fileNameCandidate)):
 			print("File already available in local DB:", fileNameCandidate)
+			fsize = os.path.getsize(fileNameCandidate)
+			if fsize < 100:
+				listNotEnoughContent.append(page)
+			else:
+				listEnoughContent.append(page)
 		else:  # fetch file if not exists	
 			try:  # Retrieves the URL, and get the page title and the scraped page content
 				pageName, pageContent = scrap.scrapPage(page)  # pageName result is not used
-				downloaded += 1
-				# Save to text file
-				_saveFile(fileNameCandidate, pageContent)
-				print("File", str(downloaded), "downloaded and saved it:", fileNameCandidate)
+				nowDownloaded += 1
+				_saveFile(fileNameCandidate, pageContent)  # Save to text file
+				print("File", str(nowDownloaded), "downloaded and saved it:", fileNameCandidate)
+				
+				if (len(pageContent) < 100):
+					listNotEnoughContent.append(page)
+				else:
+					listEnoughContent.append(page)
 			except Exception as e:
 				print(page, ":", e)
 				unretrieved_pages_list.append(page)
@@ -165,12 +176,16 @@ def buildCorpus2():
 	print(str(len(unretrieved_pages_list)) + " unretrieved pages")
 	_saveFile(_UNRETRIEVED_PAGES_FILENAME, '\n'.join(unretrieved_pages_list))
 	
-	print("ALL PAGES AVAILABLE AND CLEANED.", str(downloaded), "new files downloaded!!)")
+	lenListEnoughContent = len(listEnoughContent)
+	
+	print("ALL PAGES AVAILABLE AND CLEANED.")
+	print("New pages downloaded in this iteration:", str(nowDownloaded))
+	print("Number of pages with enough content:", str(lenListEnoughContent))
+	print("Number of pages without enough content:", str(len(listNotEnoughContent)))
 
 	# all the pages not already available have been now fetched and cleaned
 
-	
-	similarity = _textSimilarityFunctions()    # Create a textSimilarityFunctions object to measure text similarities
+	input("\nENTER to start gathering wikicats for each candidate text...")
 	
 	# # Create a new csv file if not exists. QUE SIGNIFICA W+ ? Temporalmente desactivado hasta que este claro lo que guardar
 	# with _Open(_SIMILARITIES_CSV_FILENAME, 'w+') as writeFile:
@@ -191,70 +206,96 @@ def buildCorpus2():
 
 	print("")
 	print("Identifying wikicats for candidate texts with DBpedia SpotLight...")
-	downloaded = 0
+	nowDownloaded = 0
 	
-	for idx, page in enumerate(listWithoutDuplicates, start=1):
-		print("\n(", idx, "of", lenOfListWithoutDuplicates, ") -- ", page)
+	listWithWikicats = [] # list of pages with available wikicats
+	listWithoutWikicats = [] # list of pages with no wikicats
+	
+	for idx, page in enumerate(listEnoughContent, start=1):
+		print("\n(", idx, "of", lenListEnoughContent, ") -- ", page)
 						
 		# Build filename for this page
 		pageWithoutHTTP = page[2+page.find("//"):]
-		domFolder = pageWithoutHTTP[:pageWithoutHTTP.find("/")]
+		domainFolder = pageWithoutHTTP[:pageWithoutHTTP.find("/")]
 		onlyPage = pageWithoutHTTP[1+pageWithoutHTTP.find("/"):]
 		onlyPageChanged =  onlyPage.replace("/", "..")
-		fileNameCandidateBase = _SCRAPPED_TEXT_PAGES_FOLDER+"/"+domFolder+"/"+onlyPageChanged
+		fileNameCandidateBase = _SCRAPPED_TEXT_PAGES_FOLDER+"/"+domainFolder+"/"+onlyPageChanged
 		fileNameCandidate = fileNameCandidateBase+".txt"
 		fileNameCandidateWikicats = fileNameCandidateBase+".wk"
 				
 		if (os.path.exists(fileNameCandidateWikicats)):
 			print("File already available in local DB:", fileNameCandidateWikicats)
+			fsize = os.path.getsize(fileNameCandidateWikicats)
+			if fsize == 0:
+				listWithoutWikicats.append(page)
+			else:
+				listWithWikicats.append(page)
 		else: # fetch candidate text wikicats if not in local store		
 			try:  # open and read candidate file
 				candidateTextFile = _Open(fileNameCandidate, "r")
 				candidate_text = candidateTextFile.read()
-				print("Reading file:", fileNameCandidate)
+				print("Reading candidate text file:", fileNameCandidate)
 			except:  # file that could not be downloaded
 				print("ERROR buildCorpus2(): Unavailable file, not in the store, but it should be:", fileNameCandidate)
+				input("ENTER to continue...")
 				continue
 			
+			print("Computing wikicats for:", page)
 			candidate_text_categories = _getCategoriesInText(candidate_text)  # function _getCategoriesInText from px_DB_Manager
 			
 			if ("error" in candidate_text_categories):
 				print("\n ERROR buildCorpus2(): Problem in _getCategoriesInText(candidate_text):", candidate_text_categories["error"])
+				input("ENTER to continue...")
 				continue
 				
 			print("Wikicats downloaded for", fileNameCandidateWikicats)
 			candidate_text_wikicats = list(filter(_filterSimpleWikicats, candidate_text_categories["wikicats"])) # remove simple wikicats with function located above
 			
 			_saveFile(fileNameCandidateWikicats, '\n'.join(candidate_text_wikicats))  # save file with original text wikicats,one per line
-			downloaded += 1
+			nowDownloaded += 1
+			
+			if len(candidate_text_wikicats) == 0:
+				listWithoutWikicats.append(page)
+			else:
+				listWithWikicats.append(page)
 
+	lenListWithWikicats = len(listWithWikicats)
+	
 	print("")
-	print("ALL WIKICATs COMPUTED.", str(downloaded), "new files created!!)")
+	print("ALL WIKICATs COMPUTED.")
+	print("New wikicat files computed in this iteration:", str(nowDownloaded))
+	print("Number of pages with wikicats:", str(len(listWithWikicats)))
+	print("Number of pages without wikicats:", str(len(listWithoutWikicats)))
 		
 		
+	input("\nENTER to start computing similarities for candidate texts...")
+	
+	similarity = _textSimilarityFunctions()    # Create a textSimilarityFunctions object to measure text similarities
+			
 	print("\n Computing similarities...")
 		
 	# Measure text similarity, and discard pages (discarded_pages_list) without a minimum similarity
-	for idx, page in enumerate(listWithoutDuplicates, start=1):
+	for idx, page in enumerate(listWithWikicats, start=1):
 		
-		print("(", idx, "of", lenOfListWithoutDuplicates, ") -- ", page)
+		print("(", idx, "of", lenListWithWikicats, ") -- ", page)
 						
 		# Build filename for this page
 		pageWithoutHTTP = page[2+page.find("//"):]
-		domFolder = pageWithoutHTTP[:pageWithoutHTTP.find("/")]
+		domainFolder = pageWithoutHTTP[:pageWithoutHTTP.find("/")]
 		onlyPage = pageWithoutHTTP[1+pageWithoutHTTP.find("/"):]
 		onlyPageChanged =  onlyPage.replace("/", "..")
-		fileNameCandidateBase = _SCRAPPED_TEXT_PAGES_FOLDER+"/"+domFolder+"/"+onlyPageChanged
+		fileNameCandidateBase = _SCRAPPED_TEXT_PAGES_FOLDER+"/"+domainFolder+"/"+onlyPageChanged
 		fileNameCandidate = fileNameCandidateBase+".txt"
 		fileNameCandidateWikicats = fileNameCandidateBase+".wk"
 				
-		try:  # open and read local file if already exists
-			candidateTextFile = _Open(fileNameCandidate, "r")
-			pageContent = candidateTextFile.read()
-			print("Reading file:", fileNameCandidate)
-		except:  # file that could not be downloaded
-			print("ERROR buildCorpus2(): Unavailable file, not in the store, but it should be:", fileNameCandidate)
-			continue
+		# try:  # open and read local file if already exists
+		# 	candidateTextFile = _Open(fileNameCandidate, "r")
+		# 	pageContent = candidateTextFile.read()
+		# 	print("Reading file:", fileNameCandidate)
+		# except:  # file that could not be downloaded
+		# 	print("ERROR buildCorpus2(): Unavailable file, not in the store, but it should be:", fileNameCandidate)
+		# 	input("ENTER to continue...")
+		# 	continue
 
 
 		# Compare original text with the text of this candidate (in pageContent)
@@ -286,8 +327,12 @@ def buildCorpus2():
 		
 		
 		# Measure wikicats similarity (requires shared matching)
-		shared_wikicats_jaccard_similarity = similarity.sharedWikicatsSimilarity(selectedWikicats, pageContent, fileNameCandidateWikicats)
+		shared_wikicats_jaccard_similarity = similarity.sharedWikicatsSimilarity(selectedWikicats, fileNameCandidateWikicats)
 		print("Wikicats shared jaccard similarity = "+str(shared_wikicats_jaccard_similarity))
+		
+		if shared_wikicats_jaccard_similarity == -1:
+			print("ERROR computing jaccard:", fileNameCandidateWikicats)
+			input("ENTER to continue...")
 
 
 		# # Save similarity to a CSV file
