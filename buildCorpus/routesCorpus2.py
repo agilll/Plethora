@@ -211,6 +211,8 @@ def buildCorpus2():
 	listWithWikicats = [] # list of pages with available wikicats
 	listWithoutWikicats = [] # list of pages with no wikicats
 	
+	delay = 0 # to wait for a new request to Dbpedia SpotLight in case of erroneous response
+	
 	for idx, page in enumerate(listEnoughContent, start=1):
 		print("\n(", idx, "of", lenListEnoughContent, ") -- ", page)
 						
@@ -245,6 +247,8 @@ def buildCorpus2():
 			
 			if ("error" in candidate_text_categories):
 				print("\n ERROR buildCorpus2(): Problem in _getCategoriesInText(candidate_text):", candidate_text_categories["error"])
+				# delay += 5
+				# time.sleep(delay)
 				input("ENTER to continue...")
 				continue
 				
