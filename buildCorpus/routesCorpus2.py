@@ -16,6 +16,7 @@ from aux import CORPUS_FOLDER as _CORPUS_FOLDER
 from aux import URLs_FOLDER as _URLs_FOLDER, DISCARDED_PAGES_FILENAME as _DISCARDED_PAGES_FILENAME,  SCRAPPED_TEXT_PAGES_FOLDER as _SCRAPPED_TEXT_PAGES_FOLDER
 from aux import UNRETRIEVED_PAGES_FILENAME as _UNRETRIEVED_PAGES_FILENAME, SIMILARITIES_CSV_FILENAME as _SIMILARITIES_CSV_FILENAME
 from aux import LEE_D2V_MODEL as _LEE_D2V_MODEL, OWN_D2V_MODEL as _OWN_D2V_MODEL
+from aux import CORPUS_MIN_TXT_SIZE as _CORPUS_MIN_TXT_SIZE
 	
 from scrap import scrapFunctions as _scrapFunctions
 from textSimilarities import textSimilarityFunctions as _textSimilarityFunctions
@@ -152,7 +153,7 @@ def buildCorpus2():
 		if (os.path.exists(fileNameCandidate)):
 			print("File already available in local DB:", fileNameCandidate)
 			fsize = os.path.getsize(fileNameCandidate)
-			if fsize < 100:
+			if fsize < _CORPUS_MIN_TXT_SIZE:
 				listNotEnoughContent.append(page)
 			else:
 				listEnoughContent.append(page)
@@ -163,7 +164,7 @@ def buildCorpus2():
 				_saveFile(fileNameCandidate, pageContent)  # Save to text file
 				print("File", str(nowDownloaded), "downloaded and saved it:", fileNameCandidate)
 				
-				if (len(pageContent) < 100):
+				if (len(pageContent) < _CORPUS_MIN_TXT_SIZE):
 					listNotEnoughContent.append(page)
 				else:
 					listEnoughContent.append(page)

@@ -24,6 +24,8 @@ UNRETRIEVED_PAGES_FILENAME = CORPUS_FOLDER+"/unretrieved_pages.txt"
 SIMILARITIES_CSV_FILENAME = CORPUS_FOLDER+"/similarities.csv"
 HTML_PAGES_FOLDER = CORPUS_FOLDER+"/HTML_PAGES"
 
+CORPUS_MIN_TXT_SIZE = 300
+
 
 # set of english stopwords
 nltk_stopwords = nltk.corpus.stopwords.words('english')
