@@ -227,7 +227,7 @@ class DBManager:
 		requestTypes = self.session.post(_URL_DB, data={"query": query}, headers={"accept": "application/json"}) 
 
 
-		# query to obtain for each URI only thos ones corresponding to persons (they have some tipical properties as birthDate, deathDate...
+		# query to obtain for each URI only those ones corresponding to persons (they have some typical properties as birthDate, deathDate...
 		query = """
 		SELECT ?uri ?label (group_concat(distinct ?p; separator=';') as ?properties)  WHERE {
 			VALUES ?uri {""" + totalUris + """} .

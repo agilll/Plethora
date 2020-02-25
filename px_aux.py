@@ -72,6 +72,11 @@ def saveFile (f, content):
 	out.close()
 	return
 
+def appendFile(f, line):
+	fd = _Open(f, "a")
+	fd.write(line+"\n")
+	fd.close()
+
 
 
 # to highlight in a file the entities contained in its '.p' and so generate its '.p.html'

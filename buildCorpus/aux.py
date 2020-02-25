@@ -94,6 +94,13 @@ def filterSimpleWikicats (wikicat):
 	else:
 		return True
 	
+# to reject simple subjects, with only one component
+def filterSimpleSubjects (subject):
+	if (len(getSubjectComponents(subject)) == 1):
+		return False
+	else:
+		return True
+	
 
 
 
@@ -124,66 +131,7 @@ def myTokenizer (text):
 	return words_filtered
 
 
-# to get all the single components of a wikicat
-def separateWikicatComponents (wikicat):
-	lista =[]
-	word=""
-	
-	long = len(wikicat)
-	idx = 0
-	
-	while idx < long:
-		l = wikicat[idx]
-		idx += 1
-		
-		if len(word) == 0:			# if idx=1, len(word)=0 and this continue executes
-			word = word + str(l)
-			continue
-		
-		if str(l).isdigit():
-			if not str(wikicat[idx-2]).isdigit():  # idx cannot be 1
-				lista.append(word)
-				word = str(l)
-			else:
-				word = word + str(l)
-			continue
-				
-		if l.isupper():
-			if wikicat[idx-2] == '-':
-				word = word + str(l)
-				continue
-			
-			if (idx == long):
-				word = word + str(l)
-				continue
-			
-			if word.isupper():
-				if wikicat[idx].islower():
-					lista.append(word)
-					word = str(l)
-				else:
-					word = word + str(l)
-			else:
-				if (l == 'B') and (wikicat[idx] == 'C'):
-					word = word + "BC"
-					idx += 1
-				else:
-					if (l == 'A') and (wikicat[idx] == 'D'):
-						word = word + "AD"
-						idx += 1;
-					else:
-						lista.append(word)
-						word = str(l)
-
-		else:
-			word = word + str(l)
-	
-		
-	if len(word) > 0:
-		lista.append(word)
-	
-	return lista
-
+########   compite wikicat and subject components
 
 # to get the relevant components of a wikicat 
 def getWikicatComponents (wikicat):
@@ -192,3 +140,82 @@ def getWikicatComponents (wikicat):
 	
 	components_filtered = list(filter(isNotStopWord, components_lower))  # remove stopwords
 	return components_filtered
+
+
+
+
+# to get all the single components of a wikicat (format W1W2W3...Wn)
+def separateWikicatComponents (wikicat):
+	components = []
+	word = ""
+	
+	long = len(wikicat)
+	idx = 0
+	
+	while idx < long:
+		l = wikicat[idx]
+		idx += 1  # idx always marks the char following the current one
+		
+		if len(word) == 0:			# if len(word)==0, then idx==1, this is the first char, put it in the word and continue 
+			word = word + str(l)
+			continue
+		
+		if str(l).isdigit():    # l is a digit.   idx is 2 or higher, as the first char does not arrive here
+			if not str(wikicat[idx-2]).isdigit():  # if the previous one is not a digit,
+				components.append(word)  # the word was completed with the previous one
+				word = str(l)   # and the current digit starts a new word
+			else:
+				word = word + str(l)   # if the previous one is also a digit, add this digit to the digit sequence
+			continue
+				
+		if l.isupper():      # the new char is uppercase, probably a new word starts
+			if wikicat[idx-2] == '-':   # if the previous one is hyphen, it is not a new word, but a composed one
+				word = word + str(l)    # add char to this word
+				continue
+			
+			if (idx == long):   # this is the last char of the word
+				word = word + str(l)
+				continue
+			
+			if word.isupper():  # this char is uppercase, and all the previous chars are too
+				if wikicat[idx].islower():  # if the next one is lowercase, the current char is the start of a new word
+					components.append(word)  # add completed word and start a new one
+					word = str(l)
+				else:
+					word = word + str(l)
+			else:  # this char is uppercase, but not all the previous chars are 
+				if (l == 'B') and (wikicat[idx] == 'C'):  # check if the current char is the beginning of BC or AD
+					word = word + "BC" 
+					idx += 1
+				else:
+					if (l == 'A') and (wikicat[idx] == 'D'):
+						word = word + "AD"
+						idx += 1;
+					else:  # current char is uppercase, and no special case, it marks end of word and beginning of a new one
+						components.append(word)
+						word = str(l)
+
+		else:  # if current char is not uppercase nor digit, add to the current word
+			word = word + str(l)
+	
+		
+	if len(word) > 0:
+		components.append(word)
+	
+	return components
+
+
+
+# to get the relevant components of a subject 
+def getSubjectComponents (subject):
+	components = separateSubjectComponents(subject)   # get all the components
+	components_lower = list(map(lambda x: x.lower(), components))  # to lowercase
+	
+	components_filtered = list(filter(isNotStopWord, components_lower))  # remove stopwords
+	return components_filtered
+
+
+# to get all the single components of a subject (format W1_W2_W3_..._Wn)
+def separateSubjectComponents (subject):
+	components = subject.split("_")
+	return components

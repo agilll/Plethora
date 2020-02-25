@@ -4,3 +4,4 @@
 *.pyc
 MODELS/*
 buildCorpus/KORPUS/*
+buildCorpus/corpus.log

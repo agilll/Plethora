@@ -10,10 +10,10 @@ from smart_open import open as _Open
 from aux import CORPUS_FOLDER as _CORPUS_FOLDER
 from ourSimilarityListsFunctions import ourSimilarityListsFunctions as _ourSimilarityListsFunctions
 from aux import myTokenizer as _myTokenizer, getWikicatComponents as _getWikicatComponents, NmaxElements as _NmaxElements, NmaxElements3T as _NmaxElements3T
-from aux import filterSimpleWikicats as _filterSimpleWikicats
+from aux import getSubjectComponents as _getSubjectComponents, filterSimpleWikicats as _filterSimpleWikicats
 
 from px_DB_Manager import getCategoriesInText as _getCategoriesInText
-from px_aux import saveFile as _saveFile
+from px_aux import saveFile as _saveFile,  appendFile as _appendFile
 		
 class textSimilarityFunctions():
 	
@@ -177,19 +177,19 @@ class textSimilarityFunctions():
 
 	# Shared Wikicats similarity between two texts, using ourSimilarityListsFunctions
 	# it measures shared matching between wikicats (similarity among components of two wikicat names)
-	def sharedWikicatsSimilarity (self, original_text_wikicats, fileNameCandidateWikicats):
+	def sharedWikicatsSimilarity (self, original_text_wikicats, fileNameCandidateWikicats, logFilename):
 		
 		try:  # try to read candidate text wikicats from local store
 			with _Open(fileNameCandidateWikicats) as fp:
 				candidate_text_wikicats = fp.read().splitlines()
 				print("File already available in local DB:", fileNameCandidateWikicats)
 		except:  # fetch candidate text wikicats if not in local store
-			print("Wikicats file not available:", fileNameCandidateWikicats)
-			input("ENTER to continue...")
+			_appendFile(logFilename, "ERROR sharedWikicatsSimilarity(): Wikicats file not available: "+fileNameCandidateWikicats)
+			return -1
 			
 		if len(candidate_text_wikicats) == 0:
-			printf("Wikicats file empty:",fileNameCandidateWikicats)
-			input("ENTER to continue...")
+			_appendFile(logFilename, "ERROR sharedWikicatsSimilarity(): Wikicats file empty: "+fileNameCandidateWikicats)
+			return -1
 			
 		# the wikicats lists for both texts are now available	
 		
@@ -208,66 +208,57 @@ class textSimilarityFunctions():
 			
 			union_cardinality = len(set.union(set(original_text_wikicats), set(candidate_text_wikicats)))
 			
-			if union_cardinality == 0:
-				wikicats_jaccard_similarity = 0
+			if union_cardinality == 0:  # not possible, it should not be here if len(original_text_wikicats) == 0 
+				return -1  
 			else:
 				wikicats_jaccard_similarity = sum_sims / union_cardinality
 		except Exception as e:
-			print("ERROR sharedWikicatsSimilarity(): Exception while computing Jaccard wikicats similarity: ", e)
+			_appendFile(logFilename, "ERROR sharedWikicatsSimilarity(): Exception while computing Jaccard wikicats similarity: "+e)
 			return -1
 			
 		return wikicats_jaccard_similarity
 		
 		
-	# CURRENTLY NOT USED	
 	# Shared subjects similarity between two texts, using ourSimilarityListsFunctions
-	# it measures shared matching between subjects (similarity among components of subject name)
-	def sharedSubjectsSimilarity (self, original_text, candidate_text):
+	# it measures shared matching between subjects (similarity among components of subject names)
+	def sharedSubjectsSimilarity (self, original_text_subjects, fileNameCandidateSubjects, logFilename):
 		
-		len_orig_text = len(original_text)
-		filename_sb = _CORPUS_FOLDER+"/"+str(len_orig_text)+"_sb.txt"
-		
-		try:  # try to read original text subjects from local store
-			with _Open(filename_sb) as fp:
-				original_text_subjects = fp.read().splitlines()
-		except:  # fetch subjects if not in local store
-			original_text_categories = _getCategoriesInText(original_text)  # function _getCategoriesInText from px_DB_Manager
+		try:  # try to read candidate text subjects from local store
+			with _Open(fileNameCandidateSubjects) as fp:
+				candidate_text_subjects = fp.read().splitlines()
+				print("File already available in local DB:", fileNameCandidateSubjects)
+		except:  # fetch candidate text subjects if not in local store
+			_appendFile(logFilename, "ERROR sharedSubjectsSimilarity(): Subjects file not available: "+fileNameCandidateSubjects)
+			return -1
 			
-			if ("error" in original_text_categories):
-				print("\nError in _getCategoriesInText(original_text):", original_text_categories["error"])
-				return 0
+		if len(candidate_text_subjects) == 0:
+			_appendFile(logFilename, "ERROR sharedSubjectsSimilarity(): Subjects file empty: "+fileNameCandidateSubjects)
+			return -1
 			
-			original_text_subjects = original_text_categories["subjects"]
-			
-		candidate_text_categories = _getCategoriesInText(candidate_text)    # STORE LOCAL
-		if ("error" in candidate_text_categories):
-			print("\nError in _getCategoriesInText(candidate_text):", candidate_text_categories["error"])
-			return 0
-		
-		candidate_text_subjects = candidate_text_categories["subjects"]
+		# the subjects lists for both texts are now available	
 		
 		try:
 			# change every original subject by the pair (subject, list of subject components)    NONSENSE to compute this every time
-			original_text_subjects = list(map(lambda x: (x, _getWikicatComponents(x)), original_text_subjects))
+			pairs_original_text_subjects = list(map(lambda x: (x, _getSubjectComponents(x)), original_text_subjects))
 				
 			# change every candidate subject by the pair (subject, list of subject components)
-			candidate_text_subjects = list(map(lambda x: (x, _getWikicatComponents(x)), candidate_text_subjects))
+			pairs_candidate_text_subjects = list(map(lambda x: (x, _getSubjectComponents(x)), candidate_text_subjects))
+						
+			sum_sims = 0
+			for (wko,wkocl) in pairs_original_text_subjects:
+				for (wkc,wkccl) in pairs_candidate_text_subjects:		
+					wkc_jaccard_similarity = self.measures.oJaccardSimilarity(wkocl, wkccl)
+					sum_sims += wkc_jaccard_similarity
 			
-			sims = []
-			for (sbo,sbocl) in original_text_subjects:
-				for (sbc,sbccl) in candidate_text_subjects:		
-					sbc_jaccard_similarity = self.measures.oJaccardSimilarity(sbocl, sbccl)
-					sims.append((sbo, sbc, sbc_jaccard_similarity))
+			union_cardinality = len(set.union(set(original_text_subjects), set(candidate_text_subjects)))
 			
-			N=10
-			greatests = _NmaxElements3T(sims, N)
-			greatests_nums = list(map(lambda x: x[2], greatests))
-				
-			subjects_jaccard_similarity = sum(greatests_nums) / len(greatests_nums)
+			if union_cardinality == 0:   # not possible, it should not be here if len(original_text_subjects) == 0 
+				return -1
+			else:
+				subjects_jaccard_similarity = sum_sims / union_cardinality
 		except Exception as e:
-			print("Exception while computing Jaccard subjects similarity in sharedSubjectsSimilarity:", e)
-			subjects_jaccard_similarity = 0
+			_appendFile(logFilename, "ERROR sharedSubjectsSimilarity(): Exception while computing Jaccard subjects similarity: "+e)
+			return -1
 			
-		
 		return subjects_jaccard_similarity
 

@@ -19,8 +19,10 @@ from aux import getWikicatComponents as _getWikicatComponents, filterSimpleWikic
 
 # QUERY (/getWikicatsFromText) to attend the query to get wikicats from a text   
 # receives: the text
+# computes and saves files with wikicats (length.wk) and subjects (length.sb)
 # returns:
-# result["wikicats"]: list of wikicats (and stores them in the file $CORPUS_FOLDER/length_wk.txt)
+# result["wikicats"]: list of wikicats (and saves them in the file $CORPUS_FOLDER/length.wk)
+# result["subjects"]: list of subjects (and saves them in the file $CORPUS_FOLDER/length.sb)
 # result[wk] = [component list] one for each wikicat
 # result["formerSelectedWikicats"]: list of wikicats selected in the past, to be identified in the interface
 def getWikicatsFromText():
@@ -41,26 +43,26 @@ def getWikicatsFromText():
 		
 		try:  # open wikicats file if exists
 			with _Open(filename_wk) as fp:
-				listaWikicats = fp.read().splitlines()
-				result["wikicats"] = listaWikicats
+				listWikicats = fp.read().splitlines()
+				result["wikicats"] = listWikicats
 		except:  # fetch wikicats if file does not exist yet
 			result = _getCategoriesInText(originalText)  # function getCategoriesInText from px_DB_Manager.py
 		
 			if ("error" in result):   # return error if could not fetch wikicats 
 				return jsonify(result);
 			
-			listaWikicats = list(filter(_filterSimpleWikicats, result["wikicats"])) # remove simple wikicats with function from aux.py
-			result["wikicats"] = listaWikicats  # update result wikicats for return
+			listWikicats = list(filter(_filterSimpleWikicats, result["wikicats"])) # remove simple wikicats with function from aux.py
+			result["wikicats"] = listWikicats  # update result wikicats to return
 			
-			_saveFile(filename_wk, '\n'.join(listaWikicats))  # save file (length.wk) with wikicats, one per line
+			_saveFile(filename_wk, '\n'.join(listWikicats))  # save file (length.wk) with wikicats, one per line
 			
-			listaSubjects = list(filter(_filterSimpleWikicats, result["subjects"]))  # remove simple subjects with function from aux.py
-			result["subjects"] = listaSubjects # update result subjects to return
+			listSubjects = list(filter(_filterSimpleWikicats, result["subjects"]))  # remove simple subjects with function from aux.py
+			result["subjects"] = listSubjects # update result subjects to return
 			
-			_saveFile(filename_sb, '\n'.join(listaSubjects)) # save file (length.sb) with subjects, one per line
+			_saveFile(filename_sb, '\n'.join(listSubjects)) # save file (length.sb) with subjects, one per line
 			
 		
-		for w in listaWikicats:    # compute components for every wikicat and add all of them to result
+		for w in listWikicats:    # compute components for every wikicat and add all of them to result
 			wlc = _getWikicatComponents(w)   # function getWikicatComponets from aux.py
 			result[w] = wlc  # one entry by wikicat
 		
@@ -70,7 +72,7 @@ def getWikicatsFromText():
 			with _Open(filename_selected) as fp:
 				wkSelectedList = fp.read().splitlines()
 		except:
-			wkSelectedList = []    # no previously selected wkicats
+			wkSelectedList = []    # no previously selected wikicats
 		
 		result["formerSelectedWikicats"] = wkSelectedList
 		
