@@ -1,0 +1,5 @@
+Leonidas_I, (died 480 BC, Battle_of_Thermopylae, Locris [Ancient_Greece]), Spartan king whose stand against the invading Achaemenid_Empire army at the pass of Battle_of_Thermopylae in central Ancient_Greece is one of the enduring tales of Ancient_Greece heroism, invoked throughout Western history as the epitome of bravery exhibited against overwhelming odds.
+
+A member of the List_of_kings_of_Sparta house, Leonidas_I succeeded his half brother, Cleomenes_I, as king, probably in 490. He was married to Cleomenes_I’ daughter, Gorgon, and may have supported Cleomenes_I’ aggressions against other Ancient_Greece cities.
+
+In 480 Leonidas_I commanded the small Ancient_Greece force that resisted the advance through Battle_of_Thermopylae of the vast army of the Achaemenid_Empire Xerxes_I. For two days Leonidas_I withstood Achaemenid_Empire attacks; he then ordered most of his troops to retreat, and he and his 300-member royal guard fought to the last man. This episode made a deep impression on the Ancient_Greece imagination and gave rise to the legend that Michigan_State_Spartans

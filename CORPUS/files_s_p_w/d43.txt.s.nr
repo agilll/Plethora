@@ -1,0 +1,12 @@
+Before: (War II)  -->  **the Peloponnesian <span style='color: red'>War</span> recounts the**
+Before: (War II)  -->  **the Peloponnesian <span style='color: red'>War</span>, which expounds**
+Before: (War II)  -->  **the Dorian <span style='color: red'>War</span> would come**
+Before: (War II)  -->  **another Dorian <span style='color: red'>War</span> come, this**
+Before: (War II)  -->  **the Peloponnesian <span style='color: red'>War</span> represented an**
+Before: (War II)  -->  **the Peloponnesian <span style='color: red'>War</span>. His great**
+Before: (War II)  -->  **the Peloponnesian <span style='color: red'>War</span> continued to**
+Before: (War II)  -->  **the Peloponnesian <span style='color: red'>War</span> (404 BC**
+After: (War II)  -->  **the Peloponnesian <span style='color: red'>War</span>, not because**
+After: (War II)  -->  **the Cold <span style='color: red'>War</span>, through the**
+After: (War II)  -->  **the Naval <span style='color: red'>War</span> College, an**
+After: (War II)  -->  **the Cold <span style='color: red'>War</span>, professing admiration**

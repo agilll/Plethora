@@ -24,15 +24,16 @@ UNRETRIEVED_PAGES_FILENAME = CORPUS_FOLDER+"/unretrieved_pages.txt"
 SIMILARITIES_CSV_FILENAME = CORPUS_FOLDER+"/similarities.csv"
 HTML_PAGES_FOLDER = CORPUS_FOLDER+"/HTML_PAGES"
 
-CORPUS_MIN_TXT_SIZE = 300
+CORPUS_MIN_TXT_SIZE = 300  # this is the minimum size of a file to be added to the corpus
 
+PSTOP = False  # to control if sw must pause after each phase (change to True if argument -s)
 
 # set of english stopwords
 nltk_stopwords = nltk.corpus.stopwords.words('english')
 
 # function to check if a word is in the English stopwords set (to be used in a filter)
 def isNotStopWord (word):
-	if word not in nltk_stopwords:
+	if word.lower() not in nltk_stopwords:
 		return True
 	return False
 
@@ -120,32 +121,37 @@ def myTokenizer (text):
 	# Change words to lower case
 	text_words = list(map(lambda x: x.lower(), tokens))
 	
-	def isNotStopWord (word):
-		if word not in nltk_stopwords:
-			return True
-		return False
-	
 	# remove the stopwords
 	words_filtered = list(filter(isNotStopWord, text_words))
 
 	return words_filtered
 
 
-########   compite wikicat and subject components
+########   compute wikicat and subject components
+
+# to transform some wikicats to unify for further comparison
+# this inserts a dash between nth and century (it returns nth-century). the same for nd and st
+def processCentury(cad):	
+	pattern = re.compile(r"(\d)(th|st|nd)([cC]entury)")
+	newcad = pattern.sub(r"\1\2-\3", cad)
+	return newcad
+
 
 # to get the relevant components of a wikicat 
 def getWikicatComponents (wikicat):
 	components = separateWikicatComponents(wikicat)   # get all the components
-	components_lower = list(map(lambda x: x.lower(), components))  # to lowercase
+	#components_lower = list(map(lambda x: x.lower(), components))  # to lowercase
 	
-	components_filtered = list(filter(isNotStopWord, components_lower))  # remove stopwords
+	components_filtered = list(filter(isNotStopWord, components))  # remove stopwords
 	return components_filtered
-
 
 
 
 # to get all the single components of a wikicat (format W1W2W3...Wn)
 def separateWikicatComponents (wikicat):
+	
+	wikicat = processCentury(wikicat)  # change 6thcentury to 6th-century, and similars
+	
 	components = []
 	word = ""
 	
@@ -160,6 +166,11 @@ def separateWikicatComponents (wikicat):
 			word = word + str(l)
 			continue
 		
+		if l == '(' or l == ')':
+			components.append(word)
+			word = ""
+			continue
+			
 		if str(l).isdigit():    # l is a digit.   idx is 2 or higher, as the first char does not arrive here
 			if not str(wikicat[idx-2]).isdigit():  # if the previous one is not a digit,
 				components.append(word)  # the word was completed with the previous one

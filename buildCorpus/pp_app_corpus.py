@@ -16,15 +16,17 @@ from smart_open import open as SOpen
 sys.path.append('../')
 
 # functions to be executed when Flask requests are received 
-from routesCorpus import getWikicatsFromText as _getWikicatsFromText, getWikicatUrls as _getWikicatUrls
+from routesCorpus import getWikicatsFromText as _getWikicatsFromText
 from routesCorpus2 import buildCorpus2 as _buildCorpus2
 from aux import INITIAL_TEXT as _INITIAL_TEXT
+import aux
 
 # load the initial text shown at the beginning of the interface
 initialTextFile = SOpen(_INITIAL_TEXT, "r")
 initialText = initialTextFile.read()
 
-
+pDebug = False
+	
 # the following is only executed if this is the main program, that is, if we launch the corpus tool directly from the 'buildCorpus' folder
 # not executed if we launch the corpus tool from the main tool, as the 'app' object is already available from the main tool
 if __name__ == '__main__':
@@ -43,21 +45,22 @@ if __name__ == '__main__':
 	def send_js(path):
 		return send_from_directory('../css', path)
 	
-
+	arguments = len(sys.argv) - 1
+	if arguments == 1:
+		if sys.argv[1] == "-d":   # argument '-d' prints button labels with routes associated
+			pDebug = True
+		if sys.argv[1] == "-s":   # argument '-s' forces stop after every phase
+			aux.PSTOP = True
+			print("Force stop activated!!!")
 
 # Flask routes binding for interface requests (not done in the main tool, so always necessary)
 app.add_url_rule("/getWikicatsFromText", "getWikicatsFromText", _getWikicatsFromText, methods=["POST"])  # to send a text and request the wikicats in it
 app.add_url_rule("/buildCorpus2", "buildCorpus2", _buildCorpus2, methods=["POST"])   # to send some wikicats and request to build the corpus
-app.add_url_rule("/getWikicatUrls", "getWikicatUrls", _getWikicatUrls) # what is this used for??
 
 # this is the main entry point of the corpus builder tool (not done in the main tool, so always necessary)
 @app.route('/corpus',  methods=["GET", "POST"])
 def hello_world():
-	arguments = len(sys.argv) - 1;
-	debug = False;
-	if arguments == 1 and sys.argv[1] == "-d":   # argument '-d' prints button labels with routes associated
-		debug = True;
-	return render_template('./template_corpus.html', parDefaultText=initialText, parDebug=debug) # parDebug=True prints button labels with routes associated
+	return render_template('./template_corpus.html', parDefaultText=initialText, parDebug=pDebug) # parDebug=True prints button labels with routes associated
 
 
 # start web server listening port 5000 by default if we have launched the corpus tool standalone
@@ -65,4 +68,4 @@ def hello_world():
 # the following is only executed if this is the main program, that is, if we launch the corpus tool directly from the 'buildCorpus' folder
 # not executed if we launch the corpus tool from the main tool, as the 'app' object is already available from the main tool
 if __name__ == '__main__':
-	app.run(debug=True, host='0.0.0.0', threaded=True)
+	app.run(host='0.0.0.0', port=5060, threaded=True)

@@ -1,0 +1,12 @@
+Before: (Tepe VII)  -->  **lowland Khūzestān. <span style='color: red'>Tepe</span> Sabz in**
+After: (Tepe VII)  -->  **sites of <span style='color: red'>Tepe</span> Hissar and**
+After: (Tepe VII)  -->  **tablets at <span style='color: red'>Tepe</span> Yahya south**
+After: (Yahya VI)  -->  **at Tepe <span style='color: red'>Yahya</span> south of**
+After: (Tepe VII)  -->  **ceased at <span style='color: red'>Tepe</span> Sialk, but**
+After: (Sialk IV)  -->  **at Tepe <span style='color: red'>Sialk</span>, but the**
+After: (Tepe VII)  -->  **and Dinkha <span style='color: red'>Tepe</span>, did not**
+After: (Nahhunte I)  -->  **of Shutruk-<span style='color: red'>Nahhunte</span>’s eldest**
+After: (Age III)  -->  **the Iron <span style='color: red'>Age</span> that the**
+After: (Age III)  -->  **the Iron <span style='color: red'>Age</span>, is the**
+After: (Age III)  -->  **in Iron <span style='color: red'>Age</span> history. Herodotus**
+After: (War II)  -->  **the Peloponnesian <span style='color: red'>War</span> between Sparta**

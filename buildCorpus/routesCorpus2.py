@@ -12,12 +12,13 @@ from datetime import datetime
 from px_DB_Manager import getCategoriesInText as _getCategoriesInText
 from px_aux import saveFile as _saveFile, appendFile as _appendFile, URL_DB as _URL_DB, URL_WK as _URL_WK
 from aux import hasFieldPT as _hasFieldPT  # function to check if object has  ["pt"]["value"] field
-from aux import filterSimpleWikicats as _filterSimpleWikicats, filterSimpleSubjects as _filterSimpleSubjects	
+from aux import filterSimpleWikicats as _filterSimpleWikicats, filterSimpleSubjects as _filterSimpleSubjects, getWikicatComponents as _getWikicatComponents	
 from aux import CORPUS_FOLDER as _CORPUS_FOLDER
 from aux import URLs_FOLDER as _URLs_FOLDER, DISCARDED_PAGES_FILENAME as _DISCARDED_PAGES_FILENAME,  SCRAPPED_TEXT_PAGES_FOLDER as _SCRAPPED_TEXT_PAGES_FOLDER
 from aux import UNRETRIEVED_PAGES_FILENAME as _UNRETRIEVED_PAGES_FILENAME, SIMILARITIES_CSV_FILENAME as _SIMILARITIES_CSV_FILENAME
 from aux import LEE_D2V_MODEL as _LEE_D2V_MODEL, OWN_D2V_MODEL as _OWN_D2V_MODEL
 from aux import CORPUS_MIN_TXT_SIZE as _CORPUS_MIN_TXT_SIZE
+import aux
 	
 from scrap import scrapFunctions as _scrapFunctions
 from textSimilarities import textSimilarityFunctions as _textSimilarityFunctions
@@ -39,7 +40,7 @@ def buildCorpus2():
 	logFile.close()
 	
 	originalText = request.values.get("text")  # get parameter with original text
-	len_text = len(originalText)                                   	
+	lenOriginalText = len(originalText)                                   	
 	
 	selectedWikicats = json.loads(request.values.get("wikicats"))   # get parameter with selected wikicats
 	print("Number of selected wikicats:", len(selectedWikicats))
@@ -47,10 +48,10 @@ def buildCorpus2():
 	numUrlsWK = 0
 
 	# store the selected wikicats in the file $CORPUS_FOLDER/length.selected.wk
-	_saveFile(_CORPUS_FOLDER+"/"+str(len_text)+".selected.wk", '\n'.join(selectedWikicats))
+	_saveFile(_CORPUS_FOLDER+"/"+str(lenOriginalText)+".selected.wk", '\n'.join(selectedWikicats))
 	
 	# read the original text subjects from local store
-	filename_sb = _CORPUS_FOLDER+"/"+str(len_text)+".sb"   # filename for subjects (length.sb)
+	filename_sb = _CORPUS_FOLDER+"/"+str(lenOriginalText)+".sb"   # filename for subjects (length.sb)
 	try:  
 		with _Open(filename_sb) as fp:
 			sbOriginalText = fp.read().splitlines()
@@ -58,6 +59,8 @@ def buildCorpus2():
 		sbOriginalText = []    # no subjects for original text
 		_appendFile(logFilename, "Subjects file not available: "+filename_sb)
 			
+	
+	# Now, we have wikicats in 'selectedWikicats' and subjects in 'sbOriginalText'
 
 	overwriteCorpus = json.loads(request.values.get("overwriteCorpus"))  # read the flag parameter overwriteCorpus from request
 	
@@ -68,7 +71,7 @@ def buildCorpus2():
 		shutil.rmtree(_SCRAPPED_TEXT_PAGES_FOLDER) 
 	
 	
-	# create the folder to store a file per wikicat, with the URLs linked to such wikicat
+	# create the folder to store two files per wikicat, with the URLs linked to such wikicat coming from DB and WK
 	# it must be done before calling the getUrlsLinked2Wikicats function, that it stores there files if fetched
 
 	if not os.path.exists(_URLs_FOLDER):
@@ -81,9 +84,9 @@ def buildCorpus2():
 	# now get the URLs associated to any of those wikicats (this function is below)
 	# it reads from local files if exist, otherwise it connects to Internet to fetch them and store them locally
 
-	urlsObjects = getUrlsLinked2Wikicats(selectedWikicats)
+	urlsObjects = getUrlsLinked2Wikicats(selectedWikicats, logFilename)
 
-	# it receives a dictionary entry for each wikicat   urlsObjects[wikicat] = {"db": urlsDB, "wk": urlsWK}
+	# it has been received a dictionary entry for each wikicat   urlsObjects[wikicat] = {"db": urlsDB, "wk": urlsWK}
 	# urlsDB and urlsWK are lists of URLs
 
 	result = {}  # object to store the results to be returned to the request
@@ -120,27 +123,29 @@ def buildCorpus2():
 	
 	_appendFile(logFilename, "Number of discovered URLs: "+str(lenOfListWithoutDuplicates))
 	
-	# returns number of results
+	# returns number of results, the result items are only the numbers of discovered URLs
 	result["totalDB"] = numUrlsDB
 	result["totalWK"] = numUrlsWK
 	result["totalUrls"] = len(listWithoutDuplicates)
 	# return jsonify(result);  # uncomment to return to the interface without processing files
 	
-	# the result items are only the numbers of discovered URLs
-	
-
+	if aux.PSTOP == True:
+		input("Type ENTER to continue...")
+		
+		
+		
 	
 	###  We've got the first set of relevant URLs, available in listWithoutDuplicates, and stored in the URLs folder
 	###  Let's start the analysis of their contents 
 	
+	print("\n Downloading and cleaning candidate texts...")
+		
 	scrap = _scrapFunctions()   # Create a scrapFunctions object to clean pages
 	unretrieved_pages_list = []  # a list for unsuccessful pages retrieval
 		
-	print("\n Downloading and cleaning candidate texts...")
-		
 	nowDownloaded = 0  # number of files downloaded from Internet in this iteration
 	
-	listEnoughContent = [] # list of pages with sufficient content to proceed  ( > 100 bytes)
+	listEnoughContent = [] # list of pages with sufficient content to proceed  ( > _CORPUS_MIN_TXT_SIZE bytes, a constant from aux.py)
 	listNotEnoughContent = [] # list of pages with insufficient content to proceed
 		
 	# download not locally stored pages, scrap them, and save them
@@ -149,6 +154,7 @@ def buildCorpus2():
 		print("(", idx, "of", lenOfListWithoutDuplicates, ") -- ", page)
 
 		# scrapped pages will be stored classified by domain, in specific folders
+		# currently, only "en.wikipedia.org" domain is used
 						
 		pageWithoutHTTP = page[2+page.find("//"):]		# get the domain of this page
 		domainFolder = pageWithoutHTTP[:pageWithoutHTTP.find("/")]
@@ -184,8 +190,8 @@ def buildCorpus2():
 					listNotEnoughContent.append(page)
 				else:
 					listEnoughContent.append(page)
-			except Exception as e:
-				_appendFile(logFilename, "Page could not be retrieved: "+page)
+			except Exception as exc:
+				_appendFile(logFilename, "Page "+page+" could not be retrieved: "+repr(exc))
 				unretrieved_pages_list.append(page)
 			
 	# Save the unretrieved_pages_list to a file
@@ -202,7 +208,10 @@ def buildCorpus2():
 	print("Number of pages with enough content:", str(lenListEnoughContent))
 	print("Number of pages without enough content:", str(len(listNotEnoughContent)))
 
-
+	if aux.PSTOP == True:
+		input("Type ENTER to continue...")
+		
+		
 
 	# all the pages not already available have been now fetched and cleaned
 	
@@ -227,55 +236,56 @@ def buildCorpus2():
 	listWithWikicats = [] # list of pages with available wikicats
 	listWithoutWikicats = [] # list of pages with no wikicats
 	
-	delay = 0 # to wait for a new request to Dbpedia SpotLight in case of erroneous response
-	
 	for idx, page in enumerate(listEnoughContent, start=1):
 		print("\n(", idx, "of", lenListEnoughContent, ") -- ", page)
 						
-		# Build filename for this page
+		# Build filenames for this page
 		pageWithoutHTTP = page[2+page.find("//"):]
 		domainFolder = pageWithoutHTTP[:pageWithoutHTTP.find("/")]
 		onlyPage = pageWithoutHTTP[1+pageWithoutHTTP.find("/"):]
 		onlyPageChanged =  onlyPage.replace("/", "..")
 		fileNameCandidateBase = _SCRAPPED_TEXT_PAGES_FOLDER+"/"+domainFolder+"/"+onlyPageChanged
 		fileNameCandidate = fileNameCandidateBase+".txt"
-		fileNameCandidateWikicats = fileNameCandidateBase+".wk"
-		fileNameCandidateSubjects = fileNameCandidateBase+".sb"
+		fileNameCandidateWikicats = fileNameCandidateBase+".wk"    # wikicats file for this page
+		fileNameCandidateSubjects = fileNameCandidateBase+".sb"    # subjects file for this page
 				
+		# if both files (wikicats and subjects) exists, use them from local store
 		if os.path.exists(fileNameCandidateWikicats) and os.path.exists(fileNameCandidateSubjects):
 			print("Files WK and SB already available in local DB for", fileNameCandidate)
 			fwsize = os.path.getsize(fileNameCandidateWikicats)
 			fssize = os.path.getsize(fileNameCandidateSubjects)
+			# if one of these two files is empty (no wikicats or no subjects), this page will not be used
 			if (fwsize == 0) or (fssize == 0):
 				listWithoutWikicats.append(page)
 			else:
 				listWithWikicats.append(page)
-		else: # fetch candidate text wikicats if not in local store		
-			try:  # open and read candidate file
+		else: # if one file not exists, fetch from Internet candidate text wikicats and subjects		
+			try:  # open and read text of candidate file
 				candidateTextFile = _Open(fileNameCandidate, "r")
 				candidate_text = candidateTextFile.read()
 				print("Reading candidate text file:", fileNameCandidate)
-			except:  # file that could not be downloaded
-				_appendFile(logFilename, "ERROR buildCorpus2(): Unavailable file, not in the store, but it should be: "+fileNameCandidate)
+			except:  # file that inexplicably could not be read from local store, it will not be used
+				_appendFile(logFilename, "ERROR buildCorpus2(): Unavailable candidate file, not in the store, but it should be: "+fileNameCandidate)
 				listWithoutWikicats.append(page)
 				continue
 			
 			print("Computing wikicats and subjects for:", page)
 			candidate_text_categories = _getCategoriesInText(candidate_text)  # function _getCategoriesInText from px_DB_Manager
 			
-			if ("error" in candidate_text_categories):
+			if ("error" in candidate_text_categories):  # error while fetching info, the page will not be used
 				_appendFile(logFilename, "ERROR buildCorpus2(): Problem in _getCategoriesInText(candidate_text): "+candidate_text_categories["error"])
 				listWithoutWikicats.append(page)
 				continue
 				
 			print("Wikicats and subjects downloaded for", fileNameCandidate)
-			candidate_text_wikicats = list(filter(_filterSimpleWikicats, candidate_text_categories["wikicats"])) # remove simple wikicats with function located above
-			candidate_text_subjects = list(filter(_filterSimpleSubjects, candidate_text_categories["subjects"])) # remove simple subjects with function located above
+			candidate_text_wikicats = list(filter(_filterSimpleWikicats, candidate_text_categories["wikicats"])) # remove simple wikicats with function from aux.py
+			candidate_text_subjects = list(filter(_filterSimpleSubjects, candidate_text_categories["subjects"])) # remove simple subjects with function from aux.py
 			
-			_saveFile(fileNameCandidateWikicats, '\n'.join(candidate_text_wikicats))  # save file with original text wikicats,one per line
-			_saveFile(fileNameCandidateSubjects, '\n'.join(candidate_text_subjects))  # save file with original text subjects,one per line
+			_saveFile(fileNameCandidateWikicats, '\n'.join(candidate_text_wikicats))  # save file with original text wikicats, one per line
+			_saveFile(fileNameCandidateSubjects, '\n'.join(candidate_text_subjects))  # save file with original text subjects, one per line
 			currentDownloaded += 1
 			
+			# if no wikicats or no subjects, teh page will not be used
 			if (len(candidate_text_wikicats) == 0) or (len(candidate_text_subjects) == 0):
 				listWithoutWikicats.append(page)
 			else:
@@ -292,15 +302,18 @@ def buildCorpus2():
 	print("Number of pages with wikicats:", str(len(listWithWikicats)))
 	print("Number of pages without wikicats:", str(len(listWithoutWikicats)))
 		
+	if aux.PSTOP == True:
+		input("Type ENTER to continue...")
 		
+		
+		
+	print("\n Computing similarities...")
 	
 	discarded_pages_list = []     # a list to save discarded pages' URLs
-	sims_wk_sb = []
-	
 	similarity = _textSimilarityFunctions()    # Create a textSimilarityFunctions object to measure text similarities
-			
-	print("\n Computing similarities...")
-		
+	
+	# variables to store results
+	sims_wk_sb = []	# list of triplets (filenameCandidate, similarityByWikicats, similarityBySubjects)	
 	distribution_wk = {"0":0, "1":0, "2":0, "3":0, "4":0, "5":0, "6":0, "7":0, "8":0, "9":0}
 	distribution_sb = {"0":0, "1":0, "2":0, "3":0, "4":0, "5":0, "6":0, "7":0, "8":0, "9":0}
 			
@@ -368,7 +381,7 @@ def buildCorpus2():
 		
 		# to compute distributions 
 		if shared_wikicats_jaccard_similarity == -1:
-			_appendFile(logFilename, "ERROR computing wikicats jaccard: "+fileNameCandidateWikicats)
+			_appendFile(logFilename, "ERROR computing sharedWikicatsJaccard: "+fileNameCandidateWikicats)
 		else:
 			if shared_wikicats_jaccard_similarity < 0.1:
 				distribution_wk["0"] = distribution_wk["0"] + 1
@@ -393,7 +406,7 @@ def buildCorpus2():
 	
 	
 		if shared_subjects_jaccard_similarity == -1:
-			_appendFile(logFilename, "ERROR computing subjects jaccard: "+fileNameCandidateSubjects)
+			_appendFile(logFilename, "ERROR computing sharedSubjectsJaccard: "+fileNameCandidateSubjects)
 		else:
 			if shared_subjects_jaccard_similarity < 0.1:
 				distribution_sb["0"] = distribution_sb["0"] + 1
@@ -442,7 +455,7 @@ def buildCorpus2():
 	
 	
 	sims_wk_sb_str = list(map(lambda triple : (triple[0]+" "+str(triple[1])+" "+str(triple[2])), sims_wk_sb)) 
-	_saveFile(_CORPUS_FOLDER+"/"+str(len_text)+".sims", '\n'.join(sims_wk_sb_str))
+	_saveFile(_CORPUS_FOLDER+"/"+str(lenOriginalText)+".sims", '\n'.join(sims_wk_sb_str))
 
 	result["distribution_wk"] = distribution_wk
 	result["distribution_sb"] = distribution_sb
@@ -584,13 +597,16 @@ def buildCorpus2():
 
 
 
-# aux function to get all the URLs associated to any wikicat from a set of wikicats
-# If there is a file for a wikicat, it is read for returning contents
+# aux function to get all the URLs associated to any wikicat from the set of selected wikicats
+# Receives:
+# - selectedWikicats: set of selected wikicats
+# - logFilename: file to save errors
+# For each wikicat, if there is a file for such wikicat, it is read for returning contents
 # Otherwise, it connects to Internet to query DB and WK and parse the results to return, after storing them locally
 # it returns a dictionary entry for each wikicat   urlsObjects[wikicat] = {"db": urlsDB, "wk": urlsWK}
 # urlsDB and urlsWK are lists of URLs
 
-def getUrlsLinked2Wikicats (selectedWikicats):
+def getUrlsLinked2Wikicats (selectedWikicats, logFilename):
 	requestObjects = {} # dictionary to store request objects 
 	
 	_session = FuturesSession()  # to manage asynchronous requests 
@@ -628,7 +644,8 @@ def getUrlsLinked2Wikicats (selectedWikicats):
 				print("Starting DB query for: ", wikicat)
 				requestDB = _session.post(_URL_DB, data={"query": queryDB}, headers={"accept": "application/json"})
 			except Exception as exc:
-				print("\n*** ERROR getUrlsLinked2Wikicats(): Error querying DB for", wikicat, ":", exc)
+				print("*** ERROR getUrlsLinked2Wikicats(): Error starting DB query for", wikicat, ":", exc)
+				_appendFile(logFilename, "ERROR getUrlsLinked2Wikicats(): Error starting DB query for "+wikicat+": "+repr(exc))
 				requestDB = None
 				
 			requestObjects[wikicat] = {"db": requestDB}  # store the request DB object for this wikicat
@@ -640,6 +657,9 @@ def getUrlsLinked2Wikicats (selectedWikicats):
 		filename_wk = _URLs_FOLDER+"/_Wikicat_"+wikicat+"_WK_Urls.txt"	
 
 		# it uses update with the objects dictionary, as the wikicat key has been already created for DBpedia	
+		
+		wcs = _getWikicatComponents(wikicat)
+		wcs_string = " ".join(wcs)
 		
 		try:  # try to read wikicats and subjects of original text from local store
 			with _Open(filename_wk) as fp:
@@ -658,24 +678,25 @@ def getUrlsLinked2Wikicats (selectedWikicats):
 					bd:serviceParam wikibase:api 'Search' .
 					bd:serviceParam wikibase:endpoint 'en.wikipedia.org' .
 					bd:serviceParam mwapi:language "en" .
-					bd:serviceParam mwapi:srsearch '"""+wikicat+"""' .
+					bd:serviceParam mwapi:srsearch '"""+wcs_string+"""' .
 					?title wikibase:apiOutput mwapi:title .
 				}
 			} 		
 			"""
 			# start the WK query
 			try:
-				print("Starting WK query for: ", wikicat)
+				print("Starting WK query for: ", wcs_string)
 				requestWK = _session.post(_URL_WK, data={"query": queryWK}, headers={"accept": "application/json"})
 			except Exception as exc:
-				print("\n*** ERROR getUrlsLinked2Wikicats(): Error querying WK for", wikicat, ":", exc)
+				print("\n*** ERROR getUrlsLinked2Wikicats(): Error starting WK query for", wcs_string, ":", exc)
+				_appendFile(logFilename, "ERROR getUrlsLinked2Wikicats(): Error starting WK query for "+wcs_string+": "+repr(exc))
 				requestWK = None	
 			
 			requestObjects[wikicat].update({"wk": requestWK})  # store the request WK object for this wikicat
 			requestDone = 1
 			
 		if requestDone == 1:
-			time.sleep(4)  # delay to avoid server reject for too many queries
+			time.sleep(3)  # delay to avoid server rejects for too many queries
 		
 	print("\n** ALL PENDING QUERIES LAUNCHED\n")
 	
@@ -701,7 +722,6 @@ def getUrlsLinked2Wikicats (selectedWikicats):
 			requestDB = requestObjects[wikicat]["db"]   # no local DB results, get the request DB object for this wikicat
 
 			if requestDB == None:  # error starting DB query, return []
-				print("\n*** ERROR getUrlsLinked2Wikicats(): Error querying DB for", wikicat, ": the query could not be started")
 				urlsDB = []
 			else:
 				try:
@@ -730,14 +750,21 @@ def getUrlsLinked2Wikicats (selectedWikicats):
 					
 					if len(urlsDB) > 0:
 						_saveFile(_URLs_FOLDER+"/_Wikicat_"+wikicat+"_DB_Urls.txt", '\n'.join(urlsDB))  # save all results from DB for this wikicat
+					else:
+						print("*** getUrlsLinked2Wikicats(): ", wikicat," provided 0 DB URLs from "+str(len(bindingsDB))+" results")
+						_appendFile(logFilename, "getUrlsLinked2Wikicats(): "+wikicat+" provided 0 DB URLs from "+str(len(bindingsDB))+" results")
 		
 				except Exception as exc:
-					print("\n*** ERROR getUrlsLinked2Wikicats(): Error querying DB for", wikicat,":", exc)
+					print("*** ERROR getUrlsLinked2Wikicats(): Error querying DB for", wikicat,":", exc)
+					_appendFile(logFilename, "ERROR getUrlsLinked2Wikicats(): Error querying DB for "+wikicat+": "+repr(exc))
 					urlsDB = []
 	
 		# end for DB, we already have urlsDB
 		
 		# second, study results for WK
+		
+		wcs = _getWikicatComponents(wikicat)
+		wcs_string = " ".join(wcs)
 		
 		try:
 			urlsWK = requestObjects[wikicat]["wkurls"]   # try to recover local WK results
@@ -750,7 +777,6 @@ def getUrlsLinked2Wikicats (selectedWikicats):
 			
 			
 			if requestWK == None:  # error starting WK query, return []
-				print("\n*** ERROR getUrlsLinked2Wikicats(): Error querying WK for", wikicat, ": the query could not be started")
 				urlsWK = []
 			else:
 				try:
@@ -777,9 +803,13 @@ def getUrlsLinked2Wikicats (selectedWikicats):
 	
 					if len(urlsWK) > 0:
 						_saveFile(_URLs_FOLDER+"/_Wikicat_"+wikicat+"_WK_Urls.txt", '\n'.join(urlsWK)) # save all results from WK for this wikicat
+					else:
+						print("*** getUrlsLinked2Wikicats(): ", wikicat," provided 0 WK URLs")
+						_appendFile(logFilename, "getUrlsLinked2Wikicats(): "+wikicat+" provided 0 WK URLs")
 		
 				except Exception as exc:
-					print("\n*** ERROR getUrlsLinked2Wikicats(): Error querying WK for", wikicat,":", exc)
+					print("*** ERROR getUrlsLinked2Wikicats(): Error querying WK for", wcs_string,":", exc)
+					_appendFile(logFilename, "ERROR getUrlsLinked2Wikicats(): Error querying WK for "+wcs_string+": "+repr(exc))
 					urlsWK = []
 
 		# end for WK, we already have urlsWK
