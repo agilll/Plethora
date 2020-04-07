@@ -1,0 +1,5 @@
+2020-03-30 10:27:11.227668
+ERROR getUrlsLinked2Wikicats(): Error querying DB for MunicipalitiesOfPeloponnese(region): Exception('answer is not 200, is 400')
+Number of discovered URLs: 140985
+Number of available pages with enough content: 132241
+Number of available pages with wikicats and subjects: 132092
