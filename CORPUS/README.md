@@ -4,11 +4,12 @@ These are the files to train the corpus
 
 2. files_s_p_w contains .w files, the result of processing .txt files
 
-2.1 adding suffixes
-2.2 changing surfaces forms by named entities
+2.1. adding suffixes
 
-3. files_t contains the .t files, the result of processing the .w files
+2.2. changing surfaces forms by named entities
 
-3.1 removing punctuation and stopwords
-3.2 tokenizing the sentences
-The result is a list of lists of words (each list is a sentence)
+3. files_t contains the .t files, the result of processing the .w files. The result is a list of lists of words (each list is a sentence)
+
+3.1. removing punctuation and stopwords
+
+3.2. tokenizing the sentences
