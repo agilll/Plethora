@@ -4,7 +4,7 @@ These are the files to train the corpus
 
 2. files_s_p_w contains .w files, the result of processing .txt files
 
-2.1. adding suffixes
+	2.1. adding suffixes
 
 2.2. changing surfaces forms by named entities
 
