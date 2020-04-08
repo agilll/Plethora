@@ -3,5 +3,5 @@
 *~
 *.pyc
 MODELS/*
-buildCorpus/KORPUS/*
-buildCorpus/corpus.log
+module_buildCorpus/corpus.log
+module_train/*.model
