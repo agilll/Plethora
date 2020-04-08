@@ -52,10 +52,10 @@ import time
 from shutil import copyfile
 
 # this program has been launched in the Plethora folder
-# but in the buildCorpus functionalty, it reads teh aux module in the buildCorpus folder
-# this is to search aux in the Plethora/buildCorpus folder
+# but in the buildCorpus functionalty, it reads the aux module in the module_buildCorpus folder
+# this is to search aux in the Plethora/module_buildCorpus folder
 import sys
-sys.path.append('buildCorpus')
+sys.path.append('module_buildCorpus')
 
 
 # El directorio donde están los ejemplos de modelos entrenados de Word2Vec y Doc2Vec que se proporcionan para empezar
@@ -81,7 +81,7 @@ DEFAULT_TEXT = 'defaultText.txt'
 MODEL_GOOGLE_PORT = 9100
 
 # fichero con información de las entidades de la DBpedia identificadas en los textos de entrenamiento
-# fichero generado el programa ps_2buildDbpediaInfoFromTexts.py
+# fichero generado por el programa 2buildDbpediaInfoFromTexts.py
 # debe estar en el directorio MODELS_FOLDER
 # DBPEDIA_INFO_ABOUT_TRAINING = "historical_modify.txt.p"
 DBPEDIA_INFO_ABOUT_TRAINING = "originales.s.w.p"
@@ -341,8 +341,8 @@ app.add_url_rule("/recalculateEntities", "recalculateEntities", recalculateEntit
 # app.add_url_rule("/getEntityFile", "getEntityFile", getEntityFile)
 
 # import corpus building functions
-from buildCorpus.pp_routesCorpus import getWikicatsFromText, getWikicatUrls
-from buildCorpus.pp_routesCorpus2 import buildCorpus2
+from module_buildCorpus.pp_routesCorpus import getWikicatsFromText, getWikicatUrls
+from module_buildCorpus.pp_routesCorpus2 import buildCorpus2
 
 
 
