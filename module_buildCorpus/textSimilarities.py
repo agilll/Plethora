@@ -68,7 +68,7 @@ class textSimilarityFunctions():
 		# Generate a vector from the tokenized original text
 		original_text_inferred_vector = model.infer_vector(original_text_tokens)
 
-		# Generate a vector from the tokenized text
+		# Generate a vector from the tokenized candidate text
 		candidate_text_inferred_vector = model.infer_vector(candidate_text_tokens)
 
 		# The sklearn math functions returns an array with the results
