@@ -10,13 +10,7 @@ import os
 from os.path import isfile
 import sys
 
-from aux import CORPUS_FOLDER as _CORPUS_FOLDER
 from aux import TRAINING_T_FOLDER as _TRAINING_T_FOLDER
-
-# check that CORPUS folder exists
-if not os.path.exists(_CORPUS_FOLDER):
-	print("CORPUS folder not found! (", _CORPUS_FOLDER, ")")
-	exit()
 	
 #check that folder with T files exists
 if not os.path.exists(_TRAINING_T_FOLDER):
