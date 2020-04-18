@@ -313,9 +313,12 @@ def buildCorpus2():
 	similarity = _textSimilarityFunctions()    # Create a textSimilarityFunctions object to measure text similarities
 	
 	# variables to store results
-	filenameSims = _CORPUS_FOLDER+"/"+str(lenOriginalText)+".sims.csv"  # file to store similarities
+	filenameSims = _CORPUS_FOLDER+"/"+str(lenOriginalText)+".sims.csv"  # file to store all similarities
+	filenameCorpus = _CORPUS_FOLDER+"/"+str(lenOriginalText)+".corpus.csv"  # file to store selected documents for initial corpus
+
 	sims_wk_sb = []	# list of triplets (filenameCandidate, similarityByWikicats, similarityBySubjects)
 	simsUpdated = False
+	corpusDocs = []
 	distribution_wk = {"0":0, "1":0, "2":0, "3":0, "4":0, "5":0, "6":0, "7":0, "8":0, "9":0}
 	distribution_sb = {"0":0, "1":0, "2":0, "3":0, "4":0, "5":0, "6":0, "7":0, "8":0, "9":0}
 	
@@ -418,6 +421,9 @@ def buildCorpus2():
 		_Print("Wikicats shared jaccard similarity = "+str(shared_wikicats_jaccard_similarity))
 		_Print("Subjects shared jaccard similarity = "+str(shared_subjects_jaccard_similarity))
 		
+		if shared_wikicats_jaccard_similarity >= 0.9:
+			corpusDocs.append((page, shared_wikicats_jaccard_similarity, shared_wikicats_jaccard_similarity))
+			
 		# to compute distributions 
 		if shared_wikicats_jaccard_similarity < 0.1:
 			distribution_wk["0"] = distribution_wk["0"] + 1
@@ -470,7 +476,24 @@ def buildCorpus2():
 	print("Duration F2 (wikicats):", str(elapsedTimeF2.seconds))
 	print("Duration F3 (similarities):", str(elapsedTimeF3.seconds))
 	
-	# Update the csv file if changes 
+	# save corpus filenames
+	with _Open(filenameCorpus, 'w') as csvFile:
+		fieldnames = ['Text', 'Wikicats Similarity', 'Subject Similarity']	# Name columns
+		writer = csv.DictWriter(csvFile, fieldnames=fieldnames, delimiter=" ") # Create csv headers
+		writer.writeheader()	# Write the column headers
+	
+		writer = csv.writer(csvFile, delimiter=' ')
+		for row in corpusDocs:
+			try:
+				writer.writerow([row[0], row[1], row[2]])
+			except:
+				print("Error writing corpus csv", row)
+				_appendFile(logFilename, "Error writing corpus csv "+str(row))
+	
+		csvFile.close()
+	
+	
+	# Update the csv file with all similarities, if changes 
 	
 	if simsUpdated:
 		with _Open(filenameSims, 'w') as csvFile:
