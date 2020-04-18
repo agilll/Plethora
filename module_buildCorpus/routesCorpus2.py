@@ -15,8 +15,9 @@ from aux import hasFieldPT as _hasFieldPT  # function to check if object has  ["
 from aux import filterSimpleWikicats as _filterSimpleWikicats, filterSimpleSubjects as _filterSimpleSubjects, getWikicatComponents as _getWikicatComponents	
 from aux import CORPUS_FOLDER as _CORPUS_FOLDER
 from aux import URLs_FOLDER as _URLs_FOLDER, DISCARDED_PAGES_FILENAME as _DISCARDED_PAGES_FILENAME,  SCRAPPED_TEXT_PAGES_FOLDER as _SCRAPPED_TEXT_PAGES_FOLDER
-from aux import UNRETRIEVED_PAGES_FILENAME as _UNRETRIEVED_PAGES_FILENAME, SIMILARITIES_CSV_FILENAME as _SIMILARITIES_CSV_FILENAME
+from aux import UNRETRIEVED_PAGES_FILENAME as _UNRETRIEVED_PAGES_FILENAME
 from aux import LEE_D2V_MODEL as _LEE_D2V_MODEL, OWN_D2V_MODEL as _OWN_D2V_MODEL
+from aux import Stop as _Stop, Print as _Print
 from aux import CORPUS_MIN_TXT_SIZE as _CORPUS_MIN_TXT_SIZE
 import aux
 	
@@ -43,7 +44,7 @@ def buildCorpus2():
 	lenOriginalText = len(originalText)                                   	
 	
 	selectedWikicats = json.loads(request.values.get("wikicats"))   # get parameter with selected wikicats
-	print("Number of selected wikicats:", len(selectedWikicats))
+	print("\n", "Number of selected wikicats:", len(selectedWikicats))
 	numUrlsDB = 0
 	numUrlsWK = 0
 
@@ -81,6 +82,8 @@ def buildCorpus2():
 		os.makedirs(_SCRAPPED_TEXT_PAGES_FOLDER)
 
 
+	print("\n", "********** Starting DB and WK queries...", "\n")
+	
 	# now get the URLs associated to any of those wikicats (this function is below)
 	# it reads from local files if exist, otherwise it connects to Internet to fetch them and store them locally
 
@@ -129,8 +132,7 @@ def buildCorpus2():
 	result["totalUrls"] = len(listWithoutDuplicates)
 	# return jsonify(result);  # uncomment to return to the interface without processing files
 	
-	if aux.PSTOP == True:
-		input("Type ENTER to continue...")
+	_Stop()
 		
 		
 		
@@ -138,8 +140,8 @@ def buildCorpus2():
 	###  We've got the first set of relevant URLs, available in listWithoutDuplicates, and stored in the URLs folder
 	###  Let's start the analysis of their contents 
 	
-	print("\n Downloading and cleaning candidate texts...")
-		
+	print("\n", "********** Downloading and cleaning", lenOfListWithoutDuplicates, "candidate texts...", "\n")
+	
 	scrap = _scrapFunctions()   # Create a scrapFunctions object to clean pages
 	unretrieved_pages_list = []  # a list for unsuccessful pages retrieval
 		
@@ -149,9 +151,12 @@ def buildCorpus2():
 	listNotEnoughContent = [] # list of pages with insufficient content to proceed
 		
 	# download not locally stored pages, scrap them, and save them
+	startTime = datetime.now()
 	for idx, page in enumerate(listWithoutDuplicates, start=1):
-		
-		print("(", idx, "of", lenOfListWithoutDuplicates, ") -- ", page)
+		if (idx % 10000) == 0:
+			print(".", end=' ', flush=True)
+			
+		_Print("("+str(idx)+" of "+str(lenOfListWithoutDuplicates)+") -- "+page)
 
 		# scrapped pages will be stored classified by domain, in specific folders
 		# currently, only "en.wikipedia.org" domain is used
@@ -173,7 +178,7 @@ def buildCorpus2():
 		fileNameCandidate = _SCRAPPED_TEXT_PAGES_FOLDER+"/"+domainFolder+"/"+onlyPageChanged+".txt"
 				
 		if (os.path.exists(fileNameCandidate)):
-			print("File already available in local DB:", fileNameCandidate)
+			_Print("File already available in local DB: "+fileNameCandidate)
 			fsize = os.path.getsize(fileNameCandidate)
 			if fsize < _CORPUS_MIN_TXT_SIZE:
 				listNotEnoughContent.append(page)
@@ -184,7 +189,7 @@ def buildCorpus2():
 				pageName, pageContent = scrap.scrapPage(page)  # pageName result is not used
 				nowDownloaded += 1
 				_saveFile(fileNameCandidate, pageContent)  # Save to text file
-				print("File", str(nowDownloaded), "downloaded and saved it:", fileNameCandidate)
+				_Print("File "+str(nowDownloaded)+" downloaded and saved it: "+fileNameCandidate)
 				
 				if (len(pageContent) < _CORPUS_MIN_TXT_SIZE):
 					listNotEnoughContent.append(page)
@@ -193,10 +198,12 @@ def buildCorpus2():
 			except Exception as exc:
 				_appendFile(logFilename, "Page "+page+" could not be retrieved: "+repr(exc))
 				unretrieved_pages_list.append(page)
-			
+	
+	endTime = datetime.now()
+	elapsedTimeF1 = endTime - startTime
+
 	# Save the unretrieved_pages_list to a file
-	print("")
-	print(str(len(unretrieved_pages_list)) + " unretrieved pages")
+	print("\n",str(len(unretrieved_pages_list)), "unretrieved pages")
 	_saveFile(_UNRETRIEVED_PAGES_FILENAME, '\n'.join(unretrieved_pages_list))
 	
 	lenListEnoughContent = len(listEnoughContent)
@@ -208,36 +215,26 @@ def buildCorpus2():
 	print("Number of pages with enough content:", str(lenListEnoughContent))
 	print("Number of pages without enough content:", str(len(listNotEnoughContent)))
 
-	if aux.PSTOP == True:
-		input("Type ENTER to continue...")
+	_Stop()
+	
+
 		
 		
 
 	# all the pages not already available have been now fetched and cleaned
 	
-	# # Create a new csv file if not exists. QUE SIGNIFICA W+ ? Temporalmente desactivado hasta que este claro lo que guardar
-	# with _Open(_SIMILARITIES_CSV_FILENAME, 'w+') as writeFile:
-	# 	# Name columns
-	# 	fieldnames = ['URL', 'Euclidean Distance', 'Spacy', 'Doc2Vec Euclidean Distance',
-	# 	'Doc2Vec Cosine Similarity', 'Trained Doc2Vec Euclidean Distance', 'Trained Doc2Vec Cosine Similarity',
-	# 	'Wikicats Jaccard Similarity']
-	# 
-	# 	# Create csv headers
-	# 	writer = csv.DictWriter(writeFile, fieldnames=fieldnames, delimiter=";")
-	# 
-	# 	# Write the column headers
-	# 	writer.writeheader()
 	
 
-	print("")
-	print("Identifying wikicats and subjects for candidate texts with DBpedia SpotLight...")
+	print("\n", "********** Identifying wikicats and subjects for", lenListEnoughContent, "candidate texts with DBpedia SpotLight...","\n")
 	currentDownloaded = 0
 	
 	listWithWikicats = [] # list of pages with available wikicats
 	listWithoutWikicats = [] # list of pages with no wikicats
-	
+	startTime = datetime.now()
 	for idx, page in enumerate(listEnoughContent, start=1):
-		print("\n(", idx, "of", lenListEnoughContent, ") -- ", page)
+		if (idx % 10000) == 0:
+			print(".", end=' ', flush=True)
+		_Print("\n("+str(idx)+" of "+str(lenListEnoughContent)+") -- "+page)
 						
 		# Build filenames for this page
 		pageWithoutHTTP = page[2+page.find("//"):]
@@ -251,7 +248,7 @@ def buildCorpus2():
 				
 		# if both files (wikicats and subjects) exists, use them from local store
 		if os.path.exists(fileNameCandidateWikicats) and os.path.exists(fileNameCandidateSubjects):
-			print("Files WK and SB already available in local DB for", fileNameCandidate)
+			_Print("Files WK and SB already available in local DB for "+fileNameCandidate)
 			fwsize = os.path.getsize(fileNameCandidateWikicats)
 			fssize = os.path.getsize(fileNameCandidateSubjects)
 			# if one of these two files is empty (no wikicats or no subjects), this page will not be used
@@ -263,13 +260,13 @@ def buildCorpus2():
 			try:  # open and read text of candidate file
 				candidateTextFile = _Open(fileNameCandidate, "r")
 				candidate_text = candidateTextFile.read()
-				print("Reading candidate text file:", fileNameCandidate)
+				_Print("Reading candidate text file: "+fileNameCandidate)
 			except:  # file that inexplicably could not be read from local store, it will not be used
 				_appendFile(logFilename, "ERROR buildCorpus2(): Unavailable candidate file, not in the store, but it should be: "+fileNameCandidate)
 				listWithoutWikicats.append(page)
 				continue
 			
-			print("Computing wikicats and subjects for:", page)
+			_Print("Computing wikicats and subjects for: "+page)
 			candidate_text_categories = _getCategoriesInText(candidate_text)  # function _getCategoriesInText from px_DB_Manager
 			
 			if ("error" in candidate_text_categories):  # error while fetching info, the page will not be used
@@ -277,7 +274,7 @@ def buildCorpus2():
 				listWithoutWikicats.append(page)
 				continue
 				
-			print("Wikicats and subjects downloaded for", fileNameCandidate)
+			_Print("Wikicats and subjects downloaded for "+fileNameCandidate)
 			candidate_text_wikicats = list(filter(_filterSimpleWikicats, candidate_text_categories["wikicats"])) # remove simple wikicats with function from aux.py
 			candidate_text_subjects = list(filter(_filterSimpleSubjects, candidate_text_categories["subjects"])) # remove simple subjects with function from aux.py
 			
@@ -291,42 +288,61 @@ def buildCorpus2():
 			else:
 				listWithWikicats.append(page)
 
-	
+	endTime = datetime.now()
+	elapsedTimeF2 = endTime - startTime
+
 	lenListWithWikicats = len(listWithWikicats)
 	
 	_appendFile(logFilename, "Number of available pages with wikicats and subjects: "+str(lenListWithWikicats))
 	
-	print("")
-	print("ALL WIKICATs AND SUBJECTs COMPUTED.")
+	print("\n","ALL WIKICATs AND SUBJECTs COMPUTED.")
 	print("New items computed in this iteration:", str(currentDownloaded))
 	print("Number of pages with wikicats:", str(len(listWithWikicats)))
 	print("Number of pages without wikicats:", str(len(listWithoutWikicats)))
 		
-	if aux.PSTOP == True:
-		input("Type ENTER to continue...")
+	_Stop()
 		
 		
 		
-	print("\n Computing similarities...")
+	print("\n", "********** Computing similarities for", lenListWithWikicats, "candidate texts...", "\n")
 	
 	discarded_pages_list = []     # a list to save discarded pages' URLs
 	similarity = _textSimilarityFunctions()    # Create a textSimilarityFunctions object to measure text similarities
 	
 	# variables to store results
-	sims_wk_sb = []	# list of triplets (filenameCandidate, similarityByWikicats, similarityBySubjects)	
+	filenameSims = _CORPUS_FOLDER+"/"+str(lenOriginalText)+".sims.csv"  # file to store similarities
+	sims_wk_sb = []	# list of triplets (filenameCandidate, similarityByWikicats, similarityBySubjects)
+	simsUpdated = False
 	distribution_wk = {"0":0, "1":0, "2":0, "3":0, "4":0, "5":0, "6":0, "7":0, "8":0, "9":0}
 	distribution_sb = {"0":0, "1":0, "2":0, "3":0, "4":0, "5":0, "6":0, "7":0, "8":0, "9":0}
-			
-	# Measure text similarity, and discard pages (discarded_pages_list) without a minimum similarity
-	for idx, page in enumerate(listWithWikicats, start=1):
+	
+	# try to read existing sims file
+	try:
+		with _Open(filenameSims, 'r') as csvFile:
+			reader = csv.reader(csvFile, delimiter=' ')
+			next(reader)  # to skip header
+			for row in reader:
+				sims_wk_sb.append(row)
 		
-		print("(", idx, "of", lenListWithWikicats, ") -- ", page)
+			csvFile.close()
+	except:
+		print("No similarities file")
+	
+	# Measure text similarity to discard pages (discarded_pages_list) without a minimum similarity
+	startTime = datetime.now()
+	for idx, page in enumerate(listWithWikicats, start=1):
+		if (idx % 10000) == 0:
+			print(".", end=' ', flush=True)
+		_Print("("+str(idx)+" of "+str(lenListWithWikicats)+") -- "+page)
 						
 		# Build filename for this page
 		pageWithoutHTTP = page[2+page.find("//"):]
-		domainFolder = pageWithoutHTTP[:pageWithoutHTTP.find("/")]
-		onlyPage = pageWithoutHTTP[1+pageWithoutHTTP.find("/"):]
-		onlyPageChanged =  onlyPage.replace("/", "..")
+		domainFolder = pageWithoutHTTP[:pageWithoutHTTP.find("/")]   # dns name for this page
+		onlyPage = pageWithoutHTTP[1+pageWithoutHTTP.find("/"):]    # forlder and page name of this page
+		onlyPageChanged =  onlyPage.replace("/", "..")   # change folder separator '/' by '..'
+		
+		pagename_in_resultsFile = domainFolder+"/"+onlyPageChanged+".txt"   # name of the page in results file 'length.sims'
+		
 		fileNameCandidateBase = _SCRAPPED_TEXT_PAGES_FOLDER+"/"+domainFolder+"/"+onlyPageChanged
 		fileNameCandidate = fileNameCandidateBase+".txt"
 		fileNameCandidateWikicats = fileNameCandidateBase+".wk"
@@ -370,92 +386,105 @@ def buildCorpus2():
 		# print("Subjects full jaccard similarity = "+str(subjects_jaccard_similarity))
 		
 		
-		# Measure wikicats similarity (requires shared matching)
-		shared_wikicats_jaccard_similarity = similarity.sharedWikicatsSimilarity(selectedWikicats, fileNameCandidateWikicats, logFilename)
-		print("Wikicats shared jaccard similarity = "+str(shared_wikicats_jaccard_similarity))
 		
-		shared_subjects_jaccard_similarity = similarity.sharedSubjectsSimilarity(sbOriginalText, fileNameCandidateSubjects, logFilename)
-		print("Subjects shared jaccard similarity = "+str(shared_subjects_jaccard_similarity))
+		# now compute similarities if not already stored in length.sims.csv
+		try:
+			_Print("Searching result for "+pagename_in_resultsFile)
+			match = next(x for x in sims_wk_sb if x[0] == pagename_in_resultsFile)   # search if already exists in results file
+			_Print("Found already computed similarities for "+pagename_in_resultsFile)
+			shared_wikicats_jaccard_similarity = float(match[1])
+			shared_subjects_jaccard_similarity = float(match[2])
+		except:
+			#input("Not found. Computing similarities for "+pagename_in_resultsFile)
+			# Measure wikicats similarity (requires shared matching)
+			shared_wikicats_jaccard_similarity = similarity.sharedWikicatsSimilarity(selectedWikicats, fileNameCandidateWikicats, logFilename)
+			if shared_wikicats_jaccard_similarity < 0:
+				_Print("ERROR computing sharedWikicatsJaccard: "+fileNameCandidateWikicats)
+				_appendFile(logFilename, "ERROR computing sharedWikicatsJaccard: "+fileNameCandidateWikicats)
+				continue
+			
+			shared_subjects_jaccard_similarity = similarity.sharedSubjectsSimilarity(sbOriginalText, fileNameCandidateSubjects, logFilename)
+			if shared_subjects_jaccard_similarity < 0:
+				_Print("ERROR computing sharedSubjectsJaccard: "+fileNameCandidateSubjects)
+				_appendFile(logFilename, "ERROR computing sharedSubjectsJaccard: "+fileNameCandidateSubjects)
+				continue
+
+			sims_wk_sb.append((pagename_in_resultsFile, shared_wikicats_jaccard_similarity, shared_subjects_jaccard_similarity))
+			simsUpdated = True
 		
-		sims_wk_sb.append((fileNameCandidate, shared_wikicats_jaccard_similarity, shared_subjects_jaccard_similarity))
+		_Print("Wikicats shared jaccard similarity = "+str(shared_wikicats_jaccard_similarity))
+		_Print("Subjects shared jaccard similarity = "+str(shared_subjects_jaccard_similarity))
 		
 		# to compute distributions 
-		if shared_wikicats_jaccard_similarity == -1:
-			_appendFile(logFilename, "ERROR computing sharedWikicatsJaccard: "+fileNameCandidateWikicats)
+		if shared_wikicats_jaccard_similarity < 0.1:
+			distribution_wk["0"] = distribution_wk["0"] + 1
+		elif shared_wikicats_jaccard_similarity < 0.2:
+			distribution_wk["1"] = distribution_wk["1"] + 1
+		elif shared_wikicats_jaccard_similarity < 0.3:
+			distribution_wk["2"] = distribution_wk["2"] + 1
+		elif shared_wikicats_jaccard_similarity < 0.4:
+			distribution_wk["3"] = distribution_wk["3"] + 1
+		elif shared_wikicats_jaccard_similarity < 0.5:
+			distribution_wk["4"] = distribution_wk["4"] + 1
+		elif shared_wikicats_jaccard_similarity < 0.6:
+			distribution_wk["5"] = distribution_wk["5"] + 1
+		elif shared_wikicats_jaccard_similarity < 0.7:
+			distribution_wk["6"] = distribution_wk["6"] + 1
+		elif shared_wikicats_jaccard_similarity < 0.8:
+			distribution_wk["7"] = distribution_wk["7"] + 1
+		elif shared_wikicats_jaccard_similarity < 0.9:
+			distribution_wk["8"] = distribution_wk["8"] + 1
 		else:
-			if shared_wikicats_jaccard_similarity < 0.1:
-				distribution_wk["0"] = distribution_wk["0"] + 1
-			elif shared_wikicats_jaccard_similarity < 0.2:
-				distribution_wk["1"] = distribution_wk["1"] + 1
-			elif shared_wikicats_jaccard_similarity < 0.3:
-				distribution_wk["2"] = distribution_wk["2"] + 1
-			elif shared_wikicats_jaccard_similarity < 0.4:
-				distribution_wk["3"] = distribution_wk["3"] + 1
-			elif shared_wikicats_jaccard_similarity < 0.5:
-				distribution_wk["4"] = distribution_wk["4"] + 1
-			elif shared_wikicats_jaccard_similarity < 0.6:
-				distribution_wk["5"] = distribution_wk["5"] + 1
-			elif shared_wikicats_jaccard_similarity < 0.7:
-				distribution_wk["6"] = distribution_wk["6"] + 1
-			elif shared_wikicats_jaccard_similarity < 0.8:
-				distribution_wk["7"] = distribution_wk["7"] + 1
-			elif shared_wikicats_jaccard_similarity < 0.9:
-				distribution_wk["8"] = distribution_wk["8"] + 1
-			else:
-				distribution_wk["9"] = distribution_wk["9"] + 1
+			distribution_wk["9"] = distribution_wk["9"] + 1
 	
 	
-		if shared_subjects_jaccard_similarity == -1:
-			_appendFile(logFilename, "ERROR computing sharedSubjectsJaccard: "+fileNameCandidateSubjects)
+		if shared_subjects_jaccard_similarity < 0.1:
+			distribution_sb["0"] = distribution_sb["0"] + 1
+		elif shared_subjects_jaccard_similarity < 0.2:
+			distribution_sb["1"] = distribution_sb["1"] + 1
+		elif shared_subjects_jaccard_similarity < 0.3:
+			distribution_sb["2"] = distribution_sb["2"] + 1
+		elif shared_subjects_jaccard_similarity < 0.4:
+			distribution_sb["3"] = distribution_sb["3"] + 1
+		elif shared_subjects_jaccard_similarity < 0.5:
+			distribution_sb["4"] = distribution_sb["4"] + 1
+		elif shared_subjects_jaccard_similarity < 0.6:
+			distribution_sb["5"] = distribution_sb["5"] + 1
+		elif shared_subjects_jaccard_similarity < 0.7:
+			distribution_sb["6"] = distribution_sb["6"] + 1
+		elif shared_subjects_jaccard_similarity < 0.8:
+			distribution_sb["7"] = distribution_sb["7"] + 1
+		elif shared_subjects_jaccard_similarity < 0.9:
+			distribution_sb["8"] = distribution_sb["8"] + 1
 		else:
-			if shared_subjects_jaccard_similarity < 0.1:
-				distribution_sb["0"] = distribution_sb["0"] + 1
-			elif shared_subjects_jaccard_similarity < 0.2:
-				distribution_sb["1"] = distribution_sb["1"] + 1
-			elif shared_subjects_jaccard_similarity < 0.3:
-				distribution_sb["2"] = distribution_sb["2"] + 1
-			elif shared_subjects_jaccard_similarity < 0.4:
-				distribution_sb["3"] = distribution_sb["3"] + 1
-			elif shared_subjects_jaccard_similarity < 0.5:
-				distribution_sb["4"] = distribution_sb["4"] + 1
-			elif shared_subjects_jaccard_similarity < 0.6:
-				distribution_sb["5"] = distribution_sb["5"] + 1
-			elif shared_subjects_jaccard_similarity < 0.7:
-				distribution_sb["6"] = distribution_sb["6"] + 1
-			elif shared_subjects_jaccard_similarity < 0.8:
-				distribution_sb["7"] = distribution_sb["7"] + 1
-			elif shared_subjects_jaccard_similarity < 0.9:
-				distribution_sb["8"] = distribution_sb["8"] + 1
-			else:
-				distribution_sb["9"] = distribution_sb["9"] + 1
+			distribution_sb["9"] = distribution_sb["9"] + 1
 	
+	# end of loop for pages similarity computing
+	endTime = datetime.now()
+	elapsedTimeF3 = endTime - startTime
+	print("")
+	print("Duration F1 (cleaning):", str(elapsedTimeF1.seconds))
+	print("Duration F2 (wikicats):", str(elapsedTimeF2.seconds))
+	print("Duration F3 (similarities):", str(elapsedTimeF3.seconds))
 	
+	# Update the csv file if changes 
 	
-	
+	if simsUpdated:
+		with _Open(filenameSims, 'w') as csvFile:
+			fieldnames = ['Text', 'Wikicats Similarity', 'Subject Similarity']	# Name columns
+			writer = csv.DictWriter(csvFile, fieldnames=fieldnames, delimiter=" ") # Create csv headers
+			writer.writeheader()	# Write the column headers
 		
-		# # Save similarity to a CSV file
-		# with _Open(_SIMILARITIES_CSV_FILENAME, 'a') as writeFile:
-		# 	writer = csv.writer(writeFile, delimiter=';')
-		# 	writer.writerow([page, euclidean_distance, spacy_similarity, doc2vec_euclideanDistance,
-		# 	doc2vec_cosineSimilarity, doc2vec_trained_euclideanDistance, doc2vec_trained_cosineSimilarity, shared_wikicats_jaccard_similarity])
-
-
-		# Minimum similarity for a page to be accepted.
-		# WE MUST DECIDE THE MOST RELEVANT CRITERIUM TO DECIDE ON IT
-		# currently, we used shared_wikicats_jaccard_similarity
-
-	
-	
-	min_similarity = 0.3  # review this threshold
+			writer = csv.writer(csvFile, delimiter=' ')
+			for row in sims_wk_sb:
+				try:
+					writer.writerow([row[0], row[1], row[2]])
+				except:
+					print("Error writing csv", row)
+					_appendFile(logFilename, "Error writing csv "+str(row))
 		
-	both_above_min = list(filter(lambda triple : ((triple[1] > min_similarity) and (triple[2] > min_similarity)), sims_wk_sb)) 
-
-	_appendFile(logFilename, "Number of pages with both similarities above "+str(min_similarity)+" = "+str(len(both_above_min)))
-	print("Number of pages with both similarities above", min_similarity, "=", len(both_above_min))
+			csvFile.close()
 	
-	
-	sims_wk_sb_str = list(map(lambda triple : (triple[0]+" "+str(triple[1])+" "+str(triple[2])), sims_wk_sb)) 
-	_saveFile(_CORPUS_FOLDER+"/"+str(lenOriginalText)+".sims", '\n'.join(sims_wk_sb_str))
 
 	result["distribution_wk"] = distribution_wk
 	result["distribution_sb"] = distribution_sb
@@ -591,6 +620,31 @@ def buildCorpus2():
 
 	return jsonify(result)
 
+# resultados
+# SUBJECTS =  132092
+# WIKICATS
+# 0:   3639 -     2.75 -     2.75
+# 1:   8783 -     6.65 -     9.40
+# 2:  18075 -    13.68 -    23.09
+# 3:  26059 -    19.73 -    42.82
+# 4:  24840 -    18.81 -    61.62
+# 5:  19376 -    14.67 -    76.29
+# 6:  13275 -    10.05 -    86.34
+# 7:   8352 -     6.32 -    92.66
+# 8:   4650 -     3.52 -    96.18
+# 9:   5043 -     3.82 -   100.00
+# SUBJECTS
+# 0:   6247 -     4.73 -     4.73
+# 1:  28572 -    21.63 -    26.36
+# 2:  35948 -    27.21 -    53.57
+# 3:  25613 -    19.39 -    72.96
+# 4:  15285 -    11.57 -    84.54
+# 5:   8490 -     6.43 -    90.96
+# 6:   4798 -     3.63 -    94.60
+# 7:   2711 -     2.05 -    96.65
+# 8:   1606 -     1.22 -    97.86
+# 9:   2822 -     2.14 -   100.00
+
 
 
 #############################################################################################################################################	
@@ -623,7 +677,7 @@ def getUrlsLinked2Wikicats (selectedWikicats, logFilename):
 		try:  # try to read wikicats of original text from local store
 			with _Open(filename_db) as fp:
 				urls_from_DB = fp.read().splitlines()
-				print("File already available:", filename_db)
+				_Print("File already available: "+filename_db)
 				requestObjects[wikicat] = {"dburls": urls_from_DB}  # store the local available DB URLs for this wikicat
 		except:  # fetch data from DB
 			fullWikicat = "Wikicat"+wikicat
@@ -664,7 +718,7 @@ def getUrlsLinked2Wikicats (selectedWikicats, logFilename):
 		try:  # try to read wikicats and subjects of original text from local store
 			with _Open(filename_wk) as fp:
 				urls_from_WK = fp.read().splitlines()
-				print("File already available:", filename_wk)
+				_Print("File already available: "+filename_wk)
 				requestObjects[wikicat].update({"wkurls": urls_from_WK})  # store the local available WK URLs for this wikicat
 		except:  # fetch data from WK
 	

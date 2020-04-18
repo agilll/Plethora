@@ -25,7 +25,7 @@ import aux
 initialTextFile = SOpen(_INITIAL_TEXT, "r")
 initialText = initialTextFile.read()
 
-pDebug = False
+FLAB = False	# to control if buttons must show additional label details (change to True if argument -l)
 	
 # the following is only executed if this is the main program, that is, if we launch the corpus tool directly from the 'buildCorpus' folder
 # not executed if we launch the corpus tool from the main tool, as the 'app' object is already available from the main tool
@@ -45,13 +45,20 @@ if __name__ == '__main__':
 	def send_js(path):
 		return send_from_directory('../css', path)
 	
-	arguments = len(sys.argv) - 1
-	if arguments == 1:
-		if sys.argv[1] == "-d":   # argument '-d' prints button labels with routes associated
-			pDebug = True
-		if sys.argv[1] == "-s":   # argument '-s' forces stop after every phase
-			aux.PSTOP = True
-			print("Force stop activated!!!")
+	arguments = range(len(sys.argv))
+	for argument in arguments:
+		if (argument == 0):
+			continue
+
+		if sys.argv[argument] == "-l":   # argument '-l' prints button labels with routes associated
+			FLAB = True
+			print("Flag labels activated!!!")
+		if sys.argv[argument] == "-s":   # argument '-s' forces stop after every phase
+			aux.FSTOP = True
+			print("Flag stop activated!!!")
+		if sys.argv[argument] == "-m":   # argument '-s' forces stop after every phase
+			aux.FMES = True
+			print("Flag messages activated!!!")
 
 # Flask routes binding for interface requests (not done in the main tool, so always necessary)
 app.add_url_rule("/getWikicatsFromText", "getWikicatsFromText", _getWikicatsFromText, methods=["POST"])  # to send a text and request the wikicats in it
@@ -60,7 +67,7 @@ app.add_url_rule("/buildCorpus2", "buildCorpus2", _buildCorpus2, methods=["POST"
 # this is the main entry point of the corpus builder tool (not done in the main tool, so always necessary)
 @app.route('/corpus',  methods=["GET", "POST"])
 def hello_world():
-	return render_template('./template_corpus.html', parDefaultText=initialText, parDebug=pDebug) # parDebug=True prints button labels with routes associated
+	return render_template('./template_corpus.html', parDefaultText=initialText, parDebug=FLAB) # parDebug=True prints button labels with routes associated
 
 
 # start web server listening port 5000 by default if we have launched the corpus tool standalone

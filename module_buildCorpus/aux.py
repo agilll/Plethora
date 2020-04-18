@@ -21,12 +21,23 @@ URLs_FOLDER = CORPUS_FOLDER+"/URLs"
 SCRAPPED_TEXT_PAGES_FOLDER = CORPUS_FOLDER+"/SCRAPPED_TEXT_PAGES"
 DISCARDED_PAGES_FILENAME = CORPUS_FOLDER+"/discarded_pages.txt"
 UNRETRIEVED_PAGES_FILENAME = CORPUS_FOLDER+"/unretrieved_pages.txt"
-SIMILARITIES_CSV_FILENAME = CORPUS_FOLDER+"/similarities.csv"
 HTML_PAGES_FOLDER = CORPUS_FOLDER+"/HTML_PAGES"
 
 CORPUS_MIN_TXT_SIZE = 300  # this is the minimum size of a file to be added to the corpus
 
-PSTOP = False  # to control if sw must pause after each phase (change to True if argument -s)
+FSTOP = False  # to control if program must pause after each phase (change to True if argument -s)
+FMES = False  # to control if program must print log messages (change to True if argument -m)
+
+def Stop():
+	if FSTOP == True:
+		input("\nType ENTER to continue...")
+	return
+
+def Print(message):
+	if FMES == True:
+		print(message)
+	return
+
 
 # set of english stopwords
 nltk_stopwords = nltk.corpus.stopwords.words('english')
@@ -37,6 +48,7 @@ def isNotStopWord (word):
 		return True
 	return False
 
+#
 
 # to check if a dictionary has the field 'pt' (isPrimaryTopicOf), that is a dictionary that must contain the field 'value'
 def hasFieldPT(x):
