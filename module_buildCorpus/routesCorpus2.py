@@ -104,6 +104,7 @@ def buildCorpus2():
 		# first, the results from DB
 
 		dbUrls = urlsObjects[wikicat]["db"]   # get the set of DB URLs
+		dbUrls = list(map(lambda x: x.replace("https://", "http://"), dbUrls))    # change to http:// to avoid duplicates
 		numUrlsDB += len(dbUrls)
 		
 		fullList.extend(dbUrls)  # add the DB URLs of current wikicat to the whole list
@@ -111,6 +112,7 @@ def buildCorpus2():
 		# now, the results from WK
 
 		wkUrls = urlsObjects[wikicat]["wk"]
+		wkUrls = list(map(lambda x: x.replace("https://", "http://"), wkUrls))    # change to http:// to avoid duplicates
 		numUrlsWK += len(wkUrls)
 		
 		fullList.extend(wkUrls)
@@ -121,15 +123,16 @@ def buildCorpus2():
 
 
 	listWithoutDuplicates = list(set(fullList))  # remove duplicated URLs
-	lenOfListWithoutDuplicates  = len(listWithoutDuplicates)  # length of full list to process
-	print("\n\nSummary of URLs numbers: DB=", numUrlsDB, ", WK= ", numUrlsWK, ", total without duplicates=", lenOfListWithoutDuplicates)
 	
-	_appendFile(logFilename, "Number of discovered URLs: "+str(lenOfListWithoutDuplicates))
+	lenListWithoutDuplicates  = len(listWithoutDuplicates)  # length of full list to process
+	print("\n\nSummary of URLs numbers: DB=", numUrlsDB, ", WK= ", numUrlsWK, ", total without duplicates=", lenListWithoutDuplicates)
+	
+	_appendFile(logFilename, "Number of discovered URLs: "+str(lenListWithoutDuplicates))
 	
 	# returns number of results, the result items are only the numbers of discovered URLs
 	result["totalDB"] = numUrlsDB
 	result["totalWK"] = numUrlsWK
-	result["totalUrls"] = len(listWithoutDuplicates)
+	result["totalUrls"] = lenListWithoutDuplicates
 	# return jsonify(result);  # uncomment to return to the interface without processing files
 	
 	_Stop()
@@ -140,7 +143,7 @@ def buildCorpus2():
 	###  We've got the first set of relevant URLs, available in listWithoutDuplicates, and stored in the URLs folder
 	###  Let's start the analysis of their contents 
 	
-	print("\n", "********** Downloading and cleaning", lenOfListWithoutDuplicates, "candidate texts...", "\n")
+	print("\n", "********** Downloading and cleaning", lenListWithoutDuplicates, "candidate texts...", "\n")
 	
 	scrap = _scrapFunctions()   # Create a scrapFunctions object to clean pages
 	unretrieved_pages_list = []  # a list for unsuccessful pages retrieval
@@ -156,7 +159,7 @@ def buildCorpus2():
 		if (idx % 10000) == 0:
 			print(".", end=' ', flush=True)
 			
-		_Print("("+str(idx)+" of "+str(lenOfListWithoutDuplicates)+") -- "+page)
+		_Print("("+str(idx)+" of "+str(lenListWithoutDuplicates)+") -- "+page)
 
 		# scrapped pages will be stored classified by domain, in specific folders
 		# currently, only "en.wikipedia.org" domain is used
@@ -297,7 +300,7 @@ def buildCorpus2():
 	
 	print("\n","ALL WIKICATs AND SUBJECTs COMPUTED.")
 	print("New items computed in this iteration:", str(currentDownloaded))
-	print("Number of pages with wikicats:", str(len(listWithWikicats)))
+	print("Number of pages with wikicats:", str(lenListWithWikicats))
 	print("Number of pages without wikicats:", str(len(listWithoutWikicats)))
 		
 	_Stop()

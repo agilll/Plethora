@@ -10,7 +10,7 @@ from smart_open import open as _Open
 from aux import CORPUS_FOLDER as _CORPUS_FOLDER
 from ourSimilarityListsFunctions import ourSimilarityListsFunctions as _ourSimilarityListsFunctions
 from aux import myTokenizer as _myTokenizer, getWikicatComponents as _getWikicatComponents, NmaxElements as _NmaxElements, NmaxElements3T as _NmaxElements3T
-from aux import getSubjectComponents as _getSubjectComponents, filterSimpleWikicats as _filterSimpleWikicats
+from aux import getSubjectComponents as _getSubjectComponents, filterSimpleWikicats as _filterSimpleWikicats, Print as _Print
 
 from px_DB_Manager import getCategoriesInText as _getCategoriesInText
 from px_aux import saveFile as _saveFile,  appendFile as _appendFile
@@ -182,7 +182,7 @@ class textSimilarityFunctions():
 		try:  # try to read candidate text wikicats from local store
 			with _Open(fileNameCandidateWikicats) as fp:
 				candidate_text_wikicats = fp.read().splitlines()
-				print("File already available in local DB:", fileNameCandidateWikicats)
+				_Print("File already available in local DB:", fileNameCandidateWikicats)
 		except:  # fetch candidate text wikicats if not in local store
 			_appendFile(logFilename, "ERROR sharedWikicatsSimilarity(): Wikicats file not available: "+fileNameCandidateWikicats)
 			return -1
@@ -226,7 +226,7 @@ class textSimilarityFunctions():
 		try:  # try to read candidate text subjects from local store
 			with _Open(fileNameCandidateSubjects) as fp:
 				candidate_text_subjects = fp.read().splitlines()
-				print("File already available in local DB:", fileNameCandidateSubjects)
+				_Print("File already available in local DB:", fileNameCandidateSubjects)
 		except:  # fetch candidate text subjects if not in local store
 			_appendFile(logFilename, "ERROR sharedSubjectsSimilarity(): Subjects file not available: "+fileNameCandidateSubjects)
 			return -1
