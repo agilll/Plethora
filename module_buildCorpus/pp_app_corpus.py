@@ -16,7 +16,7 @@ from smart_open import open as SOpen
 sys.path.append('../')
 
 # functions to be executed when Flask requests are received 
-from routesCorpus import getWikicatsFromText as _getWikicatsFromText
+from routesCorpus import getWikicatsFromText as _getWikicatsFromText, getWikicatUrls as _getWikicatUrls
 from routesCorpus2 import buildCorpus2 as _buildCorpus2
 from aux import INITIAL_TEXT as _INITIAL_TEXT
 import aux
@@ -63,6 +63,7 @@ if __name__ == '__main__':
 # Flask routes binding for interface requests (not done in the main tool, so always necessary)
 app.add_url_rule("/getWikicatsFromText", "getWikicatsFromText", _getWikicatsFromText, methods=["POST"])  # to send a text and request the wikicats in it
 app.add_url_rule("/buildCorpus2", "buildCorpus2", _buildCorpus2, methods=["POST"])   # to send some wikicats and request to build the corpus
+app.add_url_rule("/getWikicatUrls", "getWikicatUrls", _getWikicatUrls, methods=["GET"])  # to send the Urls derived from a wikicat
 
 # this is the main entry point of the corpus builder tool (not done in the main tool, so always necessary)
 @app.route('/corpus',  methods=["GET", "POST"])

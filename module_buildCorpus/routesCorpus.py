@@ -6,7 +6,7 @@ from smart_open import open as _Open
 from px_DB_Manager import getCategoriesInText as _getCategoriesInText
 from px_aux import saveFile as _saveFile
 
-from aux import CORPUS_FOLDER as _CORPUS_FOLDER
+from aux import CORPUS_FOLDER as _CORPUS_FOLDER, URLs_FOLDER as _URLs_FOLDER
 from aux import getWikicatComponents as _getWikicatComponents, filterSimpleWikicats as _filterSimpleWikicats
 	
 	
@@ -71,4 +71,32 @@ def getWikicatsFromText():
 		result["formerSelectedWikicats"] = wkSelectedList
 		
 		return jsonify(result);
+
+
+
+	
+# to attend the query to return URLs derived from a given wikicat  
+# receives: a  wikicat
+# returns: results from DBpedia or Wikidata
+def getWikicatUrls():
+	wikicat = request.values.get("wikicat")
+	DB = request.values.get("DB")  # to mark if DBpedia or Wikidata is requested
+	
+	results = []
+	if DB == "true":
+		filename = _URLs_FOLDER+"/_Wikicat_"+wikicat+"_DB_Urls.txt"
+	else:
+		filename = _URLs_FOLDER+"/_Wikicat_"+wikicat+"_WK_Urls.txt"	
+	
+	print("Reading local file:"+filename)
+	try:  # try to read wikicats of original text from local store
+		with _Open(filename) as fp:
+			results = fp.read().splitlines()
+	except Exception as e:
+		print("Exception in getWikicatUrls: "+str(e))
+		
+	result = {}
+	result["urls"] = results
+	return jsonify(result);
+
 	
