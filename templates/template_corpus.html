@@ -37,24 +37,31 @@
 		margin-left: auto;
 		margin-right: auto;
 	}
-</style>
+	</style>
 	
 	<script>
-		var GET_WIKICATS = "Get Wikicats";
-		var BUILD_CORPUS = "Build Corpus"
 		var debug = "{{ parDebug }}";
 		
 		function setDebug () {
 			if (debug == "True") {
-				GET_WIKICATS = "Get Wikicats (/getWikicatsFromText)";
-				BUILD_CORPUS = "Build Corpus (/buildCorpus2)"
+				GET_WIKICATS_LABEL = $(submitF0_getGetWikicats).attr("value") + " (/getWikicatsFromText)";
+				$(submitF0_getGetWikicats).attr("value", GET_WIKICATS_LABEL);
+				FIND_URLS_LABEL = $(submitF1_findURLs).attr("value") + " (/getUrlsCandidateFiles)"
+				$(submitF1_findURLs).attr("value", FIND_URLS_LABEL);
+				DOWNLOAD_URLS_LABEL = $(submitF2_DownloadURLs).attr("value") + " (/getDownloadCandidateTexts)"
+				$(submitF2_DownloadURLs).attr("value", DOWNLOAD_URLS_LABEL);
+				IDENTIFY_WIKICATS_LABEL = $(submitF3_identifyWikicats).attr("value") + " (/getIdentifyWikicats)"
+				$(submitF3_identifyWikicats).attr("value", IDENTIFY_WIKICATS_LABEL);
+				COMPUTE_SIMS_LABEL = $(submitF4_computeSimilarities).attr("value") + " (/getComputeSimilarities)"
+				$(submitF4_computeSimilarities).attr("value", COMPUTE_SIMS_LABEL);
+				TRAIN_D2V_LABEL = $(submitF5_trainD2V).attr("value") + " (/getTrainD2V)"
+				$(submitF5_trainD2V).attr("value", TRAIN_D2V_LABEL);
 			}
-			
-			$("#submit_corpusGetWikicatList").attr("value", GET_WIKICATS);
-			$("#submit_buildCorpus2").attr("value", BUILD_CORPUS);
 		}
 	</script>
 </head>
+
+
 
 <body style="margin: 10px;" >
 	
@@ -72,39 +79,91 @@
 	
 		<!-- Starting of the interface HTML page  -->
 		
-		<h1 style="color:  #0066cc">Corpus Builder Tool</h1>
-		<h3 style="color: #0066cc">Origin Text</h3>
+		<h1 style="color:  #0066cc"> Corpus Builder Tool </h1> <!-- Tool main title -->
+		
+		<h3 style="color: #0066cc" id="legendF0_OriginText" >0. Provide Origin Text</h3>
 	
 		<!--  Central content if Tools->Build Corpus is selected -->
 		<div id="buildCorpusDiv">
 	
 			<div class="form-group" style="margin-bottom: 0px">
-				<!--  the textarea will be filled with the  jquery $(#buildCorpusMenu).click  -->
-				<textarea id="buildCorpusText"  style="border: 2px solid #888; width:1000px; height:300px;"></textarea> 
+				<!--  the textarea will be filled with a template parameter just after loading the page  -->
+				<textarea id="contentF0_corpusText"  style="border: 2px solid #888; width:1000px; height:300px;"></textarea> 
 			</div>
+			<p style="margin-bottom:5mm;"></p>
 			<div class="form-group" style="margin-bottom: 0px">
-				<input style="background-color: #0066cc; color: white" id="submit_corpusGetWikicatList" type="button" value="Get Wikicats"></input>
+				<input style="background-color: #0066cc; color: white" id="submitF0_getGetWikicats" type="button" value="Next step: Get Wikicats"></input>
 			</div>
-			<p></p>
 	
-			<h4 style="color: #0066cc" id='legendWikicatsList'><hr>Wikicats list from origin text &nbsp;&nbsp;
+	
+	
+			<h3 style="color: #0066cc" id='legendF1_selectWikicats'>
+				<hr style="border-top: 1px solid red;">
+				1. Select relevant Wikicats from origin text &nbsp;&nbsp;
 				<input style="background-color: #0066cc; color: white" type="button" id="clearAllWikicats" value="Clear All"> &nbsp;&nbsp;
 				<input style="background-color: #0066cc; color: white" type="button" id="selectAllWikicats" value="Select All">
-			</h4>
+			</h3>
 			
-			<div id='div_wikicatsList'></div>  <!-- To show wikicats identified in text -->
+			<div id='contentF1_showWikicats'></div>  <!-- empty div to later show wikicats identified in text -->
+			<p style="margin-bottom:5mm;"></p>
+			<div class="form-group" style="margin-bottom: 0px">
+				<input style="background-color: #0066cc; color: white" id="submitF1_findURLs" type="button" value="Next step: Find candidate URLs"></input>
+				&nbsp;&nbsp;&nbsp;&nbsp;
+				<span id="spanOverwriteCorpus">  <input id="overwriteCorpus" name="overwriteCorpus" type="checkbox"></input>
+				Overwrite (Selected=erase all previous corpus data, Non selected=aggregate new files)</span>
+			</div>
 			
-			<p style="margin-bottom:1cm;"></p>
+
+						
+			<h3 style="color: #0066cc" id='legendF2_numberURLsDiscovered'>
+				<hr style="border-top: 1px solid red;">
+				2. Number of candidate URLs gathered from selected Wikicats
+			</h3>
 			
-			<input style="background-color: #0066cc; color: white" id="submit_buildCorpus2" type="button" value="Build Corpus"></input>
-			&nbsp;&nbsp;&nbsp;&nbsp;
-			<span id="spanOverwriteCorpus">  <input id="overwriteCorpus" name="overwriteCorpus" type="checkbox"></input>
-			Overwrite (Selected=erase all previous corpus data, Non selected=aggregate new files)</span>
+			<div id='contentF2_showNumberUrls'></div> <!-- empty div to later show number of candidate URLs discovered for each wikicat -->
+			<p style="margin-bottom:5mm;"></p>
+			<div class="form-group" style="margin-bottom: 0px">
+				<input style="background-color: #0066cc; color: white" id="submitF2_DownloadURLs" type="button" value="Next step: Download and clean candidate URLs"></input>
+			</div>
+
+
+
+			<h3 style="color: #0066cc" id='legendF3_numberTextsDownloaded'>
+				<hr style="border-top: 1px solid red;">
+				3. Number of candidate texts downloaded and cleaned
+			</h3>
 			
-			<h4 style="color: #0066cc" id='legendSelectedWikicatsList'><hr>Results from selected Wikicats</h4>
-			<div id='div_selectedWikicatsList'></div>
-			<p></p>
-	
+			<div id='contentF3_numberTextsDownloaded'></div> <!-- empty div to later show the number of candidate texts downloaded -->
+			<p style="margin-bottom:5mm;"></p>
+			<div class="form-group" style="margin-bottom: 0px">
+				<input style="background-color: #0066cc; color: white" id="submitF3_identifyWikicats" type="button" value="Next step: Identify wikicats in candidate texts"></input>
+			</div>
+			
+			
+			
+			<h3 style="color: #0066cc" id='legendF4_numberTextsValid'>
+				<hr style="border-top: 1px solid red;">
+				4. Number of candidate texts valid (with wikicats)
+			</h3>
+			
+			<div id='contentF4_numberTextsValid'></div> <!-- empty div to later show the number of candidate texts with wikicats -->
+			<p style="margin-bottom:5mm;"></p>
+			<div class="form-group" style="margin-bottom: 0px">
+				<input style="background-color: #0066cc; color: white" id="submitF4_computeSimilarities" type="button" value="Next step: Compute Similarities for candidate texts"></input>
+			</div>
+			
+			
+			
+			
+			<h3 style="color: #0066cc" id='legendF5_similarities'>
+				<hr style="border-top: 1px solid red;">
+				5. Similiarities
+			</h3>
+			
+			<div id='contentF5_similarities'></div> <!-- empty div to later show the result -->
+			<div class="form-group" style="margin-bottom: 0px">
+				<input style="background-color: #0066cc; color: white" id="submitF5_trainD2V" type="button" value="Next step: train D2V model with corpus"></input>
+			</div>
 		</div>
 				
 	
@@ -124,35 +183,57 @@
 	
 			// Here it starts what is executed when finishing to load the page  
 					
+			lenOriginalText = 0;
+			selectedWikicats = [];
+			listWithoutDuplicates = [];
+			listEnoughContent = [];
+			listWithWikicats = [];
+			
 			$(document).ready(function () {
 				
 				setDebug();
 	
 				$("#spinner").modal({show: false, backdrop: 'static'});
 	
-				$("#buildCorpusText").val({{ parDefaultText | tojson }});
-				$("#legendWikicatsList").hide()
-				$("#spanDelta").hide()
-				$("#submit_buildCorpus2").hide()
-				$("#spanOverwriteCorpus").hide()
-				$("#legendSelectedWikicatsList").hide()
+				$(contentF0_corpusText).val({{ parDefaultText | tojson }});   <!-- fill textarea with origin text -->
 				
+				$(legendF1_selectWikicats).hide()
+				$(contentF1_showWikicats).hide() 
+				$(submitF1_findURLs).hide()
+				$(spanOverwriteCorpus).hide()
 				
-				// to request the building of the text training corpus 
+				$(legendF2_numberURLsDiscovered).hide()
+				$(contentF2_showNumberUrls).hide() 
+				$(submitF2_DownloadURLs).hide()
+				
+				$(legendF3_numberTextsDownloaded).hide()
+				$(contentF3_numberTextsDownloaded).hide() 
+				$(submitF3_identifyWikicats).hide()
+				
+				$(legendF4_numberTextsValid).hide()
+				$(contentF4_numberTextsValid).hide() 
+				$(submitF4_computeSimilarities).hide()
+				
+				$(legendF5_similarities).hide()
+				$(contentF5_similarities).hide() 
+				$(submitF5_trainD2V).hide()
+				
+				// click to request server to get the wikicats of the original text 
 				// Flask "/getWikicatsFromText" is requested
 				// receives a wikicat list to present on the interface
-				$("#submit_corpusGetWikicatList").click(function() {
+				$(submitF0_getGetWikicats).click(function() {
 					$("#spinner").modal("show");
-					$("#legendWikicatsList").show()
 					$.ajax({
 						type: "POST",
 						url: "/getWikicatsFromText",
-						data: {"text":  $("#buildCorpusText").val()},  // send the text with 'text' key
+						data: {"text":  $(contentF0_corpusText).val()},  // send the text with 'text' key
 						success: function(result) {
+							$(legendF1_selectWikicats).show()
 							if (result.hasOwnProperty("error")) {
 								results = "<b style='color: red'>"+result["error"]+"</b>"
 							}
 							else {
+								lenOriginalText = result["lenOriginalText"]
 								formerSelectedWikicats =  result["formerSelectedWikicats"]
 								console.log("Wikicats selected in the past")
 								console.log(formerSelectedWikicats)
@@ -180,10 +261,12 @@
 									
 								});
 								results += "</table>"
-								$("#submit_buildCorpus2").show()
-								$("#spanOverwriteCorpus").show()
+								$(contentF1_showWikicats).html(results)
+								$(contentF1_showWikicats).show() 
+								$(submitF1_findURLs).show()
+								$(spanOverwriteCorpus).show()
 							
-							/*	
+								/*	
 								wl1 = ["5th-centuryBCGreekPeople", "AncientPeople", "GreekPeople", "5th-centuryBCRulers", "PeopleOfTheGreco-PersianWars", "RulersOfSparta", "Kings"]
 								wl2 = ["BattlesInvolvingAncientGreece", "BattlesInvolvingGreece", "Greco-PersianWars", "BattlesInvolvingTheAchaemenidEmpire", "BattlesOfTheGreco-PersianWars", "BattlesInvolvingSparta"]
 								wl3 = ["AncientGreekCities", "AncientCities", "ArchaeologicalSitesInGreece", "PopulatedPlacesInLaconia", "MunicipalitiesOfPeloponnese(Region)", "Persian-speakingCountriesAndTerritories" ]
@@ -191,47 +274,31 @@
 								results = "<b>People:</b> <table>"
 								fila=0
 								wl1.forEach(function(w){
-									if (fila++ % 3 == 0 ) {
-										results += "<tr><td>"
-									}
-									else {
-										results += "<td>"
-									}
+									if (fila++ % 3 == 0 ) {results += "<tr><td>"}
+									else {results += "<td>"}
 									results += "<input type='checkbox' name='checkboxWikicatList' value='"+w+"' checked> "+w+"&nbsp;&nbsp;";
 								});
 								results += "</table><p/>"
-								
 								results += "<b>Events:</b> <table>"
 								fila=0
 								wl2.forEach(function(w){
-									if (fila++ % 3 == 0 ) {
-										results += "<tr><td>"
-									}
-									else {
-										results += "<td>"
-									}
+									if (fila++ % 3 == 0 ) {results += "<tr><td>"}
+									else {results += "<td>"}
 									results += "<input type='checkbox' name='checkboxWikicatList' value='"+w+"' checked> "+w+"&nbsp;&nbsp;";
 								});
 								results += "</table><p/>"
-								
 								results += "<b>Locations:</b> <table>"
 								fila=0
 								wl3.forEach(function(w){
-									if (fila++ % 3 == 0 ) {
-										results += "<tr><td>"
-									}
-									else {
-										results += "<td>"
-									}
+									if (fila++ % 3 == 0 ) {results += "<tr><td>"}
+									else {results += "<td>"}
 									results += "<input type='checkbox' name='checkboxWikicatList' value='"+w+"' checked> "+w+"&nbsp;&nbsp;";
 								});
 								results += "</table>"
-								
 								$("#submit_buildCorpus").show()
-								$("#spanDelta").show()
-							*/
+								*/
 							}
-							$(div_wikicatsList).html(results)
+
 							$("#spinner").modal("hide");
 						}
 					});
@@ -239,14 +306,14 @@
 				
 				
 				// to clear selected wikicats if click radibutton option
-				$("#clearAllWikicats").click(function() {
+				$(clearAllWikicats).click(function() {
 					$.each($("input[name='checkboxWikicatList']"), function(){            
 						$(this).prop('checked', false);
 					});
 				});
 				
 				// to select all wikicats if click radibutton option
-				$("#selectAllWikicats").click(function() {
+				$(selectAllWikicats).click(function() {
 					$.each($("input[name='checkboxWikicatList']"), function(){            
 						$(this).prop('checked', true);
 					});
@@ -256,33 +323,35 @@
 				
 				
 				
-				// to build corpus starting from selected wikicats
-				// Flask "/buildCorpus2" is requested
-				// receives ???? to present on the interface
-				$("#submit_buildCorpus2").click(function(event) {
+				// click to request server to find URLs from selected wikicats
+				// Flask "/getURLsCandidateFiles" is requested
+				// receives number of DB and WK URLs for each wikicat
+				$(submitF1_findURLs).click(function(event) {
 					var overwriteCorpus = $("input[name='overwriteCorpus']:checked").val() == "on" ? true : false;
-					
-					$("#legendSelectedWikicatsList").show()
+
 					$("#spinner").modal("show");
-					var selectedWikicats = [];
+					selectedWikicats = [];
 					$.each($("input[name='checkboxWikicatList']:checked"), function(){            
 						selectedWikicats.push($(this).val());
 					});
 					
 					$.ajax({
 						type: "POST",
-						url: "/buildCorpus2",
-						data: {"overwriteCorpus": overwriteCorpus, "wikicats":  JSON.stringify(selectedWikicats), "text":  $("#buildCorpusText").val()},  // send the selected wikicats and the context text
+						url: "getUrlsCandidateFiles",  // "/buildCorpus2",
+						data: {"overwriteCorpus": overwriteCorpus, "selectedWikicats":  JSON.stringify(selectedWikicats), "text":  $("#contentF0_corpusText").val()},  // send the selected wikicats and the context text
 						success: function(result) {
+							$(legendF2_numberURLsDiscovered).show()
 							console.log(result)
 							$("#spinner").modal("hide");
 													
 							if (result.hasOwnProperty("error")) {
-								$("#div_selectedWikicatsList").hide()
+								$(contentF2_showNumberUrls).hide()
 								alert("error received")
 								return
 							}
-													
+							
+							listWithoutDuplicates = result["listWithoutDuplicates"]   // list of unique URLs 
+							
 							// present the summary of results
 							results = "<b>"+selectedWikicats.length+" wikicats</b><br>\n"
 							results += "<table style='border: 1px solid'>"
@@ -302,15 +371,18 @@
 							results += "</table><p>"
 							results += "<p style='color: black'>Identified "+result['totalDB']+" URLs from DBpedia and "+result['totalWK']+" from Wikidata. Distinct URLs: "+result['totalUrls']
 							
-							$("#div_selectedWikicatsList").html(results)
-							$("#div_selectedWikicatsList").show()
+							$(contentF2_showNumberUrls).html(results)
+							$(contentF2_showNumberUrls).show()
+							$(submitF2_DownloadURLs).show()
 						}
 					});
 				});
 							
 				
-				// to get the urls corresponding to the wikicats, coming from the DBpedia or coming from the Wikidata
-				$("#div_selectedWikicatsList").on('click', '.wiki', function() {
+				// click to request server to get the urls corresponding to one wikicat
+				// Flask "/getWikicatUrls" is requested
+				// receives the url list requested
+				$(contentF2_showNumberUrls).on('click', '.wiki', function() {
 					wikicat = $(this).attr("name")
 					$("#spinner").modal("show");
 					var w1 = window.open();
@@ -347,7 +419,120 @@
 						}
 					});
 				});
+				
+				
+				
+				
+				// click to request server to download candidate files
+				// Flask "/getDownloadCandidateTexts" is requested
+				// receives number of files with enough content
+				$(submitF2_DownloadURLs).click(function(event) {
+					$("#spinner").modal("show");
+					console.log(listWithoutDuplicates)
+					$.ajax({
+						type: "POST",
+						url: "getDownloadCandidateTexts",
+						data: {"listWithoutDuplicates": JSON.stringify(listWithoutDuplicates)},  // send the listWithoutDuplicates received in the previous phase
+						success: function(result) {
+							$(legendF3_numberTextsDownloaded).show()
+							console.log(result)
+							$("#spinner").modal("hide");
+													
+							if (result.hasOwnProperty("error")) {
+								$(contentF3_numberTextsDownloaded).hide()
+								alert("error received")
+								return
+							}
+									
+							listEnoughContent = result["listEnoughContent"]   // list of texts available with enough content
+													
+							// present results
+							results = "<b>"+result['nowDownloaded']  + " new files have been downloaded in this iteration</b><br>\n"
+							results += "<b>"+result['lenListEnoughContent']  + " files with enough content are available</b><br>\n"
+							results += "<b>"+result['lenListNotEnoughContent']  + " files without enough content have been discarded</b><br>\n"
+							results += "<b>Duration of F3: " + result['elapsedTimeF3']  + " seconds</b><br>\n"
+		
+							$(contentF3_numberTextsDownloaded).html(results)
+							$(contentF3_numberTextsDownloaded).show()
+							$(submitF3_identifyWikicats).show()
+						}
+					});
+				});
+				
+				
+				
+				
+				// click to request server to identify wikicats in candidate files
+				// Flask "/getIdentifyWikicats" is requested
+				// receives number of files with wikicats 
+				$(submitF3_identifyWikicats).click(function(event) {
+					$("#spinner").modal("show");
+					console.log(listEnoughContent)
+					$.ajax({
+						type: "POST",
+						url: "getIdentifyWikicats",
+						data: {"listEnoughContent": JSON.stringify(listEnoughContent)},  // send the listEnoughContent received in the previous phase
+						success: function(result) {
+							$(legendF4_numberTextsValid).show()
+							console.log(result)
+							$("#spinner").modal("hide");
+													
+							if (result.hasOwnProperty("error")) {
+								$(contentF4_numberTextsValid).hide()
+								alert("error received")
+								return
+							}
+									
+							listWithWikicats = result["listWithWikicats"]   // list of texts available with wikicats
+													
+							// present results
+							results = "<b>"+result['nowProcessed']  + " new files have been processed in this iteration</b><br>\n"
+							results += "<b>"+result['lenListWithWikicats']  + " files with wikicats are available</b><br>\n"
+							results += "<b>"+result['lenListWithoutWikicats']  + " files without wikicats have been discarded</b><br>\n"
+							results += "<b>Duration of F4: " + result['elapsedTimeF4']  + " seconds</b><br>\n"
+		
+							$(contentF4_numberTextsValid).html(results)
+							$(contentF4_numberTextsValid).show()
+							$(submitF4_computeSimilarities).show()
+						}
+					});
+				});
 			
+			
+			
+				// click to request server to compute similarities for candidate files
+				// Flask "/getComputeSimilarities" is requested
+				// receives result 
+				$(submitF4_computeSimilarities).click(function(event) {
+					$("#spinner").modal("show");
+					console.log(listWithWikicats)
+					$.ajax({
+						type: "POST",
+						url: "getComputeSimilarities",
+						data: {"lenOriginalText": lenOriginalText, "selectedWikicats":  JSON.stringify(selectedWikicats), "listWithWikicats": JSON.stringify(listWithWikicats)},  // send the listWithWikicats received in the previous phase
+						success: function(result) {
+							$(legendF5_similarities).show()
+							console.log(result)
+							$("#spinner").modal("hide");
+													
+							if (result.hasOwnProperty("error")) {
+								$(contentF5_similarities).hide()
+								alert("error received")
+								return
+							}
+									
+													
+							// present results
+							results = "<b>Duration of F5: " + result['elapsedTimeF5']  + " seconds</b><br>\n"
+		
+							$(contentF5_similarities).html(results)
+							$(contentF5_similarities).show()
+							$(submitF5_trainD2V).show()
+						}
+					});
+				});
+			
+	
 	
 			});
 	

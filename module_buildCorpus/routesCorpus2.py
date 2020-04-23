@@ -224,7 +224,7 @@ def buildCorpus2():
 		
 		
 
-	# all the pages not already available have been now fetched and cleaned
+	# all the pages now already available have been now fetched and cleaned
 	
 	
 
@@ -346,7 +346,7 @@ def buildCorpus2():
 		onlyPage = pageWithoutHTTP[1+pageWithoutHTTP.find("/"):]    # forlder and page name of this page
 		onlyPageChanged =  onlyPage.replace("/", "..")   # change folder separator '/' by '..'
 		
-		pagename_in_resultsFile = domainFolder+"/"+onlyPageChanged+".txt"   # name of the page in results file 'length.sims'
+		pagename_in_resultsFile = domainFolder+"/"+onlyPageChanged+".txt"   # name of the page in results file 'length.sims.csv'
 		
 		fileNameCandidateBase = _SCRAPPED_TEXT_PAGES_FOLDER+"/"+domainFolder+"/"+onlyPageChanged
 		fileNameCandidate = fileNameCandidateBase+".txt"
@@ -463,9 +463,9 @@ def buildCorpus2():
 	endTime = datetime.now()
 	elapsedTimeF3 = endTime - startTime
 	print("")
-	print("Duration F1 (cleaning):", str(elapsedTimeF1.seconds))
-	print("Duration F2 (wikicats):", str(elapsedTimeF2.seconds))
-	print("Duration F3 (similarities):", str(elapsedTimeF3.seconds))
+	print("Duration F1 (downloading and cleaning):", str(elapsedTimeF1.seconds))
+	print("Duration F2 (identifying wikicats):", str(elapsedTimeF2.seconds))
+	print("Duration F3 (computing similarities):", str(elapsedTimeF3.seconds))
 	
 	def Sort(trili): 
 		trili.sort(reverse=True, key = lambda x: x[1]) 

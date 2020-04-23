@@ -16,10 +16,13 @@ from smart_open import open as SOpen
 sys.path.append('../')
 
 # functions to be executed when Flask requests are received 
-from routesCorpus import getWikicatsFromText as _getWikicatsFromText, getWikicatUrls as _getWikicatUrls
+from routesCorpus import getWikicatsFromText as _getWikicatsFromText, getUrlsCandidateFiles as _getUrlsCandidateFiles, getWikicatUrls as _getWikicatUrls
+from routesCorpus import getDownloadCandidateTexts as _getDownloadCandidateTexts, getIdentifyWikicats as _getIdentifyWikicats
+from routesCorpus import getComputeSimilarities as _getComputeSimilarities
 from routesCorpus2 import buildCorpus2 as _buildCorpus2
 from aux import INITIAL_TEXT as _INITIAL_TEXT
 import aux
+
 
 # load the initial text shown at the beginning of the interface
 initialTextFile = SOpen(_INITIAL_TEXT, "r")
@@ -62,6 +65,10 @@ if __name__ == '__main__':
 
 # Flask routes binding for interface requests (not done in the main tool, so always necessary)
 app.add_url_rule("/getWikicatsFromText", "getWikicatsFromText", _getWikicatsFromText, methods=["POST"])  # to send a text and request the wikicats in it
+app.add_url_rule("/getUrlsCandidateFiles", "getUrlsCandidateFiles", _getUrlsCandidateFiles, methods=["POST"])  # to request the finding of the candidate files URLs
+app.add_url_rule("/getDownloadCandidateTexts", "getDownloadCandidateTexts", _getDownloadCandidateTexts, methods=["POST"])  # to request the downloading of the candidate files
+app.add_url_rule("/getIdentifyWikicats", "getIdentifyWikicats", _getIdentifyWikicats, methods=["POST"])  # to request the identification of wikicats in candidate files
+app.add_url_rule("/getComputeSimilarities", "getComputeSimilarities", _getComputeSimilarities, methods=["POST"])  # to request to compute similarities for candidate texts
 app.add_url_rule("/buildCorpus2", "buildCorpus2", _buildCorpus2, methods=["POST"])   # to send some wikicats and request to build the corpus
 app.add_url_rule("/getWikicatUrls", "getWikicatUrls", _getWikicatUrls, methods=["GET"])  # to send the Urls derived from a wikicat
 
