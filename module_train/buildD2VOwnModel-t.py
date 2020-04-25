@@ -7,7 +7,7 @@ import os
 from gensim.models.doc2vec import Doc2Vec, TaggedDocument
 import pickle
 
-from aux import TRAINING_T_FOLDER as _TRAINING_T_FOLDER, OWN_D2V_MODEL as _OWN_D2V_MODEL
+from aux_train import TRAINING_T_FOLDER as _TRAINING_T_FOLDER, OWN_D2V_MODEL as _OWN_D2V_MODEL
 
 if not os.path.exists(_TRAINING_T_FOLDER):
 	print(_TRAINING_T_FOLDER, "not found!")

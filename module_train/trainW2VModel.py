@@ -10,7 +10,7 @@ import os
 from os.path import isfile
 import sys
 
-from aux import TRAINING_T_FOLDER as _TRAINING_T_FOLDER
+from aux_train import TRAINING_T_FOLDER as _TRAINING_T_FOLDER
 	
 #check that folder with T files exists
 if not os.path.exists(_TRAINING_T_FOLDER):

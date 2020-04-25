@@ -10,7 +10,7 @@ import gensim
 from gensim.models.doc2vec import Doc2Vec
 
 	
-from aux import LEE_D2V_MODEL as _LEE_D2V_MODEL
+from aux_train import LEE_D2V_MODEL as _LEE_D2V_MODEL
 model_full_filename = _LEE_D2V_MODEL + ".model"
 
 	

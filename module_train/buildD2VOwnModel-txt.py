@@ -5,7 +5,7 @@ import os
 from gensim.models.doc2vec import Doc2Vec, TaggedDocument
 from nltk.tokenize import word_tokenize
 
-from aux import TRAINING_TXT_FOLDER as _TRAINING_TXT_FOLDER, OWN_D2V_MODEL as _OWN_D2V_MODEL
+from aux_train import TRAINING_TXT_FOLDER as _TRAINING_TXT_FOLDER, OWN_D2V_MODEL as _OWN_D2V_MODEL
 	
 if not os.path.exists(_TRAINING_TXT_FOLDER):
 	print(_TRAINING_TXT_FOLDER, "not found!")
