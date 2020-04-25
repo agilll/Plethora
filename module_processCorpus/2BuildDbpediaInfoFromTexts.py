@@ -29,7 +29,7 @@ sys.path.append('../')  # to search for imported files in the parent folder
 from px_aux import URL_DB_SL_annotate as _URL_DB_SL_annotate, getContentMarked as _getContentMarked, saveFile as _saveFile
 from px_DB_Manager import DBManager as _DBManager
 
-from aux import  SPW_FOLDER as _SPW_FOLDER
+from aux_process import  SPW_FOLDER as _SPW_FOLDER
 
 # to process a file and return dictionaries with the entities detected and filtered 
 def findEntities (filename, confPar, supPar):

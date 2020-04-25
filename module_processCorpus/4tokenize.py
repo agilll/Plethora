@@ -25,7 +25,7 @@ sys.path.append('../')  # to search for imported files in the parent folder
 
 from px_aux import StanfordBroker as _StanfordBroker
 
-from aux import  SPW_FOLDER as _SPW_FOLDER, T_FOLDER as _T_FOLDER
+from aux_process import  SPW_FOLDER as _SPW_FOLDER, T_FOLDER as _T_FOLDER
 
 
 # to process a file to convert sentences to lists of words

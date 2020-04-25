@@ -17,7 +17,7 @@ sys.path.append('../')    # to search for imported files in the parent folder
 
 from px_aux import getContentMarked as _getContentMarked, saveFile as _saveFile
 
-from aux import  SPW_FOLDER as _SPW_FOLDER
+from aux_process import  SPW_FOLDER as _SPW_FOLDER
 
 
 # aux functions

@@ -23,7 +23,7 @@ sys.path.append('../')  # to search for imported files in the parent folder
 from px_aux import saveFile as _saveFile
 from px_aux_add_suffix import processContent as _processContent   # this is the function that actually changes the content
 
-from aux import  TXT_FOLDER as _TXT_FOLDER, SPW_FOLDER as _SPW_FOLDER
+from aux_process import  TXT_FOLDER as _TXT_FOLDER, SPW_FOLDER as _SPW_FOLDER
 
 
 # to process a file and store the result as file.s
