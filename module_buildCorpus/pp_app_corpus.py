@@ -20,8 +20,8 @@ from routesCorpus import getWikicatsFromText as _getWikicatsFromText, getUrlsCan
 from routesCorpus import getDownloadCandidateTexts as _getDownloadCandidateTexts, getIdentifyWikicats as _getIdentifyWikicats
 from routesCorpus import getComputeSimilarities as _getComputeSimilarities
 from routesCorpus2 import buildCorpus2 as _buildCorpus2
-from aux import INITIAL_TEXT as _INITIAL_TEXT
-import aux
+from aux_build import INITIAL_TEXT as _INITIAL_TEXT
+import aux_build
 
 
 # load the initial text shown at the beginning of the interface
@@ -57,10 +57,10 @@ if __name__ == '__main__':
 			FLAB = True
 			print("Flag labels activated!!!")
 		if sys.argv[argument] == "-s":   # argument '-s' forces stop after every phase
-			aux.FSTOP = True
+			aux_build.FSTOP = True
 			print("Flag stop activated!!!")
 		if sys.argv[argument] == "-m":   # argument '-s' forces stop after every phase
-			aux.FMES = True
+			aux_build.FMES = True
 			print("Flag messages activated!!!")
 
 # Flask routes binding for interface requests (not done in the main tool, so always necessary)

@@ -7,10 +7,10 @@ import spacy
 
 from smart_open import open as _Open
 
-from aux import CORPUS_FOLDER as _CORPUS_FOLDER
+from aux_build import CORPUS_FOLDER as _CORPUS_FOLDER
 from ourSimilarityListsFunctions import ourSimilarityListsFunctions as _ourSimilarityListsFunctions
-from aux import myTokenizer as _myTokenizer, getWikicatComponents as _getWikicatComponents, NmaxElements as _NmaxElements, NmaxElements3T as _NmaxElements3T
-from aux import getSubjectComponents as _getSubjectComponents, filterSimpleWikicats as _filterSimpleWikicats, Print as _Print
+from aux_build import myTokenizer as _myTokenizer, getWikicatComponents as _getWikicatComponents, NmaxElements as _NmaxElements, NmaxElements3T as _NmaxElements3T
+from aux_build import getSubjectComponents as _getSubjectComponents, filterSimpleWikicats as _filterSimpleWikicats, Print as _Print
 
 from px_DB_Manager import getCategoriesInText as _getCategoriesInText
 from px_aux import saveFile as _saveFile,  appendFile as _appendFile

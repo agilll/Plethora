@@ -11,12 +11,11 @@ from requests_futures.sessions import FuturesSession
 from px_DB_Manager import getCategoriesInText as _getCategoriesInText
 from px_aux import saveFile as _saveFile, appendFile as _appendFile, URL_DB as _URL_DB, URL_WK as _URL_WK
 
-from aux import hasFieldPT as _hasFieldPT
-from aux import CORPUS_FOLDER as _CORPUS_FOLDER, URLs_FOLDER as _URLs_FOLDER,  SCRAPPED_TEXT_PAGES_FOLDER as _SCRAPPED_TEXT_PAGES_FOLDER
-from aux import getWikicatComponents as _getWikicatComponents, filterSimpleWikicats as _filterSimpleWikicats
-from aux import Print as _Print
-from aux import CORPUS_MIN_TXT_SIZE as _CORPUS_MIN_TXT_SIZE
-from aux import UNRETRIEVED_PAGES_FILENAME as _UNRETRIEVED_PAGES_FILENAME, DISCARDED_PAGES_FILENAME as _DISCARDED_PAGES_FILENAME
+from aux_build import hasFieldPT as _hasFieldPT, Print as _Print
+from aux_build import CORPUS_FOLDER as _CORPUS_FOLDER, URLs_FOLDER as _URLs_FOLDER,  SCRAPPED_TEXT_PAGES_FOLDER as _SCRAPPED_TEXT_PAGES_FOLDER
+from aux_build import getWikicatComponents as _getWikicatComponents, filterSimpleWikicats as _filterSimpleWikicats
+from aux_build import CORPUS_MIN_TXT_SIZE as _CORPUS_MIN_TXT_SIZE
+from aux_build import UNRETRIEVED_PAGES_FILENAME as _UNRETRIEVED_PAGES_FILENAME, DISCARDED_PAGES_FILENAME as _DISCARDED_PAGES_FILENAME
 	
 from scrap import scrapFunctions as _scrapFunctions
 from textSimilarities import textSimilarityFunctions as _textSimilarityFunctions
@@ -56,19 +55,19 @@ def getWikicatsFromText():
 			if ("error" in result):   # return error if could not fetch wikicats 
 				return jsonify(result);
 			
-			listWikicats = list(filter(_filterSimpleWikicats, result["wikicats"])) # remove simple wikicats with function from aux.py
+			listWikicats = list(filter(_filterSimpleWikicats, result["wikicats"])) # remove simple wikicats with function from aux_build.py
 			result["wikicats"] = listWikicats  # update result wikicats to return
 			
 			_saveFile(filename_wk, '\n'.join(listWikicats))  # save file (length.wk) with wikicats, one per line
 			
-			listSubjects = list(filter(_filterSimpleWikicats, result["subjects"]))  # remove simple subjects with function from aux.py
+			listSubjects = list(filter(_filterSimpleWikicats, result["subjects"]))  # remove simple subjects with function from aux_build.py
 			result["subjects"] = listSubjects # update result subjects to return
 			
 			_saveFile(filename_sb, '\n'.join(listSubjects)) # save file (length.sb) with subjects, one per line
 			
 		
 		for w in listWikicats:    # compute components for every wikicat and add all of them to result
-			wlc = _getWikicatComponents(w)   # function getWikicatComponets from aux.py
+			wlc = _getWikicatComponents(w)   # function getWikicatComponets from aux_build.py
 			result[w] = wlc  # one entry per wikicat
 		
 		filename_selected = _CORPUS_FOLDER+"/"+str(lenOriginalText)+".selected.wk"   # previously selected wikicats file for this text
@@ -258,7 +257,7 @@ def getDownloadCandidateTexts():
 		
 	nowDownloaded = 0  # number of files downloaded from Internet in this iteration
 	
-	listEnoughContent = [] # list of pages with sufficient content to proceed  ( > _CORPUS_MIN_TXT_SIZE bytes, a constant from aux.py)
+	listEnoughContent = [] # list of pages with sufficient content to proceed  ( > _CORPUS_MIN_TXT_SIZE bytes, a constant from aux_build.py)
 	listNotEnoughContent = [] # list of pages with insufficient content to proceed
 		
 	# download not locally stored pages, scrap them, and save them
@@ -412,8 +411,8 @@ def getIdentifyWikicats():
 				continue
 				
 			_Print("Wikicats and subjects downloaded for", fileNameCandidate)
-			candidate_text_wikicats = list(filter(_filterSimpleWikicats, candidate_text_categories["wikicats"])) # remove simple wikicats with function from aux.py
-			candidate_text_subjects = list(filter(_filterSimpleSubjects, candidate_text_categories["subjects"])) # remove simple subjects with function from aux.py
+			candidate_text_wikicats = list(filter(_filterSimpleWikicats, candidate_text_categories["wikicats"])) # remove simple wikicats with function from aux_build.py
+			candidate_text_subjects = list(filter(_filterSimpleSubjects, candidate_text_categories["subjects"])) # remove simple subjects with function from aux_build.py
 			
 			_saveFile(fileNameCandidateWikicats, '\n'.join(candidate_text_wikicats))  # save file with original text wikicats, one per line
 			_saveFile(fileNameCandidateSubjects, '\n'.join(candidate_text_subjects))  # save file with original text subjects, one per line
