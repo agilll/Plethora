@@ -1,8 +1,8 @@
 #!/Library/Frameworks/Python.framework/Versions/Current/bin/python3
 
-# This script is intended to process one or several files (parameter) to detect pairs "NAME romannumber" (event) and proceed to the following changes
-# 1. change future ocurrences of NAME without romannumber to "NAME romannumber" (where 'romannumber' is the last event detected for NAME)   
-# 2. change any ocurrence of NAME previous to a unique event from NAME (NAME happens only once with a romannumber) to "NAME romannumber"  (being romannumber the one of the future event)
+# This script is intended to process one or several files (parameter) to detect pairs "NAME romanNumber" (event) and proceed to the following changes
+# 1. change future ocurrences of NAME without romanNumber to "NAME romanNumber" (where 'romanNumber' is the last event detected for NAME)   
+# 2. change any ocurrence of NAME previous to a unique event from NAME (NAME happens only once with a romanNumber) to "NAME romanNumber"  (being romanNumber the one of the future event)
 #
 # input: a .txt file or folder received as parameter
 #			if folder, the subfolder folder/files_txt/ must exist, and all '.txt' files in folder/files_txt will be processed
@@ -58,7 +58,7 @@ def processFolder (foldername):
 	# check that the subfolder files_txt/  exists
 	if not os.path.exists(txt_folder):
 		print(txt_folder, "not found!")
-		exit()
+		return -1
 	# create the folder to store results
 	spw_folder = foldername + _SPW_FOLDER
 	if not os.path.exists(spw_folder):
@@ -92,7 +92,7 @@ def processFolder (foldername):
 					if result[2] != "":
 						_saveFile(spw_folder+filename+".s.nr", result[2])
 						_saveFile(spw_folder+filename+".s.nr.html", result[3])
-	return
+	return 0
 
 
 
@@ -120,6 +120,12 @@ def generateAgregate (foldername):
 	return
 
 # end of aux functions 
+
+
+
+
+
+
 
 
 # start script execution
@@ -173,7 +179,10 @@ elif os.path.isdir(source):
 		print(source, "not found!")
 		exit()
 	print("Processing folder "+source+"...")
-	processFolder(source)
+	ok = processFolder(source)
+	if ok == -1:
+		print("Could not process", source)
+		exit()
 	
 	# if -g, all resulting files are aggregated
 	if join:

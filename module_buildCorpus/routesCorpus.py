@@ -12,7 +12,7 @@ from px_DB_Manager import getCategoriesInText as _getCategoriesInText
 from px_aux import saveFile as _saveFile, appendFile as _appendFile, URL_DB as _URL_DB, URL_WK as _URL_WK
 
 from aux_build import hasFieldPT as _hasFieldPT, Print as _Print
-from aux_build import CORPUS_FOLDER as _CORPUS_FOLDER, URLs_FOLDER as _URLs_FOLDER,  SCRAPPED_TEXT_PAGES_FOLDER as _SCRAPPED_TEXT_PAGES_FOLDER
+from aux_build import CORPUS_FOLDER as _CORPUS_FOLDER, URLs_FOLDER as _URLs_FOLDER,  SCRAPPED_PAGES_FOLDER as _SCRAPPED_PAGES_FOLDER
 from aux_build import getWikicatComponents as _getWikicatComponents, filterSimpleWikicats as _filterSimpleWikicats
 from aux_build import CORPUS_MIN_TXT_SIZE as _CORPUS_MIN_TXT_SIZE
 from aux_build import UNRETRIEVED_PAGES_FILENAME as _UNRETRIEVED_PAGES_FILENAME, DISCARDED_PAGES_FILENAME as _DISCARDED_PAGES_FILENAME
@@ -125,7 +125,7 @@ def getUrlsCandidateFiles():
 	# 	print("Deleting current URLs lists...")
 	# 	shutil.rmtree(_URLs_FOLDER)  
 	# 	print("Deleting current scrapped texts...")
-	# 	shutil.rmtree(_SCRAPPED_TEXT_PAGES_FOLDER) 
+	# 	shutil.rmtree(_SCRAPPED_PAGES_FOLDER) 
 	
 	
 	# create the folder to store two files per wikicat, with the URLs linked to such wikicat coming from DB and WK
@@ -249,8 +249,8 @@ def getDownloadCandidateTexts():
 	
 	print("\n", "********** Downloading and cleaning", lenListWithoutDuplicates, "candidate texts...", "\n")
 	
-	if not os.path.exists(_SCRAPPED_TEXT_PAGES_FOLDER):  # create the folder to store scrapped pages and wikicat files
-	 	os.makedirs(_SCRAPPED_TEXT_PAGES_FOLDER)
+	if not os.path.exists(_SCRAPPED_PAGES_FOLDER):  # create the folder to store scrapped pages and wikicat files
+	 	os.makedirs(_SCRAPPED_PAGES_FOLDER)
 	
 	scrap = _scrapFunctions()   # Create a scrapFunctions object to clean pages
 	unretrieved_pages_list = []  # a list for unsuccessful pages retrieval
@@ -275,8 +275,8 @@ def getDownloadCandidateTexts():
 		pageWithoutHTTP = page[2+page.find("//"):]		# get the domain of this page
 		domainFolder = pageWithoutHTTP[:pageWithoutHTTP.find("/")]
 
-		if (not os.path.exists(_SCRAPPED_TEXT_PAGES_FOLDER+"/"+domainFolder)):	# create this domain folder if not exists 
-			os.makedirs(_SCRAPPED_TEXT_PAGES_FOLDER+"/"+domainFolder)
+		if (not os.path.exists(_SCRAPPED_PAGES_FOLDER+"/"+domainFolder)):	# create this domain folder if not exists 
+			os.makedirs(_SCRAPPED_PAGES_FOLDER+"/"+domainFolder)
 		
 		# the pagename will be the name of the file, with the following change
 		# dir1/dir2/page --> dir1..dir2..page.txt
@@ -286,7 +286,7 @@ def getDownloadCandidateTexts():
 		
 		# Add file extension '.txt' to page name for saving it   !!!!!!!!!!
 		# pageFinalName = page[1+page.rindex("/"):]
-		fileNameCandidate = _SCRAPPED_TEXT_PAGES_FOLDER+"/"+domainFolder+"/"+onlyPageChanged+".txt"
+		fileNameCandidate = _SCRAPPED_PAGES_FOLDER+"/"+domainFolder+"/"+onlyPageChanged+".txt"
 				
 		if (os.path.exists(fileNameCandidate)):
 			_Print("File already available in local DB:", fileNameCandidate)
@@ -377,7 +377,7 @@ def getIdentifyWikicats():
 		domainFolder = pageWithoutHTTP[:pageWithoutHTTP.find("/")]
 		onlyPage = pageWithoutHTTP[1+pageWithoutHTTP.find("/"):]
 		onlyPageChanged =  onlyPage.replace("/", "..")
-		fileNameCandidateBase = _SCRAPPED_TEXT_PAGES_FOLDER+"/"+domainFolder+"/"+onlyPageChanged
+		fileNameCandidateBase = _SCRAPPED_PAGES_FOLDER+"/"+domainFolder+"/"+onlyPageChanged
 		fileNameCandidate = fileNameCandidateBase+".txt"
 		fileNameCandidateWikicats = fileNameCandidateBase+".wk"    # wikicats file for this page
 		fileNameCandidateSubjects = fileNameCandidateBase+".sb"    # subjects file for this page
@@ -526,7 +526,7 @@ def getComputeSimilarities():
 		
 		pagename_in_resultsFile = domainFolder+"/"+onlyPageChanged+".txt"   # name of the page in results file 'length.sims.csv'
 		
-		fileNameCandidateBase = _SCRAPPED_TEXT_PAGES_FOLDER+"/"+domainFolder+"/"+onlyPageChanged
+		fileNameCandidateBase = _SCRAPPED_PAGES_FOLDER+"/"+domainFolder+"/"+onlyPageChanged
 		fileNameCandidate = fileNameCandidateBase+".txt"
 		fileNameCandidateWikicats = fileNameCandidateBase+".wk"
 		fileNameCandidateSubjects = fileNameCandidateBase+".sb"

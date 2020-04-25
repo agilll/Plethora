@@ -14,7 +14,7 @@ from px_aux import saveFile as _saveFile, appendFile as _appendFile, URL_DB as _
 from aux import hasFieldPT as _hasFieldPT  # function to check if object has  ["pt"]["value"] field
 from aux import filterSimpleWikicats as _filterSimpleWikicats, filterSimpleSubjects as _filterSimpleSubjects, getWikicatComponents as _getWikicatComponents	
 from aux import CORPUS_FOLDER as _CORPUS_FOLDER
-from aux import URLs_FOLDER as _URLs_FOLDER, DISCARDED_PAGES_FILENAME as _DISCARDED_PAGES_FILENAME,  SCRAPPED_TEXT_PAGES_FOLDER as _SCRAPPED_TEXT_PAGES_FOLDER
+from aux import URLs_FOLDER as _URLs_FOLDER, DISCARDED_PAGES_FILENAME as _DISCARDED_PAGES_FILENAME,  SCRAPPED_PAGES_FOLDER as _SCRAPPED_PAGES_FOLDER
 from aux import UNRETRIEVED_PAGES_FILENAME as _UNRETRIEVED_PAGES_FILENAME
 from aux import LEE_D2V_MODEL as _LEE_D2V_MODEL, OWN_D2V_MODEL as _OWN_D2V_MODEL
 from aux import Stop as _Stop, Print as _Print
@@ -69,7 +69,7 @@ def buildCorpus2():
 		print("Deleting current URLs lists...")
 		shutil.rmtree(_URLs_FOLDER)  
 		print("Deleting current scrapped texts...")
-		shutil.rmtree(_SCRAPPED_TEXT_PAGES_FOLDER) 
+		shutil.rmtree(_SCRAPPED_PAGES_FOLDER) 
 	
 	
 	# create the folder to store two files per wikicat, with the URLs linked to such wikicat coming from DB and WK
@@ -78,8 +78,8 @@ def buildCorpus2():
 	if not os.path.exists(_URLs_FOLDER):
 		os.makedirs(_URLs_FOLDER)
 		
-	if not os.path.exists(_SCRAPPED_TEXT_PAGES_FOLDER):  # create the folder to store scrapped pages and wikicat files
-		os.makedirs(_SCRAPPED_TEXT_PAGES_FOLDER)
+	if not os.path.exists(_SCRAPPED_PAGES_FOLDER):  # create the folder to store scrapped pages and wikicat files
+		os.makedirs(_SCRAPPED_PAGES_FOLDER)
 
 
 	print("\n", "********** Starting DB and WK queries...", "\n")
@@ -167,8 +167,8 @@ def buildCorpus2():
 		pageWithoutHTTP = page[2+page.find("//"):]		# get the domain of this page
 		domainFolder = pageWithoutHTTP[:pageWithoutHTTP.find("/")]
 
-		if (not os.path.exists(_SCRAPPED_TEXT_PAGES_FOLDER+"/"+domainFolder)):	# create this domain folder if not exists 
-			os.makedirs(_SCRAPPED_TEXT_PAGES_FOLDER+"/"+domainFolder)
+		if (not os.path.exists(_SCRAPPED_PAGES_FOLDER+"/"+domainFolder)):	# create this domain folder if not exists 
+			os.makedirs(_SCRAPPED_PAGES_FOLDER+"/"+domainFolder)
 		
 		# the pagename will be the name of the file, with the following change
 		# dir1/dir2/page --> dir1..dir2..page.txt
@@ -178,7 +178,7 @@ def buildCorpus2():
 		
 		# Add file extension '.txt' to page name for saving it   !!!!!!!!!!
 		# pageFinalName = page[1+page.rindex("/"):]
-		fileNameCandidate = _SCRAPPED_TEXT_PAGES_FOLDER+"/"+domainFolder+"/"+onlyPageChanged+".txt"
+		fileNameCandidate = _SCRAPPED_PAGES_FOLDER+"/"+domainFolder+"/"+onlyPageChanged+".txt"
 				
 		if (os.path.exists(fileNameCandidate)):
 			_Print("File already available in local DB:", fileNameCandidate)
@@ -244,7 +244,7 @@ def buildCorpus2():
 		domainFolder = pageWithoutHTTP[:pageWithoutHTTP.find("/")]
 		onlyPage = pageWithoutHTTP[1+pageWithoutHTTP.find("/"):]
 		onlyPageChanged =  onlyPage.replace("/", "..")
-		fileNameCandidateBase = _SCRAPPED_TEXT_PAGES_FOLDER+"/"+domainFolder+"/"+onlyPageChanged
+		fileNameCandidateBase = _SCRAPPED_PAGES_FOLDER+"/"+domainFolder+"/"+onlyPageChanged
 		fileNameCandidate = fileNameCandidateBase+".txt"
 		fileNameCandidateWikicats = fileNameCandidateBase+".wk"    # wikicats file for this page
 		fileNameCandidateSubjects = fileNameCandidateBase+".sb"    # subjects file for this page
@@ -348,7 +348,7 @@ def buildCorpus2():
 		
 		pagename_in_resultsFile = domainFolder+"/"+onlyPageChanged+".txt"   # name of the page in results file 'length.sims.csv'
 		
-		fileNameCandidateBase = _SCRAPPED_TEXT_PAGES_FOLDER+"/"+domainFolder+"/"+onlyPageChanged
+		fileNameCandidateBase = _SCRAPPED_PAGES_FOLDER+"/"+domainFolder+"/"+onlyPageChanged
 		fileNameCandidate = fileNameCandidateBase+".txt"
 		fileNameCandidateWikicats = fileNameCandidateBase+".wk"
 		fileNameCandidateSubjects = fileNameCandidateBase+".sb"

@@ -6,7 +6,7 @@ from smart_open import open as _Open
 
 class scrapFunctions():
 	from px_aux import saveFile as _saveFile
-	from aux_build import CORPUS_FOLDER as _CORPUS_FOLDER, URLs_FOLDER as _URLs_FOLDER, SCRAPPED_TEXT_PAGES_FOLDER as _SCRAPPED_TEXT_PAGES_FOLDER, HTML_PAGES_FOLDER as _HTML_PAGES_FOLDER
+	from aux_build import CORPUS_FOLDER as _CORPUS_FOLDER, URLs_FOLDER as _URLs_FOLDER, SCRAPPED_PAGES_FOLDER as _SCRAPPED_PAGES_FOLDER, HTML_PAGES_FOLDER as _HTML_PAGES_FOLDER
 
 	# Scrap HTML pages
 	def scrapPage(self, page):
@@ -243,7 +243,7 @@ class scrapFunctions():
 		fileName = 	pageName + ".txt"
 
 		# Save to html file
-		_saveFile(_SCRAPPED_TEXT_PAGES_FOLDER+"/"+fileName, html)
+		_saveFile(_SCRAPPED_PAGES_FOLDER+"/"+fileName, html)
 
 		return pageName, cleanedText
 
@@ -339,7 +339,7 @@ class scrapFunctions():
 		fileName = 	pageName + ".txt"
 
 		# Save to html file
-		_saveFile(_SCRAPPED_TEXT_PAGES_FOLDER+"/"+fileName, html)
+		_saveFile(_SCRAPPED_PAGES_FOLDER+"/"+fileName, html)
 
 		return pageName, cleanedText
 
