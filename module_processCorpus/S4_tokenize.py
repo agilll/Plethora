@@ -81,7 +81,7 @@ def processOneFile (filename):
 # to process a file and save results
 # input 'source', a .w file 
 # output a .w.t file
-def processFile(source):
+def processS4File(source):
 	if not source.endswith(".w"):
 		print(source+" has not '.w' extension")
 		return -1
@@ -99,7 +99,7 @@ def processFile(source):
 # To process a folder, source. It must be the base CORPUS folder
 # it must exist a files_s_p_w folder inside
 # process all '.w' files in source/files_s_p_w
-def processFolder(source):
+def processS4Folder(source):
 	spw_folder = source + _SPW_FOLDER
 	if not os.path.exists(spw_folder):
 		print(spw_folder, "not found!")

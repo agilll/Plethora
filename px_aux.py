@@ -63,8 +63,8 @@ ORIGINAL_TEXTS_FOLDER = './texts/originales'
 DEFAULT_TRAINING_TEXTS = "originales.s.w"
 
 # scripts para recalcular los textos de entrenamiento tras cambiar parámetros
-SCRIPT_STEP2 = "./module_processCorpus/2BuildDbpediaInfoFromTexts.py"
-SCRIPT_STEP3 = "./module_processCorpus/3UpdateTextsEntities.py"
+SCRIPT_STEP2 = "./module_processCorpus/S2.py"
+SCRIPT_STEP3 = "./module_processCorpus/S3.py"
 
 # to save some ASCII content in a file 
 def saveFile (f, content):

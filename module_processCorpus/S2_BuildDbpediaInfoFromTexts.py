@@ -69,7 +69,7 @@ def findEntities (filename, confPar, supPar):
 # to process a file and save results
 # input 'source' .s file
 # output 'source.p' result file and 'source.p.html' with entities highlighted
-def processFile(source, confidence=0.5, support=1):
+def processS2File(source, confidence=0.5, support=1):
 	if not source.endswith(".s"):
 		print(source+" has not '.s' extension")
 		return -1
@@ -90,7 +90,7 @@ def processFile(source, confidence=0.5, support=1):
 # to process a folder and save results.
 # input: 'source' folder
 # output: for each .s file in source/files_s_p_w, both '.s.p' result file and '.s.p.html' with entities highlighted
-def processFolder(source, confidence=0.5, support=1):
+def processS2Folder(source, confidence=0.5, support=1):
 	if not os.path.exists(source):
 		print(source, "not found!")
 		return -1

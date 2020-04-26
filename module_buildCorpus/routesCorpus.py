@@ -19,7 +19,11 @@ from aux_build import UNRETRIEVED_PAGES_FILENAME as _UNRETRIEVED_PAGES_FILENAME,
 	
 from scrap import scrapFunctions as _scrapFunctions
 from textSimilarities import textSimilarityFunctions as _textSimilarityFunctions
-	
+
+import sys
+sys.path.append('../module_processCorpus')
+
+from S1_AddSuffixToTexts import processS1List as _processS1List
 
 # QUERY (/getWikicatsFromText) to attend the query to get wikicats from a text   
 # receives: the text
@@ -500,7 +504,7 @@ def getComputeSimilarities():
 			reader = csv.reader(csvFile, delimiter=' ')
 			next(reader)  # to skip header
 			for row in reader:
-				sims_wk_sb.append((_SCRAPPED_PAGES_FOLDER+"/"+row[0], row[1], row[2]))
+				sims_wk_sb.append((row[0], float(row[1]), float(row[2])))
 		
 			csvFile.close()
 	except:
@@ -522,6 +526,7 @@ def getComputeSimilarities():
 		fileNameCandidateBase = doc[:doc.rfind(".")]
 		fileNameCandidateWikicats = fileNameCandidateBase+".wk"    # wikicats file for this doc
 		fileNameCandidateSubjects = fileNameCandidateBase+".sb"    # subjects file for this doc
+		lastNameCandidate = fileNameCandidate.replace(_SCRAPPED_PAGES_FOLDER+"/", "")
 				
 		# try:  # open and read local file if already exists
 		# 	candidateTextFile = _Open(fileNameCandidate, "r")
@@ -559,10 +564,10 @@ def getComputeSimilarities():
 		# now compute similarities if not already stored in length.sims.csv
 		try:
 			_Print("Searching previously computed result for", fileNameCandidate)
-			match = next(x for x in sims_wk_sb if x[0] == fileNameCandidate)   # search if already exists in results file
+			match = next(x for x in sims_wk_sb if x[0] == lastNameCandidate)   # search if already exists in results file
 			_Print("Found already computed similarities for", fileNameCandidate)
-			shared_wikicats_jaccard_similarity = float(match[1])
-			shared_subjects_jaccard_similarity = float(match[2])
+			shared_wikicats_jaccard_similarity = match[1]
+			shared_subjects_jaccard_similarity = match[2]
 		except:
 			# Measure wikicats similarity (requires shared matching)
 			shared_wikicats_jaccard_similarity = similarity.sharedWikicatsSimilarity(fileNameCandidateWikicats, logFilename)
@@ -577,8 +582,7 @@ def getComputeSimilarities():
 				_appendFile(logFilename, "ERROR computing sharedSubjectsJaccard: "+fileNameCandidateSubjects)
 				continue
 
-			name_in_simsFile = fileNameCandidate.replace(_SCRAPPED_PAGES_FOLDER+"/", "")
-			sims_wk_sb.append((name_in_simsFile, shared_wikicats_jaccard_similarity, shared_subjects_jaccard_similarity))
+			sims_wk_sb.append((lastNameCandidate, shared_wikicats_jaccard_similarity, shared_subjects_jaccard_similarity))
 			simsUpdated = True
 		
 		_Print("Wikicats shared jaccard similarity =", str(shared_wikicats_jaccard_similarity))
@@ -632,13 +636,8 @@ def getComputeSimilarities():
 	# end of loop for pages similarity computing
 	endTime = datetime.now()
 	elapsedTimeF5 = endTime - startTime
-	print("")
-	print("Duration F5 (computing similarities):", str(elapsedTimeF5.seconds))
-	
-	def Sort(trili): 
-		trili.sort(reverse=True, key = lambda x: x[1]) 
-		return trili
 
+	print("\n\n", "Duration F5 (computing similarities):", str(elapsedTimeF5.seconds))
 
 	# Update the csv file with all similarities, if changes 
 	
@@ -652,15 +651,22 @@ def getComputeSimilarities():
 			for row in sims_wk_sb:
 				try:
 					writer.writerow([row[0], row[1], row[2]])
+					print(row[0])
 				except:
 					print("Error writing csv with similarities", row)
 					_appendFile(logFilename, "Error writing csv with similarities"+str(row))
 		
 			csvFile.close()
 
-	docsCorpus = Sort(sims_wk_sb)
-	sizeCorpus = int(lenListWithWikicats / 10)
-	docsCorpus = docsCorpus[:sizeCorpus]
+	
+	def Sort(trili): 
+		trili.sort(reverse=True, key = lambda x: x[1]) 
+		return trili
+	
+	# compute docCorpus with the 5% docs with higher wikicat similarity
+	docsCorpus = Sort(sims_wk_sb)  # order by wikicat similarity
+	sizeCorpus = int(lenListWithWikicats / 20)   # size of 5%
+	docsCorpus = docsCorpus[:sizeCorpus]   # keep only 5%
 	
 	listDocsCorpus = list(map(lambda x: (_SCRAPPED_PAGES_FOLDER+"/"+x[0],x[1],x[2]), docsCorpus))
 	
@@ -680,16 +686,61 @@ def getComputeSimilarities():
 	
 		csvFile.close()
 	
+	# Save the discarded_pages_list to a file
+	_saveFile(_DISCARDED_PAGES_FILENAME, '\n'.join(discarded_pages_list))
+	
+	printSimsDistribution(lenListWithWikicats, distribution_wk, distribution_sb)
+	
 	result["elapsedTimeF5"] = elapsedTimeF5.seconds
 	result["distribution_wk"] = distribution_wk
 	result["distribution_sb"] = distribution_sb
-	result["docsCorpus"] = listDocsCorpus
+	result["listDocsCorpus"] = listDocsCorpus
 		
-	# Save the discarded_pages_list to a file
-	_saveFile(_DISCARDED_PAGES_FILENAME, '\n'.join(discarded_pages_list))
-	# print(str(len(discarded_pages_list)) + " discarded pages")
+	return jsonify(result)
+
+
+
+
+
+
+
+# QUERY (/getTrainD2V) to attend the query to train the Doc2Vec network
+# receives:
+# * the list of corpus docs 
+# returns: 
+		
+def getTrainD2V():
 	
+	result = {}  # object to store the results to be returned to the request
 	
+	logFilename = "corpus.log"
+	logFile = _Open(logFilename, "a")
+	logFile.write("\n\n")
+	logFile.write(str(datetime.now())+"\n")
+	logFile.close()
+	
+	listDocsCorpus = json.loads(request.values.get("listDocsCorpus"))  # get parameter with the corpus docs
+
+	startTime = datetime.now()
+	
+	_processS1List(".", listDocsCorpus)
+
+	endTime = datetime.now()
+	elapsedTimeF6 = endTime - startTime
+	
+	result["elapsedTimeF6"] = elapsedTimeF6
+	
+	return jsonify(result)
+
+
+
+
+
+
+
+# to print similarity results distributions
+def printSimsDistribution (lenListWithWikicats, distribution_wk, distribution_sb):
+
 	# print distributions
 	t0 = distribution_wk["0"]
 	p0 = 100*t0/lenListWithWikicats
@@ -813,8 +864,8 @@ def getComputeSimilarities():
 	print("8: %6d - %8.2f - %8.2f" % (t8, p8, p8a))
 	print("9: %6d - %8.2f - %8.2f" % (t9, p9, p9a))
 				
+	return
 
-	return jsonify(result)
 	
 	
 	

@@ -180,7 +180,7 @@ def rebuild (byOffset):
 # input 'source' .s file (a .s.p file must already exist)
 # output 'source.w' result file and 'source.w.html' with entities highlighte
 # source.s.w.p and source.w.p.html are also created
-def processFile(source):
+def processS3File(source):
 	if not source.endswith(".s"):
 		print(source+" has not '.s' extension")
 		return -1
@@ -210,7 +210,7 @@ def processFile(source):
 # input: 'source' folder
 # output: for each .s file in source/files_s_p_w, both '.s.w' result file and '.s.w.html' with entities highlighted
 # .s.w.p and .s.w.p.html are also created
-def processFolder(source):
+def processS3Folder(source):
 	if not os.path.exists(source):
 		print(source, "not found!")
 		return -1

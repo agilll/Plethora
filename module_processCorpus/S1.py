@@ -13,7 +13,7 @@
 import os
 import sys
 
-from S1_AddSuffixToTexts import processFile as _processFile, processFolder as _processFolder
+from S1_AddSuffixToTexts import processS1File as _processS1File, processS1Folder as _processS1Folder
 
 
 # variable to control if aggregated file must be created     
@@ -55,7 +55,7 @@ if os.path.isfile(source):
 		print("The file "+source+" is not '.txt'")
 		exit(-1)
 	print("Processing file "+source+"...\n")
-	_processFile(source)
+	_processS1File(source)
 	
 # source is a folder. It must be the base CORPUS folder
 # it must exist a files_txt folder inside
@@ -65,7 +65,7 @@ elif os.path.isdir(source):
 		print(source, "not found!")
 		exit()
 	print("Processing folder "+source+"...")
-	ok = _processFolder(source)
+	ok = _processS1Folder(source)
 	if ok == -1:
 		print("Could not process", source)
 		exit()

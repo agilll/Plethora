@@ -13,7 +13,7 @@
 import os
 import sys
 
-from S2_BuildDbpediaInfoFromTexts import processFile as _processFile, processFolder as _processFolder
+from S2_BuildDbpediaInfoFromTexts import processS2File as _processS2File, processS2Folder as _processS2Folder
 
 # parameter checking
 
@@ -61,7 +61,7 @@ print("Processing with Confidence=", confidence, " and Support=", support, "\n")
 
 # process a file, source is a .s file
 if os.path.isfile(source):
-	ok = _processFile(source, confidence, support)
+	ok = _processS2File(source, confidence, support)
 	if ok == -1:
 		print(source, "could not be processed")
 	
@@ -70,7 +70,7 @@ if os.path.isfile(source):
 # it must exist a files_s_p_w folder inside
 # process all '.s' files in source/files_s_p_w
 elif os.path.isdir(source):
-	ok = _processFolder(source, confidence, support)
+	ok = _processS2Folder(source, confidence, support)
 	if ok == -1:
 		print(source, "could not be processed")
 	

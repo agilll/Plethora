@@ -164,6 +164,15 @@
 			<div class="form-group" style="margin-bottom: 0px">
 				<input style="background-color: #0066cc; color: white" id="submitF5_trainD2V" type="button" value="Next step: train D2V model with corpus"></input>
 			</div>
+			
+			
+			
+			<h3 style="color: #0066cc" id='legendF6_D2V'>
+				<hr style="border-top: 1px solid red;">
+				5. Doc2Vec network training
+			</h3>
+			
+			<div id='contentF6_D2V'></div> <!-- empty div to later show the result -->
 		</div>
 				
 	
@@ -218,6 +227,9 @@
 				$(legendF5_similarities).hide()
 				$(contentF5_similarities).hide() 
 				$(submitF5_trainD2V).hide()
+				
+				$(legendF6_D2V).hide()
+				$(contentF6_D2V).hide() 
 				
 				// click to request server to get the wikicats of the original text 
 				// Flask "/getWikicatsFromText" is requested
@@ -548,6 +560,40 @@
 				});
 			
 	
+
+	
+				// click to request server to train the Doc2Vec network
+				// Flask "/getTrainD2V" is requested
+				// receives result 
+				$(submitF5_trainD2V).click(function(event) {
+					$("#spinner").modal("show");
+
+					$.ajax({
+						type: "POST",
+						url: "getTrainD2V",
+						data: {"listDocsCorpus": JSON.stringify(listDocsCorpus)},  // send the listDocsCorpus received in the previous phase
+						success: function(result) {
+							$("#spinner").modal("hide");
+							$(legendF6_D2V).show()
+				
+							if (result.hasOwnProperty("error")) {
+								$(contentF6_D2V).hide()
+								alert("error received")
+								return
+							}
+
+							console.log("Result of phase 6")
+							console.log(result)
+																				
+							// present results
+							results = "<b>Duration of F6: " + result['elapsedTimeF6']  + " seconds</b><br>\n"
+		
+							$(contentF6_D2V).html(results)
+							$(contentF6_D2V).show()
+							// $(submitF5_trainD2V).show()
+						}
+					});
+				});
 	
 			});
 	

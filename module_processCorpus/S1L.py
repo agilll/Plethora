@@ -12,7 +12,7 @@
 import os
 import sys
 
-from S1_AddSuffixToTexts import processList as _processList
+from S1_AddSuffixToTexts import processS1List as _processS1List
 
 
 # variable to control if aggregation must be created     
@@ -50,7 +50,7 @@ else:
 # source is a folder. It will be the base CORPUS folder for output files. It will be created in processList if does not exist
 	
 print("Processing list...")
-_processList(source, ["/Users/agil/Google Drive/KORPUS/SCRAPPED_PAGES/en.wikipedia.org/wiki..Eudamidas_I.txt", "/Users/agil/Google Drive/KORPUS/SCRAPPED_PAGES/en.wikipedia.org/wiki..Pleistarchus.txt"])
+_processS1List(source, ["/Users/agil/Google Drive/KORPUS/SCRAPPED_PAGES/en.wikipedia.org/wiki..Eudamidas_I.txt", "/Users/agil/Google Drive/KORPUS/SCRAPPED_PAGES/en.wikipedia.org/wiki..Pleistarchus.txt"])
 
 
 # if -g, all resulting files are aggregated

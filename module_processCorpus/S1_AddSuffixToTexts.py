@@ -28,7 +28,7 @@ from aux_process import  TXT_FOLDER as _TXT_FOLDER, SPW_FOLDER as _SPW_FOLDER
 
 
 # processFile: to process a file (parameter 'filename') and store the result as filename.s
-def processFile (filename):
+def processS1File (filename):
 	with open(filename, 'r') as content_file:
 		content = content_file.read()  # the original content of the file is read 
 	
@@ -57,7 +57,7 @@ def processFile (filename):
 # it receives the CORPUS base folder for input and output files
 # it must have a 'files_txt' folder inside with the input .txt files
 # outputs:	for each processed file, several files will be created in folder/files_s_p_w
-def processFolder (foldername):
+def processS1Folder (foldername):
 
 	txt_folder = foldername + _TXT_FOLDER  # subfolder with the input .txt files
 	# check that the subfolder files_txt/  exists
@@ -109,7 +109,7 @@ def processFolder (foldername):
 # it receives a list with the input filenames of the the CORPUS
 # it receives the CORPUS base folder for output files
 # outputs:	for each processed file, several files will be created in folder/files_s_p_w
-def processList (foldername, fileList):
+def processS1List (foldername, fileList):
 
 	if not os.path.exists(foldername):  # create CORPUS folder for output files if does not exist
 		os.makedirs(foldername)

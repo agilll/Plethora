@@ -11,7 +11,7 @@
 import os, os.path
 import sys
 
-from S3_UpdateTextsEntities import processFile as _processFile, processFolder as _processFolder
+from S3_UpdateTextsEntities import processS3File as _processS3File, processS3Folder as _processS3Folder
 
 # parameter checking
 
@@ -33,7 +33,7 @@ else:
 
 # process a file
 if os.path.isfile(source):
-	ok = _processFile(source)
+	ok = _processS3File(source)
 	if ok == -1:
 		print(source, "could not be processed")
 			
@@ -41,7 +41,7 @@ if os.path.isfile(source):
 # it must exist a files_s_p_w folder inside
 # process all '.s' files in source/files_s_p_w
 elif os.path.isdir(source):
-	ok = _processFolder(source)
+	ok = _processS3Folder(source)
 	if ok == -1:
 		print(source, "could not be processed")
 	

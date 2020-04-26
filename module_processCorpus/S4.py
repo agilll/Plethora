@@ -17,7 +17,7 @@
 import os
 import sys
 
-from S4_tokenize import processFile as _processFile, processFolder as _processFolder
+from S4_tokenize import processS4File as _processS4File, processS4Folder as _processS4Folder
 
 # parameter checking
 
@@ -45,13 +45,13 @@ else:
 # process a file
 if os.path.isfile(source):
 	print("Processing file "+source+"...\n")
-	ok = _processFile(source)
+	ok = _processS4File(source)
 	if ok == -1:
 		print(source, "could not be processed")
 
 # process a folder
 elif os.path.isdir(source):
-	ok = _processFolder(source)
+	ok = _processS4Folder(source)
 	if ok == -1:
 		print(source, "could not be processed")
 	
