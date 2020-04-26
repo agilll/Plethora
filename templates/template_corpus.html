@@ -188,6 +188,7 @@
 			listWithoutDuplicates = [];
 			listEnoughContent = [];
 			listWithWikicats = [];
+			listDocsCorpus = [];
 			
 			$(document).ready(function () {
 				
@@ -228,6 +229,7 @@
 						url: "/getWikicatsFromText",
 						data: {"text":  $(contentF0_corpusText).val()},  // send the text with 'text' key
 						success: function(result) {
+							$("#spinner").modal("hide");
 							$(legendF1_selectWikicats).show()
 							if (result.hasOwnProperty("error")) {
 								results = "<b style='color: red'>"+result["error"]+"</b>"
@@ -235,7 +237,7 @@
 							else {
 								lenOriginalText = result["lenOriginalText"]
 								formerSelectedWikicats =  result["formerSelectedWikicats"]
-								console.log("Wikicats selected in the past")
+								console.log("Result of phase 1: wikicats selected in the past")
 								console.log(formerSelectedWikicats)
 								
 								wikicatList = result["wikicats"]   // this is the list of wikicats in text
@@ -299,7 +301,6 @@
 								*/
 							}
 
-							$("#spinner").modal("hide");
 						}
 					});
 				});
@@ -340,17 +341,21 @@
 						url: "getUrlsCandidateFiles",  // "/buildCorpus2",
 						data: {"overwriteCorpus": overwriteCorpus, "selectedWikicats":  JSON.stringify(selectedWikicats), "text":  $("#contentF0_corpusText").val()},  // send the selected wikicats and the context text
 						success: function(result) {
-							$(legendF2_numberURLsDiscovered).show()
-							console.log(result)
 							$("#spinner").modal("hide");
-													
+							$(legendF2_numberURLsDiscovered).show()
+									
 							if (result.hasOwnProperty("error")) {
 								$(contentF2_showNumberUrls).hide()
 								alert("error received")
 								return
 							}
 							
+							console.log("Result of phase 2: number of URLs found for each wikicat")
+							console.log(result)
+							
 							listWithoutDuplicates = result["listWithoutDuplicates"]   // list of unique URLs 
+							console.log("List of pages without duplicates")
+							console.log(listWithoutDuplicates)
 							
 							// present the summary of results
 							results = "<b>"+selectedWikicats.length+" wikicats</b><br>\n"
@@ -397,25 +402,26 @@
 						url: "/getWikicatUrls",
 						data: {"wikicat":  wikicat, "DB": DB},
 						success: function(result) {
+							$("#spinner").modal("hide");
+							
 							if (result.hasOwnProperty("error")) {
 								results = "error in query"
+								return
 							}
-							else {
-								values = result["urls"]
+
+							values = result["urls"]
 	
-								results = values.length+"<br>\n"
-								values.forEach(function(u){
-									results += "<a href='"+u+"'>"+u+"</a><br>";
-								});
+							results = values.length+"<br>\n"
+							values.forEach(function(u){
+								results += "<a href='"+u+"'>"+u+"</a><br>";
+							});
 							
-							}
 							if (w1 == null) alert("error opening window [w1]")
 							else {
 								w1.document.open();
 								w1.document.write(results);
 								w1.document.close();
 							}
-							$("#spinner").modal("hide");
 						}
 					});
 				});
@@ -428,23 +434,26 @@
 				// receives number of files with enough content
 				$(submitF2_DownloadURLs).click(function(event) {
 					$("#spinner").modal("show");
-					console.log(listWithoutDuplicates)
 					$.ajax({
 						type: "POST",
 						url: "getDownloadCandidateTexts",
 						data: {"listWithoutDuplicates": JSON.stringify(listWithoutDuplicates)},  // send the listWithoutDuplicates received in the previous phase
 						success: function(result) {
-							$(legendF3_numberTextsDownloaded).show()
-							console.log(result)
 							$("#spinner").modal("hide");
-													
+							$(legendF3_numberTextsDownloaded).show()
+					
 							if (result.hasOwnProperty("error")) {
 								$(contentF3_numberTextsDownloaded).hide()
 								alert("error received")
 								return
 							}
-									
+							
+							console.log("Result of phase 3:")
+							console.log(result)
+							
 							listEnoughContent = result["listEnoughContent"]   // list of texts available with enough content
+							console.log("List of pages with enough content")
+							console.log(listEnoughContent)
 													
 							// present results
 							results = "<b>"+result['nowDownloaded']  + " new files have been downloaded in this iteration</b><br>\n"
@@ -467,15 +476,13 @@
 				// receives number of files with wikicats 
 				$(submitF3_identifyWikicats).click(function(event) {
 					$("#spinner").modal("show");
-					console.log(listEnoughContent)
 					$.ajax({
 						type: "POST",
 						url: "getIdentifyWikicats",
 						data: {"listEnoughContent": JSON.stringify(listEnoughContent)},  // send the listEnoughContent received in the previous phase
 						success: function(result) {
-							$(legendF4_numberTextsValid).show()
-							console.log(result)
 							$("#spinner").modal("hide");
+							$(legendF4_numberTextsValid).show()
 													
 							if (result.hasOwnProperty("error")) {
 								$(contentF4_numberTextsValid).hide()
@@ -483,7 +490,12 @@
 								return
 							}
 									
+							console.log("Result of phase 4:")
+							console.log(result)
+							
 							listWithWikicats = result["listWithWikicats"]   // list of texts available with wikicats
+							console.log("List of pages with wikicats")
+							console.log(listWithWikicats)
 													
 							// present results
 							results = "<b>"+result['nowProcessed']  + " new files have been processed in this iteration</b><br>\n"
@@ -505,22 +517,25 @@
 				// receives result 
 				$(submitF4_computeSimilarities).click(function(event) {
 					$("#spinner").modal("show");
-					console.log(listWithWikicats)
+
 					$.ajax({
 						type: "POST",
 						url: "getComputeSimilarities",
 						data: {"lenOriginalText": lenOriginalText, "selectedWikicats":  JSON.stringify(selectedWikicats), "listWithWikicats": JSON.stringify(listWithWikicats)},  // send the listWithWikicats received in the previous phase
 						success: function(result) {
-							$(legendF5_similarities).show()
-							console.log(result)
 							$("#spinner").modal("hide");
-													
+							$(legendF5_similarities).show()
+				
 							if (result.hasOwnProperty("error")) {
 								$(contentF5_similarities).hide()
 								alert("error received")
 								return
 							}
-									
+
+							console.log("Result of phase 5")
+							console.log(result)
+							
+							listDocsCorpus = result["listDocsCorpus"]  
 													
 							// present results
 							results = "<b>Duration of F5: " + result['elapsedTimeF5']  + " seconds</b><br>\n"

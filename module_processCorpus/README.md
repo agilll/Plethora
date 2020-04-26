@@ -9,17 +9,17 @@ They are executed in order to finally generate .t files:
     The actual job of changing contents is done by the external 
     processContent() function, shared with the main project
 
-    python3 1AddSuffixToTexts.py folder 
+    python3 S1.py folder (calls functions in S1_AddSuffixToTexts.py)
 
 2 - build DB entities file (input .s, output .s.p)
 
-    python3 2BuildDbpediaInfoFromTexts.py folder
+    python3 S2.py folder (calls functions in S2_BuildDbpediaInfoFromTexts.py)
 
-3 - change surface forms by entity names (input .s and .p, output .s.w)
+3 - change surface forms by entity names (input .s and .p, outputs .s.w and .s.w.p)
 
-    python3 3UpdateTextsEntities.py folder
+    python3 S3.py.py folder
 
 4 - remove stopwords and tokenize (input .w, output .t)
     Requires the Stanford Core NLP server to be started and listening in port 9000
 
-    python3 4tokenize.py folder
+    python3 S4.py folder

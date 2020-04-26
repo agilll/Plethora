@@ -1,6 +1,5 @@
-#!/Library/Frameworks/Python.framework/Versions/Current/bin/python3
 
-# This script tokenizes .w files to get .t files
+# This script contains functions tokenize .w files to get .t files
 # a .w file is a text file that has been preprocessed with previous scripts
 # a .t file is a binary file, saved with pickle, containing a list of lists of words
 
@@ -29,7 +28,7 @@ from aux_process import  SPW_FOLDER as _SPW_FOLDER, T_FOLDER as _T_FOLDER
 
 
 # to process a file to convert sentences to lists of words
-# returns a global list, composed of lists of words, each per sentence
+# returns a global list, composed of lists of words, one per sentence
 def processOneFile (filename):
 	fp = open(filename)
 	data = fp.read()
@@ -79,50 +78,39 @@ def processOneFile (filename):
 
 
 
-
-# start processing
-
-# parameter checking
-
-# at least, one param
-if len(sys.argv) < 2:
-	print("Use: "+sys.argv[0]+" file|folder")
-	exit(-1)
-
-# if only one param, cannot start by '-'
-if len(sys.argv) == 2:
-	if sys.argv[1][0] == "-":
-		print("Use: "+sys.argv[0]+" file|folder")
-		exit(-1)
-	else:
-		source = sys.argv[1]  # this is the file|folder with the source data
-# error if more than one param
-else:
-	print("Use: "+sys.argv[0]+" file|folder")
-	exit(-1)
-
+# to process a file and save results
+# input 'source', a .w file 
+# output a .w.t file
+def processFile(source):
+	if not source.endswith(".w"):
+		print(source+" has not '.w' extension")
+		return -1
 	
-
-
-# process a file
-if os.path.isfile(source):
-	print("Processing file "+source+"...\n")
+	if not os.path.exists(source):
+		print(source, "not found!")
+		return -1
+	
 	result = processOneFile(source)
 	pickle.dump(result, open(source+".t", "wb" ))
+	return
 	
-# source is a folder. It must be the base CORPUS folder
+
+
+# To process a folder, source. It must be the base CORPUS folder
 # it must exist a files_s_p_w folder inside
 # process all '.w' files in source/files_s_p_w
-elif os.path.isdir(source):
+def processFolder(source):
 	spw_folder = source + _SPW_FOLDER
 	if not os.path.exists(spw_folder):
 		print(spw_folder, "not found!")
-		exit()
+		return -1
+		
 	t_folder = source + _T_FOLDER
 	if not os.path.exists(t_folder):
 		os.makedirs(t_folder)
 	
 	print("Processing folder "+spw_folder+"...")
+	
 	numFiles = 0
 	for filename in sorted(os.listdir(spw_folder)):
 		if not filename.endswith(".w"):
@@ -133,6 +121,11 @@ elif os.path.isdir(source):
 			result = processOneFile(spw_folder+filename)
 			pickle.dump(result, open(t_folder+filename+".t", "wb" ))
 		
-else:
-	print(source, "not found!")
+
 	
+
+
+
+
+
+

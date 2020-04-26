@@ -1,4 +1,3 @@
-#!/Library/Frameworks/Python.framework/Versions/Current/bin/python3
 
 # This script receives as parameter a file (.s) or a folder and, for each file, it generate other (.s.p) with the entities identified in DB-SL 
 # input: a .s file or a folder
@@ -17,6 +16,7 @@
 # ?uri dct:subject ?subject .
 # FILTER(regex(?type,'http://dbpedia.org/ontology|http://dbpedia.org/class/yago')) . FILTER(lang(?label) = 'en')} group by ?label ?uri
 
+# these functions can be used with script S2.py (to process a file or a folder)
 
 import os
 import pickle
@@ -29,7 +29,8 @@ sys.path.append('../')  # to search for imported files in the parent folder
 from px_aux import URL_DB_SL_annotate as _URL_DB_SL_annotate, getContentMarked as _getContentMarked, saveFile as _saveFile
 from px_DB_Manager import DBManager as _DBManager
 
-from aux_process import  SPW_FOLDER as _SPW_FOLDER
+from aux_process import SPW_FOLDER as _SPW_FOLDER
+
 
 # to process a file and return dictionaries with the entities detected and filtered 
 def findEntities (filename, confPar, supPar):
@@ -65,78 +66,41 @@ def findEntities (filename, confPar, supPar):
 	return allDicts
 
 
-
-
-
-# start script execution
-
-# parameter checking
-
-# at least a parameter  
-if len(sys.argv) < 2:
-	print("Use: "+sys.argv[0]+" file|folder")
-	exit(-1)
-
-confidence = 0.5   # default parameters for DB-SL
-support = 1
-
-# if one parameter it cannot start by '-'
-if len(sys.argv) == 2:
-	source = sys.argv[1]
-
-# to simplify,  '-c' and '-s' must go together, or both or none
-elif len(sys.argv) == 6:
-	if sys.argv[1] == "-c":
-		confidence = sys.argv[2]
-	elif sys.argv[1] == "-s":
-		support = sys.argv[2]
-	else:
-		print("Use: "+sys.argv[0]+" file|folder")
-		exit(-1)
+# to process a file and save results
+# input 'source' .s file
+# output 'source.p' result file and 'source.p.html' with entities highlighted
+def processFile(source, confidence=0.5, support=1):
+	if not source.endswith(".s"):
+		print(source+" has not '.s' extension")
+		return -1
+	
+	if not os.path.exists(source):
+		print(source, "not found!")
+		return -1
+	
+	print("Processing file "+source+"...\n")
+	entities = findEntities(source, confidence, support)
+	pickle.dump(entities, open(source+".p", "wb" ))
 		
-	if sys.argv[3] == "-c":
-		confidence = sys.argv[4]
-	elif sys.argv[3] == "-s":
-		support = sys.argv[4]
-	else:
-		print("Use: "+sys.argv[0]+" file|folder")
-		exit(-1)
-	
-	source = sys.argv[5]   # this is the file|folder with the source data
+	highlightedContent = _getContentMarked(source, 's')
+	_saveFile(source+".p.html", highlightedContent)
 
-else:
-	print("Use: "+sys.argv[0]+" file|folder")
-	exit(-1)
-	
-	
-	
-# start processing
+		
 
-print("Processing with Confidence=", confidence, " and Support=", support, "\n")
-
-# process a file, source is the .s global filename
-if os.path.isfile(source):
-	if source.endswith(".s"):
-		print("Processing file "+source+"...\n")
-		entities = findEntities(source, confidence, support)
-		pickle.dump(entities, open(source+".p", "wb" ))
-			
-		highlightedContent = _getContentMarked(source, 's')
-		_saveFile(source+".p.html", highlightedContent)
-	else:
-		print("The file "+source+" has not '.s' extension")
-		exit(-1)
-	
-# source is a folder. It must be the base CORPUS folder
-# it must exist a files_s_p_w folder inside
-# process all '.s' files in source/files_s_p_w
-elif os.path.isdir(source):
+# to process a folder and save results.
+# input: 'source' folder
+# output: for each .s file in source/files_s_p_w, both '.s.p' result file and '.s.p.html' with entities highlighted
+def processFolder(source, confidence=0.5, support=1):
+	if not os.path.exists(source):
+		print(source, "not found!")
+		return -1
+		
 	print("Processing folder "+source+"...")
 	numFiles = 0
 	spw_folder = source + _SPW_FOLDER
 	if not os.path.exists(spw_folder):
 		print(spw_folder, "not found!")
-		exit()
+		return -1
 	
 	for sfilename in sorted(os.listdir(spw_folder)):
 		if sfilename.endswith(".s"):
@@ -150,10 +114,11 @@ elif os.path.isdir(source):
 			_saveFile(sfullfilename+".p.html", highlightedContent)
 		else:
 			continue
-	
-else:
-	print(source, "not found!")
-	exit(-1)
+		
+		
+		
+		
+
 	
 	
 

@@ -19,7 +19,6 @@ sys.path.append('../')
 from routesCorpus import getWikicatsFromText as _getWikicatsFromText, getUrlsCandidateFiles as _getUrlsCandidateFiles, getWikicatUrls as _getWikicatUrls
 from routesCorpus import getDownloadCandidateTexts as _getDownloadCandidateTexts, getIdentifyWikicats as _getIdentifyWikicats
 from routesCorpus import getComputeSimilarities as _getComputeSimilarities
-#from routesCorpus2 import buildCorpus2 as _buildCorpus2
 from aux_build import INITIAL_TEXT as _INITIAL_TEXT
 import aux_build
 
@@ -69,7 +68,6 @@ app.add_url_rule("/getUrlsCandidateFiles", "getUrlsCandidateFiles", _getUrlsCand
 app.add_url_rule("/getDownloadCandidateTexts", "getDownloadCandidateTexts", _getDownloadCandidateTexts, methods=["POST"])  # to request the downloading of the candidate files
 app.add_url_rule("/getIdentifyWikicats", "getIdentifyWikicats", _getIdentifyWikicats, methods=["POST"])  # to request the identification of wikicats in candidate files
 app.add_url_rule("/getComputeSimilarities", "getComputeSimilarities", _getComputeSimilarities, methods=["POST"])  # to request to compute similarities for candidate texts
-#app.add_url_rule("/buildCorpus2", "buildCorpus2", _buildCorpus2, methods=["POST"])   # to send some wikicats and request to build the corpus
 app.add_url_rule("/getWikicatUrls", "getWikicatUrls", _getWikicatUrls, methods=["GET"])  # to send the Urls derived from a wikicat
 
 # this is the main entry point of the corpus builder tool (not done in the main tool, so always necessary)

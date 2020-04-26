@@ -292,9 +292,9 @@ def getDownloadCandidateTexts():
 			_Print("File already available in local DB:", fileNameCandidate)
 			fsize = os.path.getsize(fileNameCandidate)
 			if fsize < _CORPUS_MIN_TXT_SIZE:
-				listNotEnoughContent.append(page)
+				listNotEnoughContent.append(fileNameCandidate)
 			else:
-				listEnoughContent.append(page)
+				listEnoughContent.append(fileNameCandidate)
 		else:  # fetch file if not exists	
 			try:  # Retrieves the URL, and get the page title and the scraped page content
 				pageName, pageContent = scrap.scrapPage(page)  # pageName result is not used
@@ -303,9 +303,9 @@ def getDownloadCandidateTexts():
 				_Print("File "+str(nowDownloaded)+" downloaded and saved it:", fileNameCandidate)
 				
 				if (len(pageContent) < _CORPUS_MIN_TXT_SIZE):
-					listNotEnoughContent.append(page)
+					listNotEnoughContent.append(fileNameCandidate)
 				else:
-					listEnoughContent.append(page)
+					listEnoughContent.append(fileNameCandidate)
 			except Exception as exc:
 				_appendFile(logFilename, "Page "+page+" could not be retrieved: "+repr(exc))
 				unretrieved_pages_list.append(page)
@@ -323,8 +323,8 @@ def getDownloadCandidateTexts():
 	
 	print("ALL PAGES AVAILABLE AND CLEANED.")
 	print("New pages downloaded in this iteration:", str(nowDownloaded))
-	print("Number of pages with enough content:", str(lenListEnoughContent))
-	print("Number of pages without enough content:", str(len(listNotEnoughContent)))
+	print("Number of texts with enough content:", str(lenListEnoughContent))
+	print("Number of texts without enough content:", str(len(listNotEnoughContent)))
 	print("Duration F3 (downloading and cleaning):", str(elapsedTimeF3.seconds))
 
 	result["nowDownloaded"] = nowDownloaded
@@ -344,7 +344,7 @@ def getDownloadCandidateTexts():
 
 # QUERY (/getIdentifyWikicats)  to attend the query to identify wikicats in candidate texts
 # receives:
-# * the list of candidate texts
+# * the list of candidate texts with enough content (>300 bytes)
 # returns: the number of downloaded and cleaned files with and without enough content	
 		
 def getIdentifyWikicats():
@@ -363,35 +363,31 @@ def getIdentifyWikicats():
 	print("\n", "********** Identifying wikicats and subjects for", lenListEnoughContent, "candidate texts with DBpedia SpotLight...","\n")
 	nowProcessed = 0
 	
-	listWithWikicats = [] # list of pages with available wikicats
-	listWithoutWikicats = [] # list of pages with no wikicats
+	listWithWikicats = [] # list of docs with available wikicats
+	listWithoutWikicats = [] # list of docs with no wikicats
 	startTime = datetime.now()
 	
-	for idx, page in enumerate(listEnoughContent, start=1):
+	for idx, doc in enumerate(listEnoughContent, start=1):
 		if (idx % 5000) == 0:
 			print(".", end=' ', flush=True)
-		_Print("\n("+str(idx)+" of "+str(lenListEnoughContent)+") -- ", page)
+		_Print("\n("+str(idx)+" of "+str(lenListEnoughContent)+") -- ", doc)
 						
-		# Build filenames for this page
-		pageWithoutHTTP = page[2+page.find("//"):]
-		domainFolder = pageWithoutHTTP[:pageWithoutHTTP.find("/")]
-		onlyPage = pageWithoutHTTP[1+pageWithoutHTTP.find("/"):]
-		onlyPageChanged =  onlyPage.replace("/", "..")
-		fileNameCandidateBase = _SCRAPPED_PAGES_FOLDER+"/"+domainFolder+"/"+onlyPageChanged
-		fileNameCandidate = fileNameCandidateBase+".txt"
-		fileNameCandidateWikicats = fileNameCandidateBase+".wk"    # wikicats file for this page
-		fileNameCandidateSubjects = fileNameCandidateBase+".sb"    # subjects file for this page
+		# Build filenames for this doc
+		fileNameCandidate = doc
+		fileNameCandidateBase = doc[:doc.rfind(".")]
+		fileNameCandidateWikicats = fileNameCandidateBase+".wk"    # wikicats file for this doc
+		fileNameCandidateSubjects = fileNameCandidateBase+".sb"    # subjects file for this doc
 				
 		# if both files (wikicats and subjects) exists, use them from local store
 		if os.path.exists(fileNameCandidateWikicats) and os.path.exists(fileNameCandidateSubjects):
 			_Print("Files WK and SB already available in local DB for", fileNameCandidate)
 			fwsize = os.path.getsize(fileNameCandidateWikicats)
 			fssize = os.path.getsize(fileNameCandidateSubjects)
-			# if one of these two files is empty (no wikicats or no subjects), this page will not be used
+			# if one of these two files is empty (no wikicats or no subjects), this doc will not be used
 			if (fwsize == 0) or (fssize == 0):
-				listWithoutWikicats.append(page)
+				listWithoutWikicats.append(doc)
 			else:
-				listWithWikicats.append(page)
+				listWithWikicats.append(doc)
 		else: # if one file not exists, fetch from Internet candidate text wikicats and subjects		
 			try:  # open and read text of candidate file
 				candidateTextFile = _Open(fileNameCandidate, "r")
@@ -399,15 +395,15 @@ def getIdentifyWikicats():
 				_Print("Reading candidate text file:", fileNameCandidate)
 			except:  # file that inexplicably could not be read from local store, it will not be used
 				_appendFile(logFilename, "ERROR buildCorpus2(): Unavailable candidate file, not in the store, but it should be: "+fileNameCandidate)
-				listWithoutWikicats.append(page)
+				listWithoutWikicats.append(doc)
 				continue
 			
-			_Print("Computing wikicats and subjects for:", page)
+			_Print("Computing wikicats and subjects for:", doc)
 			candidate_text_categories = _getCategoriesInText(candidate_text)  # function _getCategoriesInText from px_DB_Manager
 			
 			if ("error" in candidate_text_categories):  # error while fetching info, the page will not be used
 				_appendFile(logFilename, "ERROR buildCorpus2(): Problem in _getCategoriesInText(candidate_text): "+candidate_text_categories["error"])
-				listWithoutWikicats.append(page)
+				listWithoutWikicats.append(doc)
 				continue
 				
 			_Print("Wikicats and subjects downloaded for", fileNameCandidate)
@@ -420,9 +416,9 @@ def getIdentifyWikicats():
 			
 			# if no wikicats or no subjects, teh page will not be used
 			if (len(candidate_text_wikicats) == 0) or (len(candidate_text_subjects) == 0):
-				listWithoutWikicats.append(page)
+				listWithoutWikicats.append(doc)
 			else:
-				listWithWikicats.append(page)
+				listWithWikicats.append(doc)
 
 	endTime = datetime.now()
 	elapsedTimeF4 = endTime - startTime
@@ -433,8 +429,8 @@ def getIdentifyWikicats():
 	
 	print("\n","ALL WIKICATs AND SUBJECTs COMPUTED")
 	print("New items processed in this iteration:", str(nowProcessed))
-	print("Number of pages with wikicats:", str(lenListWithWikicats))
-	print("Number of pages without wikicats:", str(len(listWithoutWikicats)))
+	print("Number of docs with wikicats:", str(lenListWithWikicats))
+	print("Number of docs without wikicats:", str(len(listWithoutWikicats)))
 	print("Duration F4 (identifying wikicats):", str(elapsedTimeF4.seconds))
 		
 	result["nowProcessed"] = nowProcessed
@@ -456,7 +452,7 @@ def getIdentifyWikicats():
 
 # QUERY (/getComputeSimilarities)  to attend the query to compute similarities for candidate texts
 # receives:
-# * the list of candidate texts
+# * the list of candidate texts with wikicats
 # returns: the resulting data	
 		
 def getComputeSimilarities():
@@ -504,7 +500,7 @@ def getComputeSimilarities():
 			reader = csv.reader(csvFile, delimiter=' ')
 			next(reader)  # to skip header
 			for row in reader:
-				sims_wk_sb.append(row)
+				sims_wk_sb.append((_SCRAPPED_PAGES_FOLDER+"/"+row[0], row[1], row[2]))
 		
 			csvFile.close()
 	except:
@@ -513,23 +509,19 @@ def getComputeSimilarities():
 	# Measure text similarity to discard pages (discarded_pages_list) without a minimum similarity
 	startTime = datetime.now()
 	
-	for idx, page in enumerate(listWithWikicats, start=1):
+	for idx, doc in enumerate(listWithWikicats, start=1):
 		if (idx % 5000) == 0:
 			print(".", end=' ', flush=True)
-		_Print("("+str(idx)+" of "+str(lenListWithWikicats)+") -- ", page)
+		_Print("("+str(idx)+" of "+str(lenListWithWikicats)+") -- ", doc)
 						
 		# Build filename for this page
-		pageWithoutHTTP = page[2+page.find("//"):]
-		domainFolder = pageWithoutHTTP[:pageWithoutHTTP.find("/")]   # dns name for this page
-		onlyPage = pageWithoutHTTP[1+pageWithoutHTTP.find("/"):]    # forlder and page name of this page
-		onlyPageChanged =  onlyPage.replace("/", "..")   # change folder separator '/' by '..'
 		
-		pagename_in_resultsFile = domainFolder+"/"+onlyPageChanged+".txt"   # name of the page in results file 'length.sims.csv'
-		
-		fileNameCandidateBase = _SCRAPPED_PAGES_FOLDER+"/"+domainFolder+"/"+onlyPageChanged
-		fileNameCandidate = fileNameCandidateBase+".txt"
-		fileNameCandidateWikicats = fileNameCandidateBase+".wk"
-		fileNameCandidateSubjects = fileNameCandidateBase+".sb"
+		#pagename_in_resultsFile = doc  # name of the doc in results file 'length.sims.csv'
+				
+		fileNameCandidate = doc
+		fileNameCandidateBase = doc[:doc.rfind(".")]
+		fileNameCandidateWikicats = fileNameCandidateBase+".wk"    # wikicats file for this doc
+		fileNameCandidateSubjects = fileNameCandidateBase+".sb"    # subjects file for this doc
 				
 		# try:  # open and read local file if already exists
 		# 	candidateTextFile = _Open(fileNameCandidate, "r")
@@ -566,13 +558,12 @@ def getComputeSimilarities():
 		
 		# now compute similarities if not already stored in length.sims.csv
 		try:
-			_Print("Searching result for", pagename_in_resultsFile)
-			match = next(x for x in sims_wk_sb if x[0] == pagename_in_resultsFile)   # search if already exists in results file
-			_Print("Found already computed similarities for", pagename_in_resultsFile)
+			_Print("Searching previously computed result for", fileNameCandidate)
+			match = next(x for x in sims_wk_sb if x[0] == fileNameCandidate)   # search if already exists in results file
+			_Print("Found already computed similarities for", fileNameCandidate)
 			shared_wikicats_jaccard_similarity = float(match[1])
 			shared_subjects_jaccard_similarity = float(match[2])
 		except:
-			#input("Not found. Computing similarities for "+pagename_in_resultsFile)
 			# Measure wikicats similarity (requires shared matching)
 			shared_wikicats_jaccard_similarity = similarity.sharedWikicatsSimilarity(fileNameCandidateWikicats, logFilename)
 			if shared_wikicats_jaccard_similarity < 0:
@@ -586,7 +577,8 @@ def getComputeSimilarities():
 				_appendFile(logFilename, "ERROR computing sharedSubjectsJaccard: "+fileNameCandidateSubjects)
 				continue
 
-			sims_wk_sb.append((pagename_in_resultsFile, shared_wikicats_jaccard_similarity, shared_subjects_jaccard_similarity))
+			name_in_simsFile = fileNameCandidate.replace(_SCRAPPED_PAGES_FOLDER+"/", "")
+			sims_wk_sb.append((name_in_simsFile, shared_wikicats_jaccard_similarity, shared_subjects_jaccard_similarity))
 			simsUpdated = True
 		
 		_Print("Wikicats shared jaccard similarity =", str(shared_wikicats_jaccard_similarity))
@@ -647,27 +639,7 @@ def getComputeSimilarities():
 		trili.sort(reverse=True, key = lambda x: x[1]) 
 		return trili
 
-	docsCorpus = Sort(sims_wk_sb)
-	sizeCorpus = int(lenListWithWikicats / 10)
-	docsCorpus = docsCorpus[:sizeCorpus]
-	
-	# save corpus filenames
-	with _Open(filenameCorpus, 'w') as csvFile:
-		fieldnames = ['Text', 'Wikicats Similarity', 'Subject Similarity']	# Name columns
-		writer = csv.DictWriter(csvFile, fieldnames=fieldnames, delimiter=" ") # Create csv headers
-		writer.writeheader()	# Write the column headers
-	
-		writer = csv.writer(csvFile, delimiter=' ')
-		for row in docsCorpus:
-			try:
-				writer.writerow([row[0], row[1], row[2]])
-			except:
-				print("Error writing corpus csv", row)
-				_appendFile(logFilename, "Error writing corpus csv "+str(row))
-	
-		csvFile.close()
-	
-	
+
 	# Update the csv file with all similarities, if changes 
 	
 	if simsUpdated:
@@ -681,15 +653,37 @@ def getComputeSimilarities():
 				try:
 					writer.writerow([row[0], row[1], row[2]])
 				except:
-					print("Error writing csv", row)
-					_appendFile(logFilename, "Error writing csv "+str(row))
+					print("Error writing csv with similarities", row)
+					_appendFile(logFilename, "Error writing csv with similarities"+str(row))
 		
 			csvFile.close()
+
+	docsCorpus = Sort(sims_wk_sb)
+	sizeCorpus = int(lenListWithWikicats / 10)
+	docsCorpus = docsCorpus[:sizeCorpus]
 	
+	listDocsCorpus = list(map(lambda x: (_SCRAPPED_PAGES_FOLDER+"/"+x[0],x[1],x[2]), docsCorpus))
+	
+	# save corpus filenames
+	with _Open(filenameCorpus, 'w') as csvFile:
+		fieldnames = ['Text', 'Wikicats Similarity', 'Subject Similarity']	# Name columns
+		writer = csv.DictWriter(csvFile, fieldnames=fieldnames, delimiter=" ") # Create csv headers
+		writer.writeheader()	# Write the column headers
+	
+		writer = csv.writer(csvFile, delimiter=' ')
+		for row in listDocsCorpus:
+			try:
+				writer.writerow([row[0], row[1], row[2]])
+			except:
+				print("Error writing csv with corpus", row)
+				_appendFile(logFilename, "Error writing csv with corpus"+str(row))
+	
+		csvFile.close()
 	
 	result["elapsedTimeF5"] = elapsedTimeF5.seconds
 	result["distribution_wk"] = distribution_wk
 	result["distribution_sb"] = distribution_sb
+	result["docsCorpus"] = listDocsCorpus
 		
 	# Save the discarded_pages_list to a file
 	_saveFile(_DISCARDED_PAGES_FILENAME, '\n'.join(discarded_pages_list))

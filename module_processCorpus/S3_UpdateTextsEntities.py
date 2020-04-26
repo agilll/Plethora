@@ -1,11 +1,10 @@
-#!/Library/Frameworks/Python.framework/Versions/Current/bin/python3
 
-# This script changes in a .s file (or all .s files in a folder) every surface form detected (located in .s.p file) by the entity name 
+# This script process a .s file (or all .s files in a folder) changing every surface form detected (annotated in .s.p file) by the entity name 
 # input: a .s file, or a folder 
 #			if folder, folder/files_s_p_w must exist, and all '.s' files in folder/files_s_p_w will be processed  (for every .s file a .s.p file is supposed to exist with the entities)
 # output: several files will be created in folder/files_s_p_w
-#			a .s.w file with the changes, for every processed file
-#			a .s.w.p file with the updated entities, as the surface forms and the offsets have changed
+#			a .s.w file with the changes, for every processed file (and the corresponding .s.w.html to highlight changes)
+#			a .s.w.p file with the updated entities, as the surface forms and the offsets have changed (and the corresponding .s.w.p.html to highlight changes)
 
 # process the file contents twice, and it is stored in memory (could be a problem for large texts)
 
@@ -17,7 +16,7 @@ sys.path.append('../')    # to search for imported files in the parent folder
 
 from px_aux import getContentMarked as _getContentMarked, saveFile as _saveFile
 
-from aux_process import  SPW_FOLDER as _SPW_FOLDER
+from aux_process import SPW_FOLDER as _SPW_FOLDER
 
 
 # aux functions
@@ -32,7 +31,7 @@ from aux_process import  SPW_FOLDER as _SPW_FOLDER
 	
 	
 # to apply all processing to a .s file and return result to save it in a '.s.w' file  
-# besides, as a colateral effect (not good), saves the new file '.s.w.p'
+# besides, as a collateral effect (not an appropriate solution), saves the new file '.s.w.p' with the entities updated
 def getContentAfterChanges (sfilename, pfilename):
 	
 	finalContent = ""
@@ -138,7 +137,7 @@ def getContentAfterChanges (sfilename, pfilename):
 
 
 # rebuild byUri and byType from the new byOffset
-def rebuild(byOffset):
+def rebuild (byOffset):
 		newByType = {}
 		newByUri = {}
 		checkDuplicates = []
@@ -175,49 +174,53 @@ def rebuild(byOffset):
 
 
 
-# start processing
-
-# parameter checking
-
-# ok if only one param  
-if len(sys.argv) == 2:
-	# if only one param, cannot start by '-'
-	if sys.argv[1][0] == "-":
-		print("Use: "+sys.argv[0]+" file|folder")
-		exit(-1)
-	else:
-		source = sys.argv[1]   # this is the file|folder with the source data
-# error if more than one param
-else:
-	print("Use: "+sys.argv[0]+" file|folder")
-	exit(-1)
 
 
-# start processing
-
-# process a file
-if os.path.isfile(source):
+# to process a file and save results
+# input 'source' .s file (a .s.p file must already exist)
+# output 'source.w' result file and 'source.w.html' with entities highlighte
+# source.s.w.p and source.w.p.html are also created
+def processFile(source):
 	if not source.endswith(".s"):
-		print("The file "+source+" has not '.s' extension")
-		exit(-1)
+		print(source+" has not '.s' extension")
+		return -1
+	
+	if not os.path.exists(source):
+		print(source, "not found!")
+		return -1
+	
+	if not os.path.exists(source+".p"):
+		print(source+".p", "not found!")
+		return -1
+	
 	print("Processing file "+source+"...\n")
 	result = getContentAfterChanges(source, source+".p")
+	
 	# save result in files with the same name a new extensions  
-	_saveFile(source+".w", result[0])   # the new text with extensióo '.w'
+	_saveFile(source+".w", result[0])   # the new text with extension '.w'
 	_saveFile(source+".w.html", result[1])   # the report with the changes with extension '.w.html'
 	
 	highlightedContent = _getContentMarked(source+".w", "w")
 	_saveFile(source+".w.p.html", highlightedContent)
-			
-# source is a folder. It must be the base CORPUS folder
-# it must exist a files_s_p_w folder inside
-# process all '.s' files in source/files_s_p_w
-elif os.path.isdir(source):
+	
+	
+	
+	
+# to process a folder and save results.
+# input: 'source' folder
+# output: for each .s file in source/files_s_p_w, both '.s.w' result file and '.s.w.html' with entities highlighted
+# .s.w.p and .s.w.p.html are also created
+def processFolder(source):
+	if not os.path.exists(source):
+		print(source, "not found!")
+		return -1
+		
 	print("Processing folder "+source+"...")
 	spw_folder = source + _SPW_FOLDER
 	if not os.path.exists(spw_folder):
 		print(spw_folder, "not found!")
-		exit()
+		return -1
+	
 	for sfilename in sorted(os.listdir(spw_folder)):
 		if not sfilename.endswith(".s"):
 			continue
@@ -232,9 +235,7 @@ elif os.path.isdir(source):
 			
 			highlightedContent = _getContentMarked(sfullfilename+".w", "w")
 			_saveFile(sfullfilename+".w.p.html", highlightedContent)
-	
-else:
-	print(source, "not found!")
+
 	
 
 
