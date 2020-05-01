@@ -205,7 +205,6 @@
 	
 			// Here it starts what is executed when finishing to load the page  
 			
-			lenOriginalText = 0;
 			selectedWikicats = [];
 			listWithoutDuplicates = [];
 			listEnoughContent = [];
@@ -220,17 +219,35 @@
 	
 				$(contentF0_corpusText).val({{ parDefaultText | tojson }});   <!-- fill textarea with origin text -->
 				
-				$(contentF1_showWikicats).hide() 
 				
-				$(contentF2_showNumberUrls).hide() 
+				function buildF1contents (result) {
+					wikicatList = result["wikicats"]   // this is the list of wikicats in text
+					selectedWikicats =  result["selectedWikicats"]
+
+					results = "<b>"+wikicatList.length+" wikicats</b> (click on anyone to see its wikicat components)<br>\n"
+					results += "<table>"
+					fila=0
+					wikicatList.forEach(function(w){
+						if (fila++ % 3 == 0 ) 
+							results += "<tr><td style='padding-left:20px'>";
+						else 
+							results += "<td style='padding-left:20px'>";
+						
+						results += "<input type='checkbox' name='checkboxWikicatList' value='"+w+"'";
+						
+						if (selectedWikicats.includes(w))
+							results += "checked>";
+						else
+							results += ">";
+							
+						wr = result[w]
+						results += " <span onclick='alert(\""+wr["components"]+"\")'>"+w+"</span>";
+					});
+					results += "</table>"
+					
+					return results
+				}
 				
-				$(contentF3_numberTextsDownloaded).hide() 
-				
-				$(contentF4_numberTextsValid).hide() 
-				
-				$(contentF5_similarities).hide() 
-				
-				$(contentF6_D2V).hide() 
 				
 				// click to request server to get the wikicats of the original text 
 				// Flask "/doPh1getWikicatsFromText" is requested
@@ -244,41 +261,17 @@
 						data: {"originalText": originalText},  // send the text with 'text' key
 						success: function(result) {
 							$("#spinner").modal("hide");
+							console.log("Result of phase 1: wikicats of text")
+							console.log(result)
+								
 							if (result.hasOwnProperty("error")) {
+								alert("error received!")
 								results = "<b style='color: red'>"+result["error"]+"</b>"
+								$(contentF1_showWikicats).html(results)
 							}
 							else {
-								console.log("Result of phase 1")
-								console.log(result)
-								
-								lenOriginalText = result["lenOriginalText"]
-								wikicatList = result["wikicats"]   // this is the list of wikicats in text
-								formerSelectedWikicats =  result["formerSelectedWikicats"]
-
-								results = "<b>"+wikicatList.length+" wikicats</b> (click on anyone to see its wikicat components)<br>\n"
-								results += "<table>"
-								fila=0
-								wikicatList.forEach(function(w){
-									if (fila++ % 3 == 0 ) {
-										results += "<tr><td style='padding-left:20px'>"
-									}
-									else {
-										results += "<td style='padding-left:20px'>"
-									}
-									
-									results += "<input type='checkbox' name='checkboxWikicatList' value='"+w+"'";
-									
-									if (formerSelectedWikicats.includes(w))
-										results += "checked>";
-									else
-									    results += ">";
-										
-									results += " <span onclick='alert(\""+result[w]+"\")'>"+w+"</span>";
-									
-								});
-								results += "</table>"
+								results = buildF1contents(result)
 								$(contentF1_showWikicats).html(results)
-								$(contentF1_showWikicats).show() 
 							
 								/*	
 								wl1 = ["5th-centuryBCGreekPeople", "AncientPeople", "GreekPeople", "5th-centuryBCRulers", "PeopleOfTheGreco-PersianWars", "RulersOfSparta", "Kings"]
@@ -312,7 +305,6 @@
 								$("#submit_buildCorpus").show()
 								*/
 							}
-
 						}
 					});
 				});
@@ -336,6 +328,36 @@
 				
 				
 				
+				function buildF2contents (result) {
+					listWithoutDuplicates = result["listWithoutDuplicates"]   // list of unique URLs 
+					console.log("List of pages without duplicates")
+					console.log(listWithoutDuplicates)
+					
+					selectedWikicats = result["selectedWikicats"]
+						
+					// present the summary of results
+					results = "<b>"+selectedWikicats.length+" wikicats</b><br>\n"
+					results += "<table style='border: 1px solid'>"
+					fila=0
+					results += "<th style='text-align: center; border: 1px solid'> Wikicat <th style='text-align: center; border: 1px solid'> Wikicat"
+					selectedWikicats.forEach(function(w){
+						if (fila++ % 2 == 0 ) {
+							results += "<tr style='border: 1px solid'><td style='padding-right:10px; padding-left:10px; border: 1px solid'>"
+						}
+						else {
+							results += "<td style='padding-right:10px; padding-left:10px; border: 1px solid'>"
+						}
+						wr = result[w]
+						results += w+" ("+wr["db"]+" from <span style='color: blue; font-weight: bold; text-decoration: underline;' name='"+w+"'  class='wiki wikicat'>DBpedia</span>, "
+						results += wr["wk"]+" from <span style='color: blue; font-weight: bold; text-decoration: underline;' name='"+w+"'  class='wiki wikidata'>Wikidata</span>)";
+					});
+					results += "</table><p>"
+					results += "<p style='color: black'>Identified "+result['totalDB']+" URLs from DBpedia and "+result['totalWK']+" from Wikidata. Distinct URLs: "+result['totalUrls']		
+					
+					return results
+				}
+				
+				
 				// click to request server to find URLs from selected wikicats
 				// Flask "/doPh2getURLsCandidateFiles" is requested
 				// receives number of DB and WK URLs for each wikicat
@@ -352,47 +374,25 @@
 					$.ajax({
 						type: "POST",
 						url: "doPh2getUrlsCandidateFiles", 
-						data: {"originalText": originalText, "lenOriginalText": lenOriginalText, "fromStart": fromStart, "selectedWikicats":  JSON.stringify(selectedWikicats)},  // send the selected wikicats and the context text
+						data: {"originalText": originalText, "fromStart": fromStart, "selectedWikicats":  JSON.stringify(selectedWikicats)},  // send the selected wikicats and the context text
 						success: function(result) {
 							$("#spinner").modal("hide");
-									
-							if (result.hasOwnProperty("error")) {
-								$(contentF2_showNumberUrls).hide()
-								alert("error received")
-								return
-							}
-							
 							console.log("Result of phase 2: number of URLs found for each wikicat")
 							console.log(result)
-							
-							listWithoutDuplicates = result["listWithoutDuplicates"]   // list of unique URLs 
-							console.log("List of pages without duplicates")
-							console.log(listWithoutDuplicates)
-							
-							selectedWikicats = result["selectedWikicats"]
-							lenOriginalText = result["lenOriginalText"]
-								
-							// present the summary of results
-							results = "<b>"+selectedWikicats.length+" wikicats</b><br>\n"
-							results += "<table style='border: 1px solid'>"
-							fila=0
-							results += "<th style='text-align: center; border: 1px solid'> Wikicat <th style='text-align: center; border: 1px solid'> Wikicat"
-							selectedWikicats.forEach(function(w){
-								if (fila++ % 2 == 0 ) {
-									results += "<tr style='border: 1px solid'><td style='padding-right:10px; padding-left:10px; border: 1px solid'>"
-								}
-								else {
-									results += "<td style='padding-right:10px; padding-left:10px; border: 1px solid'>"
-								}
-								wr = result[w]
-								results += w+" ("+wr["db"]+" from <span style='color: blue; font-weight: bold; text-decoration: underline;' name='"+w+"'  class='wiki wikicat'>DBpedia</span>, "
-								results += wr["wk"]+" from <span style='color: blue; font-weight: bold; text-decoration: underline;' name='"+w+"'  class='wiki wikidata'>Wikidata</span>)";
-							});
-							results += "</table><p>"
-							results += "<p style='color: black'>Identified "+result['totalDB']+" URLs from DBpedia and "+result['totalWK']+" from Wikidata. Distinct URLs: "+result['totalUrls']
-							
-							$(contentF2_showNumberUrls).html(results)
-							$(contentF2_showNumberUrls).show()
+									
+							if (result.hasOwnProperty("error")) {
+								alert("error received!")
+								results = "<b style='color: red'>"+result["error"]+"</b>"
+								$(contentF2_showNumberUrls).html(results)
+							}
+							else {
+								results = buildF2contents(result)
+								$(contentF2_showNumberUrls).html(results)
+								if (fromStart) {
+                                    results = buildF1contents(result)
+									$(contentF1_showWikicats).html(results)
+                                }
+							}
 						}
 					});
 				});
@@ -478,7 +478,7 @@
 							results += "<b>Duration of F3: " + result['elapsedTimeF3']  + " seconds</b><br>\n"
 		
 							$(contentF3_numberTextsDownloaded).html(results)
-							$(contentF3_numberTextsDownloaded).show()
+							//$(contentF3_numberTextsDownloaded).show()
 						}
 					});
 				});
@@ -522,7 +522,7 @@
 							results += "<b>Duration of F4: " + result['elapsedTimeF4']  + " seconds</b><br>\n"
 		
 							$(contentF4_numberTextsValid).html(results)
-							$(contentF4_numberTextsValid).show()
+							//$(contentF4_numberTextsValid).show()
 						}
 					});
 				});
@@ -560,7 +560,7 @@
 							results += "<b>Number of files: " + listDocsCorpus.length  + " </b><br>\n"
 									
 							$(contentF5_similarities).html(results)
-							$(contentF5_similarities).show()
+							//$(contentF5_similarities).show()
 						}
 					});
 				});
@@ -593,10 +593,11 @@
 							}
 																				
 							// present results
-							results = "<b>Duration of F6: " + result['elapsedTimeF6']  + " seconds</b><br>\n"
+							results = "<b>Duration of F61 (preprocessing): " + result['elapsedTimeF61']  + " seconds</b><br>\n"
+							results += "<b>Duration of F62 (training): " + result['elapsedTimeF62']  + " seconds</b><br>\n"
 		
 							$(contentF6_D2V).html(results)
-							$(contentF6_D2V).show()
+							//$(contentF6_D2V).show()
 						}
 					});
 				});

@@ -88,7 +88,7 @@ def doPh1 (originalText):
 	
 	for w in listWikicats:    # compute components for every wikicat and add all of them to result
 		wlc = _getWikicatComponents(w)   # function getWikicatComponets from aux_build.py
-		result[w] = wlc  # one entry per wikicat
+		result[w] = {"components":wlc}  # one entry per wikicat
 	
 	filename_selected = _CORPUS_FOLDER+str(lenOriginalText)+".selected.wk"   # previously selected wikicats file for this text
 	
@@ -98,8 +98,7 @@ def doPh1 (originalText):
 	except:
 		wkSelectedList = []    # no previously selected wikicats
 	
-	result["lenOriginalText"] = lenOriginalText
-	result["formerSelectedWikicats"] = wkSelectedList
+	result["selectedWikicats"] = wkSelectedList
 
 	return result;
 
@@ -117,18 +116,18 @@ def doPh1 (originalText):
 def doPh2getUrlsCandidateFiles():
 	_Print("Requested Phase 2")
 		
-	originalText = request.values.get("originalText")
 	fromStart = json.loads(request.values.get("fromStart")) 
+	originalText = request.values.get("originalText")
+	lenOriginalText = len(originalText)
 	
 	if fromStart:
 		resultPh1 = doPh1(originalText)
-		lenOriginalText = resultPh1["lenOriginalText"]
 		selectedWikicats = resultPh1["wikicats"]	# todas las wikicats seleccionadas
-	else:
-		lenOriginalText = int(request.values.get("lenOriginalText"))  # get parameter with original text
+	else: 
 		selectedWikicats = json.loads(request.values.get("selectedWikicats"))   # get parameter with selected wikicats
 		
 	result = doPh2(lenOriginalText, selectedWikicats)
+	result["wikicats"] = selectedWikicats
 	return jsonify(result);  
 	
 	
@@ -215,7 +214,6 @@ def doPh2 (lenOriginalText, selectedWikicats):
 	result["totalWK"] = numUrlsWK
 	result["totalUrls"] = lenListWithoutDuplicates
 	result["listWithoutDuplicates"] = listWithoutDuplicates
-	result["lenOriginalText"] = lenOriginalText
 	
 	return result  
 
@@ -289,10 +287,10 @@ def doPh3downloadCandidateTexts():
 		
 	fromStart = json.loads(request.values.get("fromStart")) 
 	originalText = request.values.get("originalText")
+	lenOriginalText = len(originalText)
 	
 	if fromStart:
 		resultPh1 = doPh1(originalText)
-		lenOriginalText = resultPh1["lenOriginalText"]
 		selectedWikicats = resultPh1["wikicats"]
 		resultPh2 = doPh2(lenOriginalText, selectedWikicats)
 		listWithoutDuplicates = resultPh2["listWithoutDuplicates"]
@@ -424,12 +422,12 @@ def doPh3(listWithoutDuplicates):
 def doPh4identifyWikicats():
 	_Print("Requested Phase 4")
 		
-	originalText = request.values.get("originalText")
 	fromStart = json.loads(request.values.get("fromStart")) 
+	originalText = request.values.get("originalText")
+	lenOriginalText = len(originalText)
 	
 	if fromStart:
 		resultPh1 = doPh1(originalText)
-		lenOriginalText = resultPh1["lenOriginalText"]
 		selectedWikicats = resultPh1["wikicats"]
 		resultPh2 = doPh2(lenOriginalText, selectedWikicats)
 		listWithoutDuplicates = resultPh2["listWithoutDuplicates"]
@@ -445,7 +443,6 @@ def doPh4identifyWikicats():
 	return jsonify(result);
 
 
-	
 	
 def doPh4(listEnoughContent):
 	_Print("Executing Phase 4")	
@@ -557,14 +554,13 @@ def doPh4(listEnoughContent):
 		
 def doPh5computeSimilarities():
 	_Print("Requested Phase 5")
-	originalText = request.values.get("originalText")
-	fromStart = json.loads(request.values.get("fromStart"))
 	
+	fromStart = json.loads(request.values.get("fromStart"))
+	originalText = request.values.get("originalText")
 	lenOriginalText = len(originalText)
 	
 	if fromStart:
 		resultPh1 = doPh1(originalText)
-		lenOriginalText = resultPh1["lenOriginalText"]
 		selectedWikicats = resultPh1["wikicats"]
 		resultPh2 = doPh2(lenOriginalText, selectedWikicats)
 		listWithoutDuplicates = resultPh2["listWithoutDuplicates"]
@@ -817,14 +813,12 @@ def doPh5(listWithWKSB, lenOriginalText, selectedWikicats):
 def doPh6trainD2V():
 	_Print("Requested Phase 6")
 	
-	originalText = request.values.get("originalText")
 	fromStart = json.loads(request.values.get("fromStart"))
-	
+	originalText = request.values.get("originalText")
 	lenOriginalText = len(originalText)
 	
 	if fromStart:
 		resultPh1 = doPh1(originalText)
-		lenOriginalText = resultPh1["lenOriginalText"]
 		selectedWikicats = resultPh1["wikicats"]
 		resultPh2 = doPh2(lenOriginalText, selectedWikicats)
 		listWithoutDuplicates = resultPh2["listWithoutDuplicates"]
@@ -875,6 +869,10 @@ def doPh6(listDocsCorpus, lenOriginalText):
 		_Print("Processing S4...")
 		_processS4Folder(str(corpusFolder))
 		
+		endTime = datetime.now()
+		elapsedTimeF61 = endTime - startTime
+		startTime = datetime.now()
+	
 		# let's train
 		
 		vector_size = 20	# vector_size (int, optional) – Dimensionality of the feature vectors
@@ -904,9 +902,10 @@ def doPh6(listDocsCorpus, lenOriginalText):
 		_appendFile(logFilename, "Exception in doPh6trainD2V"+str(e))
 
 	endTime = datetime.now()
-	elapsedTimeF6 = endTime - startTime
+	elapsedTimeF62 = endTime - startTime
 	
-	result["elapsedTimeF6"] = elapsedTimeF6.seconds
+	result["elapsedTimeF61"] = elapsedTimeF61.seconds
+	result["elapsedTimeF62"] = elapsedTimeF62.seconds
 	
 	return result
 
