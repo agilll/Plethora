@@ -23,11 +23,13 @@ from textSimilarities import textSimilarityFunctions as _textSimilarityFunctions
 
 import sys
 sys.path.append('../module_processCorpus')
-
 from S1_AddSuffixToTexts import processS1List as _processS1List
 from S2_BuildDbpediaInfoFromTexts import processS2Folder as _processS2Folder
 from S3_UpdateTextsEntities import processS3Folder as _processS3Folder
 from S4_tokenize import processS4Folder as _processS4Folder
+
+sys.path.append('../module_train')
+from D2V_BuildOwnModel_t import buildDoc2VecModel as _buildDoc2VecModel
 
 
 
@@ -857,7 +859,7 @@ def doPh6(listDocsCorpus, lenOriginalText):
 	
 	listDocs = list(map(lambda x: x[0], listDocsCorpus))
 	
-	corpusFolder = _CORPUS_FOLDER+str(lenOriginalText)
+	corpusFolder = _CORPUS_FOLDER+str(lenOriginalText)+"/"
 	if not os.path.exists(corpusFolder):  # create CORPUS folder for output files if does not exist
 		os.makedirs(corpusFolder)
 
@@ -872,6 +874,30 @@ def doPh6(listDocsCorpus, lenOriginalText):
 		_processS3Folder(str(corpusFolder))
 		_Print("Processing S4...")
 		_processS4Folder(str(corpusFolder))
+		
+		# let's train
+		
+		vector_size = 20	# vector_size (int, optional) – Dimensionality of the feature vectors
+		window = 8	# window (int, optional) – The maximum distance between the current and predicted word within a sentence
+		alpha = 0.025	# alpha (float, optional) – The initial learning rate
+		min_alpha = 0.00025	# min_alpha (float, optional) – Learning rate will linearly drop to min_alpha as training progresses
+		# seed = 1 # Seed for the random number generator. Initial vectors for each word are seeded with a hash of the concatenation of word + str(seed)
+		min_count = 5	# min_count (int, optional) – Ignores all words with total frequency lower than this
+		max_vocab_size = None	# max_vocab_size (int, optional) – Limits the RAM during vocabulary building
+		distributed_memory = 1	# Defines the training algorithm. If dm=1, ‘distributed memory’ (PV-DM). Otherwise, distributed bag of words (PV-DBOW)
+		epochs = 100	# epochs (int, optional) – Number of iterations (epochs) over the corpus
+		
+		model_filename =  _CORPUS_FOLDER+str(lenOriginalText)+ "-t.model"
+		files_folder = corpusFolder+"files_t/"
+				
+		# Build a doc2vec model trained with files in 
+		r =_buildDoc2VecModel(files_folder, model_filename, vector_size, window, alpha, min_alpha, min_count, distributed_memory, epochs)
+		
+		if (r == 0):
+			print("Training success!!")
+		else:
+			print("Training failed!")
+			
 	except Exception as e:
 		result["error"] = str(e)
 		print("Exception in getTrainD2V", str(e))
