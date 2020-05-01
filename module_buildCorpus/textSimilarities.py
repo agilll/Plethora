@@ -189,14 +189,13 @@ class textSimilarityFunctions():
 		try:  # try to read candidate text wikicats from local store
 			with _Open(fileNameCandidateWikicats) as fp:
 				candidate_text_wikicats = fp.read().splitlines()
-				_Print("File already available in local DB:", fileNameCandidateWikicats)
 		except Exception as e:  # fetch candidate text wikicats if not in local store
-			_appendFile(logFilename, "ERROR sharedWikicatsSimilarity(): Candidate Wikicats file not available: "+fileNameCandidateWikicats+" "+str(e))
+			_Print("Candidate wikicats file not found in local DB:", fileNameCandidateWikicats)
+			_appendFile(logFilename, "ERROR sharedWikicatsSimilarity(): Candidate ikicats file not found: "+fileNameCandidateWikicats+" "+str(e))
 			return -1
 			
 		if len(candidate_text_wikicats) == 0:
-			_appendFile(logFilename, "ERROR sharedWikicatsSimilarity(): Wikicats file empty: "+fileNameCandidateWikicats)
-			return -1
+			return 0
 			
 		# the wikicats lists for both texts are now available	
 		
@@ -221,10 +220,10 @@ class textSimilarityFunctions():
 			_appendFile(logFilename, "ERROR sharedWikicatsSimilarity(): Exception while computing Jaccard wikicats similarity: "+str(e))
 			return -1
 			
-		if wikicats_jaccard_similarity >= 1:
-			print("Candidate:", fileNameCandidateWikicats)
-			print(sum_sims, denominator, wikicats_jaccard_similarity)
-			input("y?")
+		if wikicats_jaccard_similarity > 1:
+			_Print("Candidate with wikicats similarity > 1:", fileNameCandidateWikicats, sum_sims, denominator, wikicats_jaccard_similarity)
+			_appendFile(logFilename, "ERROR sharedWikicatsSimilarity(): similarity > 1")
+			return -1
 			
 		return wikicats_jaccard_similarity
 		
@@ -236,14 +235,13 @@ class textSimilarityFunctions():
 		try:  # try to read candidate text subjects from local store
 			with _Open(fileNameCandidateSubjects) as fp:
 				candidate_text_subjects = fp.read().splitlines()
-				_Print("File already available in local DB:", fileNameCandidateSubjects)
 		except Exception as e:  # fetch candidate text subjects if not in local store
-			_appendFile(logFilename, "ERROR sharedSubjectsSimilarity(): Subjects file not available: "+fileNameCandidateSubjects+" "+str(e))
+			_Print("Candidate subjects file not found in local DB:", fileNameCandidateSubjects)
+			_appendFile(logFilename, "ERROR sharedSubjectsSimilarity(): subjects file not available: "+fileNameCandidateSubjects+" "+str(e))
 			return -1
 			
 		if len(candidate_text_subjects) == 0:
-			_appendFile(logFilename, "ERROR sharedSubjectsSimilarity(): Subjects file empty: "+fileNameCandidateSubjects)
-			return -1
+			return 0
 			
 		# the subjects lists for both texts are now available	
 		
@@ -267,5 +265,10 @@ class textSimilarityFunctions():
 			_appendFile(logFilename, "ERROR sharedSubjectsSimilarity(): Exception while computing Jaccard subjects similarity: "+str(e))
 			return -1
 			
+		if subjects_jaccard_similarity > 1:
+			_Print("Candidate with subjects similarity > 1:", fileNameCandidateSubjects, sum_sims, denominator, subjects_jaccard_similarity)
+			_appendFile(logFilename, "ERROR sharedSubjectsSimilarity(): similarity > 1")
+			return -1
+		
 		return subjects_jaccard_similarity
 

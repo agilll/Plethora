@@ -105,21 +105,28 @@ def processS4Folder(source):
 		print(spw_folder, "not found!")
 		return -1
 		
+	print("\n\nProcessing folder "+spw_folder+"...")
+			
 	t_folder = source + _T_FOLDER
 	if not os.path.exists(t_folder):
 		os.makedirs(t_folder)
 	
-	print("Processing folder "+spw_folder+"...")
-	
 	numFiles = 0
-	for filename in sorted(os.listdir(spw_folder)):
-		if not filename.endswith(".w"):
+	for wfilename in sorted(os.listdir(spw_folder)):
+		if not wfilename.endswith(".w"):
 			continue
-		else:
-			numFiles += 1
-			print("\n", numFiles, " **************** Processing file ", spw_folder+ filename+"...\n")
-			result = processOneFile(spw_folder+filename)
-			pickle.dump(result, open(t_folder+filename+".t", "wb" ))
+
+		numFiles += 1
+		print(numFiles, "**************** Processing file ", wfilename)
+				
+		tfullfilename = t_folder+wfilename+".t"
+		
+		if os.path.exists(tfullfilename):
+			print("T file already available in local DB: "+tfullfilename)
+			continue
+		
+		result = processOneFile(spw_folder+wfilename)
+		pickle.dump(result, open(t_folder+wfilename+".t", "wb" ))
 		
 
 	

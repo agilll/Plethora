@@ -1,4 +1,5 @@
 import requests
+from requests.exceptions import Timeout
 import re
 from bs4 import BeautifulSoup
 import glob
@@ -12,10 +13,13 @@ class scrapFunctions():
 	def scrapPage(self, page):
 		# Make the request
 		try:
-			request = requests.get(page)
+			request = requests.get(page, timeout=10)
+		except Timeout as e:
+			print("*** Timeout ***", page)
+			raise Exception("Timeout")
 		except:
 			print("Connection broken: " + page)
-			return
+			return -1
 
 
 		# Extract HTML from Response object and print
@@ -136,7 +140,7 @@ class scrapFunctions():
 		fileName = pageName + ".html"
 
 		# Save to html file
-		_saveFile(_HTML_PAGES_FOLDER+"/"+fileName, html)
+		_saveFile(_HTML_PAGES_FOLDER+fileName, html)
 
 		return html
 
@@ -243,7 +247,7 @@ class scrapFunctions():
 		fileName = 	pageName + ".txt"
 
 		# Save to html file
-		_saveFile(_SCRAPPED_PAGES_FOLDER+"/"+fileName, html)
+		_saveFile(_SCRAPPED_PAGES_FOLDER+fileName, html)
 
 		return pageName, cleanedText
 
@@ -339,7 +343,7 @@ class scrapFunctions():
 		fileName = 	pageName + ".txt"
 
 		# Save to html file
-		_saveFile(_SCRAPPED_PAGES_FOLDER+"/"+fileName, html)
+		_saveFile(_SCRAPPED_PAGES_FOLDER+fileName, html)
 
 		return pageName, cleanedText
 

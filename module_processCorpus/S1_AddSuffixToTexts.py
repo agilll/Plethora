@@ -18,6 +18,7 @@
 # these functions can be used with scripts S1.py (to process a file or a folder) and S1L.py (to process a list of files)
 
 import os
+import time
 import sys
 sys.path.append('../')  # to search for imported files in the parent folder
 
@@ -80,6 +81,11 @@ def processS1Folder (foldername):
 			numFiles += 1
 			print("\n", numFiles, " **************** Processing file ", filename+"...\n")
 			
+			basename = spw_folder+filename
+			if os.path.exists(basename+".s"):
+				print("S file already available in local DB: "+basename+".s")
+				continue
+		
 			with open(txt_folder+filename, 'r') as content_file:
 				content = content_file.read()  # the original content of file is read 
 	
@@ -89,17 +95,17 @@ def processS1Folder (foldername):
 		
 				if result == None:
 					print("no change")
-					_saveFile(spw_folder+filename+".s", content)    # store result without changes in a file with '.s' extension 
-					_saveFile(spw_folder+filename+".s.html", content)  # store result without changes in an HTML report file
+					_saveFile(basename+".s", content)    # store result without changes in a file with '.s' extension 
+					_saveFile(basename+".s.html", content)  # store result without changes in an HTML report file
 				else:
 					print("changes")
-					_saveFile(spw_folder+filename+".s", result[0])     # store result with changes in a file with '.s' extension 
-					_saveFile(spw_folder+filename+".s.html", result[1])   # store result with changes in an HTML report file
+					_saveFile(basename+".s", result[0])     # store result with changes in a file with '.s' extension 
+					_saveFile(basename+".s.html", result[1])   # store result with changes in an HTML report file
 			
 					# store results reporting studied changes finally not done
 					if result[2] != "":
-						_saveFile(spw_folder+filename+".s.nr", result[2])
-						_saveFile(spw_folder+filename+".s.nr.html", result[3])
+						_saveFile(basename+".s.nr", result[2])
+						_saveFile(basename+".s.nr.html", result[3])
 	return 0
 
 
@@ -110,6 +116,8 @@ def processS1Folder (foldername):
 # it receives the CORPUS base folder for output files
 # outputs:	for each processed file, several files will be created in folder/files_s_p_w
 def processS1List (foldername, fileList):
+	
+	print("\nProcessing list to folder "+foldername)
 
 	if not os.path.exists(foldername):  # create CORPUS folder for output files if does not exist
 		os.makedirs(foldername)
@@ -122,7 +130,14 @@ def processS1List (foldername, fileList):
 	numFiles = 0
 	for filename in fileList:
 		numFiles += 1
-		print("\n", numFiles, " **************** Processing file ", filename+"...\n")
+		print(numFiles, "**************** Processing file ", filename)
+
+		final_name = filename[(1+filename.rfind("/")):]
+		basename = spw_folder+final_name
+		
+		if os.path.exists(basename+".s"):  # this is case insensitive
+			print("S file already available in local DB: "+basename+".s")
+			continue
 		
 		with open(filename, 'r') as content_file:
 			content = content_file.read()  # the original content of file is read 
@@ -130,21 +145,23 @@ def processS1List (foldername, fileList):
 			# to process a textual content
 			# returns a tupla (text changed, html text with highlighted changes, no changes report, HTML no changes report)
 			result = _processContent(content)  
-	
-			final_name = filename[(1+filename.rfind("/")):]
+			time.sleep(2)
+			
 			if result == None:
 				print("no change")
-				_saveFile(spw_folder+final_name+".s", content)    # store result without changes in a file with '.s' extension 
-				_saveFile(spw_folder+final_name+".s.html", content)  # store result without changes in an HTML report file
+				print("saving .s", basename+".s")
+				_saveFile(basename+".s", content)    # store result without changes in a file with '.s' extension 
+				_saveFile(basename+".s.html", content)  # store result without changes in an HTML report file
 			else:
 				print("changes")
-				_saveFile(spw_folder+final_name+".s", result[0])     # store result with changes in a file with '.s' extension 
-				_saveFile(spw_folder+final_name+".s.html", result[1])   # store result with changes in an HTML report file
+				_saveFile(basename+".s", result[0])     # store result with changes in a file with '.s' extension 
+				_saveFile(basename+".s.html", result[1])   # store result with changes in an HTML report file
 		
 				# store results reporting studied changes finally not done
 				if result[2] != "":
-					_saveFile(spw_folder+final_name+".s.nr", result[2])
-					_saveFile(spw_folder+final_name+".s.nr.html", result[3])
+					_saveFile(basename+".s.nr", result[2])
+					_saveFile(basename+".s.nr.html", result[3])
+	
 	return 0
 
 

@@ -6,22 +6,22 @@ import os
 
 # folders and filenames involved in corpus construction
 
-MODELS_FOLDER = "../MODELS"
-LEE_D2V_MODEL = MODELS_FOLDER+"/model_d2v_lee.model"
-OWN_D2V_MODEL = MODELS_FOLDER+"/model_d2v_own-t.model"
+MODELS_FOLDER = "../MODELS/"
+LEE_D2V_MODEL = MODELS_FOLDER+"model_d2v_lee.model"
+OWN_D2V_MODEL = MODELS_FOLDER+"model_d2v_own-t.model"
 
 # initial text for corpus building
 INITIAL_TEXT = 'initialText.txt'
 
-CORPUS_FOLDER = os.getenv('HOME') + "/Google Drive/KORPUS"
+CORPUS_FOLDER = os.getenv('HOME') + "/Google Drive/KORPUS/"
 
 # these are the files and folders created in the building of corpus
 
-URLs_FOLDER = CORPUS_FOLDER+"/URLs"
-SCRAPPED_PAGES_FOLDER = CORPUS_FOLDER+"/SCRAPPED_PAGES"
-DISCARDED_PAGES_FILENAME = CORPUS_FOLDER+"/discarded_pages.txt"
-UNRETRIEVED_PAGES_FILENAME = CORPUS_FOLDER+"/unretrieved_pages.txt"
-HTML_PAGES_FOLDER = CORPUS_FOLDER+"/HTML_PAGES"
+URLs_FOLDER = CORPUS_FOLDER+"URLs/"
+SCRAPPED_PAGES_FOLDER = CORPUS_FOLDER+"SCRAPPED_PAGES/"
+DISCARDED_PAGES_FILENAME = CORPUS_FOLDER+"discarded_pages.txt"
+UNRETRIEVED_PAGES_FILENAME = CORPUS_FOLDER+"unretrieved_pages.txt"
+HTML_PAGES_FOLDER = CORPUS_FOLDER+"HTML_PAGES/"
 
 CORPUS_MIN_TXT_SIZE = 300  # this is the minimum size of a file to be added to the corpus
 

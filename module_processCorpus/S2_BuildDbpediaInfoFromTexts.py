@@ -22,6 +22,7 @@ import os
 import pickle
 import json
 import requests
+import time
 import sys
 sys.path.append('../')  # to search for imported files in the parent folder
 
@@ -95,25 +96,33 @@ def processS2Folder(source, confidence=0.5, support=1):
 		print(source, "not found!")
 		return -1
 		
-	print("Processing folder "+source+"...")
-	numFiles = 0
+	print("\n\nProcessing folder "+source+"...")
+	
 	spw_folder = source + _SPW_FOLDER
 	if not os.path.exists(spw_folder):
 		print(spw_folder, "not found!")
 		return -1
 	
+	numFiles = 0
 	for sfilename in sorted(os.listdir(spw_folder)):
-		if sfilename.endswith(".s"):
-			numFiles += 1
-			sfullfilename = spw_folder+sfilename
-			print("\n", numFiles, " **************** Processing file ", sfullfilename+"...\n")
-			entities = findEntities(sfullfilename, confidence, support)
-			pickle.dump(entities, open(sfullfilename+".p", "wb" ))
-			
-			highlightedContent = _getContentMarked(sfullfilename, "s")
-			_saveFile(sfullfilename+".p.html", highlightedContent)
-		else:
+		if not sfilename.endswith(".s"):
 			continue
+		
+		numFiles += 1
+		print(numFiles, "**************** Processing file ", sfilename)
+		
+		sfullfilename = spw_folder+sfilename
+		
+		if os.path.exists(sfullfilename+".p"):
+			print("P file already available in local DB: "+sfullfilename+".p")
+			continue
+		
+		entities = findEntities(sfullfilename, confidence, support)
+		time.sleep(1)
+		pickle.dump(entities, open(sfullfilename+".p", "wb" ))
+		
+		highlightedContent = _getContentMarked(sfullfilename, "s")
+		_saveFile(sfullfilename+".p.html", highlightedContent)
 		
 		
 		

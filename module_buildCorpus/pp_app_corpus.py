@@ -16,9 +16,10 @@ from smart_open import open as SOpen
 sys.path.append('../')
 
 # functions to be executed when Flask requests are received 
-from routesCorpus import getWikicatsFromText as _getWikicatsFromText, getUrlsCandidateFiles as _getUrlsCandidateFiles, getWikicatUrls as _getWikicatUrls
-from routesCorpus import getDownloadCandidateTexts as _getDownloadCandidateTexts, getIdentifyWikicats as _getIdentifyWikicats
-from routesCorpus import getComputeSimilarities as _getComputeSimilarities, getTrainD2V as _getTrainD2V
+from routesCorpus import doPh1getWikicatsFromText as _doPh1getWikicatsFromText, doPh2getUrlsCandidateFiles as _doPh2getUrlsCandidateFiles
+from routesCorpus import getWikicatUrls as _getWikicatUrls
+from routesCorpus import doPh3downloadCandidateTexts as _doPh3downloadCandidateTexts, doPh4identifyWikicats as _doPh4identifyWikicats
+from routesCorpus import doPh5computeSimilarities as _doPh5computeSimilarities, doPh6trainD2V as _doPh6trainD2V
 from aux_build import INITIAL_TEXT as _INITIAL_TEXT
 import aux_build
 
@@ -63,12 +64,12 @@ if __name__ == '__main__':
 			print("Flag messages activated!!!")
 
 # Flask routes binding for interface requests (not done in the main tool, so always necessary)
-app.add_url_rule("/getWikicatsFromText", "getWikicatsFromText", _getWikicatsFromText, methods=["POST"])  # to send a text and request the wikicats in it
-app.add_url_rule("/getUrlsCandidateFiles", "getUrlsCandidateFiles", _getUrlsCandidateFiles, methods=["POST"])  # to request the finding of the candidate files URLs
-app.add_url_rule("/getDownloadCandidateTexts", "getDownloadCandidateTexts", _getDownloadCandidateTexts, methods=["POST"])  # to request the downloading of the candidate files
-app.add_url_rule("/getIdentifyWikicats", "getIdentifyWikicats", _getIdentifyWikicats, methods=["POST"])  # to request the identification of wikicats in candidate files
-app.add_url_rule("/getComputeSimilarities", "getComputeSimilarities", _getComputeSimilarities, methods=["POST"])  # to request to compute similarities for candidate texts
-app.add_url_rule("/getTrainD2V", "getTrainD2V", _getTrainD2V, methods=["POST"])  # to request to train the Doc2Vec network
+app.add_url_rule("/doPh1getWikicatsFromText", "doPh1getWikicatsFromText", _doPh1getWikicatsFromText, methods=["POST"])  # to send a text and request the wikicats in it
+app.add_url_rule("/doPh2getUrlsCandidateFiles", "doPh2getUrlsCandidateFiles", _doPh2getUrlsCandidateFiles, methods=["POST"])  # to request the finding of the candidate files URLs
+app.add_url_rule("/doPh3downloadCandidateTexts", "doPh3downloadCandidateTexts", _doPh3downloadCandidateTexts, methods=["POST"])  # to request the downloading of the candidate files
+app.add_url_rule("/doPh4identifyWikicats", "doPh4identifyWikicats", _doPh4identifyWikicats, methods=["POST"])  # to request the identification of wikicats in candidate files
+app.add_url_rule("/doPh5computeSimilarities", "doPh5computeSimilarities", _doPh5computeSimilarities, methods=["POST"])  # to request to compute similarities for candidate texts
+app.add_url_rule("/doPh6trainD2V", "doPh6trainD2V", _doPh6trainD2V, methods=["POST"])  # to request to train the Doc2Vec network
 app.add_url_rule("/getWikicatUrls", "getWikicatUrls", _getWikicatUrls, methods=["GET"])  # to send the Urls derived from a wikicat
 
 # this is the main entry point of the corpus builder tool (not done in the main tool, so always necessary)

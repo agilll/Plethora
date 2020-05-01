@@ -44,17 +44,17 @@
 		
 		function setDebug () {
 			if (debug == "True") {
-				GET_WIKICATS_LABEL = $(submitF0_getGetWikicats).attr("value") + " (/getWikicatsFromText)";
+				GET_WIKICATS_LABEL = $(submitF0_getGetWikicats).attr("value") + " (/doPh1getWikicatsFromText)";
 				$(submitF0_getGetWikicats).attr("value", GET_WIKICATS_LABEL);
-				FIND_URLS_LABEL = $(submitF1_findURLs).attr("value") + " (/getUrlsCandidateFiles)"
+				FIND_URLS_LABEL = $(submitF1_findURLs).attr("value") + " (/doPh2getUrlsCandidateFiles)"
 				$(submitF1_findURLs).attr("value", FIND_URLS_LABEL);
-				DOWNLOAD_URLS_LABEL = $(submitF2_DownloadURLs).attr("value") + " (/getDownloadCandidateTexts)"
+				DOWNLOAD_URLS_LABEL = $(submitF2_DownloadURLs).attr("value") + " (/doPh3downloadCandidateTexts)"
 				$(submitF2_DownloadURLs).attr("value", DOWNLOAD_URLS_LABEL);
-				IDENTIFY_WIKICATS_LABEL = $(submitF3_identifyWikicats).attr("value") + " (/getIdentifyWikicats)"
+				IDENTIFY_WIKICATS_LABEL = $(submitF3_identifyWikicats).attr("value") + " (/doPh4identifyWikicats)"
 				$(submitF3_identifyWikicats).attr("value", IDENTIFY_WIKICATS_LABEL);
-				COMPUTE_SIMS_LABEL = $(submitF4_computeSimilarities).attr("value") + " (/getComputeSimilarities)"
+				COMPUTE_SIMS_LABEL = $(submitF4_computeSimilarities).attr("value") + " (/doPh5computeSimilarities)"
 				$(submitF4_computeSimilarities).attr("value", COMPUTE_SIMS_LABEL);
-				TRAIN_D2V_LABEL = $(submitF5_trainD2V).attr("value") + " (/getTrainD2V)"
+				TRAIN_D2V_LABEL = $(submitF5_trainD2V).attr("value") + " (/doPh6trainD2V)"
 				$(submitF5_trainD2V).attr("value", TRAIN_D2V_LABEL);
 			}
 		}
@@ -92,7 +92,7 @@
 			</div>
 			<p style="margin-bottom:5mm;"></p>
 			<div class="form-group" style="margin-bottom: 0px">
-				<input style="background-color: #0066cc; color: white" id="submitF0_getGetWikicats" type="button" value="Next step: Get Wikicats"></input>
+				<input style="background-color: #0066cc; color: white" id="submitF0_getGetWikicats" type="button" value="Next Ph1: Get Wikicats"></input>
 			</div>
 	
 	
@@ -107,10 +107,10 @@
 			<div id='contentF1_showWikicats'></div>  <!-- empty div to later show wikicats identified in text -->
 			<p style="margin-bottom:5mm;"></p>
 			<div class="form-group" style="margin-bottom: 0px">
-				<input style="background-color: #0066cc; color: white" id="submitF1_findURLs" type="button" value="Next step: Find candidate URLs"></input>
+				<input style="background-color: #0066cc; color: white" id="submitF1_findURLs" type="button" value="Next Ph2: Find candidate URLs"></input>
 				&nbsp;&nbsp;&nbsp;&nbsp;
-				<span id="spanOverwriteCorpus">  <input id="overwriteCorpus" name="overwriteCorpus" type="checkbox"></input>
-				Overwrite (Selected=erase all previous corpus data, Non selected=aggregate new files)</span>
+				<span id="spanFromStartF1">  <input id="fromStartF1" name="fromStartF1" type="checkbox"></input>
+				From start (Selected=this phase and previous, Non selected=only this phase)</span>
 			</div>
 			
 
@@ -123,7 +123,10 @@
 			<div id='contentF2_showNumberUrls'></div> <!-- empty div to later show number of candidate URLs discovered for each wikicat -->
 			<p style="margin-bottom:5mm;"></p>
 			<div class="form-group" style="margin-bottom: 0px">
-				<input style="background-color: #0066cc; color: white" id="submitF2_DownloadURLs" type="button" value="Next step: Download and clean candidate URLs"></input>
+				<input style="background-color: #0066cc; color: white" id="submitF2_DownloadURLs" type="button" value="Next Ph3: Download and clean candidate URLs"></input>
+				&nbsp;&nbsp;&nbsp;&nbsp;
+				<span id="spanFromStartF2">  <input id="fromStartF2" name="fromStartF2" type="checkbox"></input>
+				From start (Selected=this phase and previous, Non selected=only this phase)</span>
 			</div>
 
 
@@ -136,7 +139,10 @@
 			<div id='contentF3_numberTextsDownloaded'></div> <!-- empty div to later show the number of candidate texts downloaded -->
 			<p style="margin-bottom:5mm;"></p>
 			<div class="form-group" style="margin-bottom: 0px">
-				<input style="background-color: #0066cc; color: white" id="submitF3_identifyWikicats" type="button" value="Next step: Identify wikicats in candidate texts"></input>
+				<input style="background-color: #0066cc; color: white" id="submitF3_identifyWikicats" type="button" value="Next Ph4: Identify wikicats in candidate texts"></input>
+				&nbsp;&nbsp;&nbsp;&nbsp;
+				<span id="spanFromStartF3">  <input id="fromStartF3" name="fromStartF3" type="checkbox"></input>
+				From start (Selected=this phase and previous, Non selected=only this phase)</span>
 			</div>
 			
 			
@@ -149,9 +155,11 @@
 			<div id='contentF4_numberTextsValid'></div> <!-- empty div to later show the number of candidate texts with wikicats -->
 			<p style="margin-bottom:5mm;"></p>
 			<div class="form-group" style="margin-bottom: 0px">
-				<input style="background-color: #0066cc; color: white" id="submitF4_computeSimilarities" type="button" value="Next step: Compute Similarities for candidate texts"></input>
+				<input style="background-color: #0066cc; color: white" id="submitF4_computeSimilarities" type="button" value="Next Ph5: Compute Similarities for candidate texts"></input>
+				&nbsp;&nbsp;&nbsp;&nbsp;
+				<span id="spanFromStartF4">  <input id="fromStartF4" name="fromStartF4" type="checkbox"></input>
+				From start (Selected=this phase and previous, Non selected=only this phase)</span>
 			</div>
-			
 			
 			
 			
@@ -161,18 +169,23 @@
 			</h3>
 			
 			<div id='contentF5_similarities'></div> <!-- empty div to later show the result -->
+			<p style="margin-bottom:5mm;"></p>
 			<div class="form-group" style="margin-bottom: 0px">
-				<input style="background-color: #0066cc; color: white" id="submitF5_trainD2V" type="button" value="Next step: train D2V model with corpus"></input>
+				<input style="background-color: #0066cc; color: white" id="submitF5_trainD2V" type="button" value="Next Ph6: train D2V model with corpus"></input>
+				&nbsp;&nbsp;&nbsp;&nbsp;
+				<span id="spanFromStartF5">  <input id="fromStartF5" name="fromStartF5" type="checkbox"></input>
+				From start (Selected=this phase and previous, Non selected=only this phase)</span>
 			</div>
 			
 			
 			
 			<h3 style="color: #0066cc" id='legendF6_D2V'>
 				<hr style="border-top: 1px solid red;">
-				5. Doc2Vec network training
+				6. Doc2Vec network training
 			</h3>
-			
+		
 			<div id='contentF6_D2V'></div> <!-- empty div to later show the result -->
+			<p style="margin-bottom:5mm;"></p>
 		</div>
 				
 	
@@ -191,12 +204,12 @@
 		<script type="text/javascript">
 	
 			// Here it starts what is executed when finishing to load the page  
-					
+			
 			lenOriginalText = 0;
 			selectedWikicats = [];
 			listWithoutDuplicates = [];
 			listEnoughContent = [];
-			listWithWikicats = [];
+			listWithWKSB = [];
 			listDocsCorpus = [];
 			
 			$(document).ready(function () {
@@ -207,52 +220,41 @@
 	
 				$(contentF0_corpusText).val({{ parDefaultText | tojson }});   <!-- fill textarea with origin text -->
 				
-				$(legendF1_selectWikicats).hide()
 				$(contentF1_showWikicats).hide() 
-				$(submitF1_findURLs).hide()
-				$(spanOverwriteCorpus).hide()
 				
-				$(legendF2_numberURLsDiscovered).hide()
 				$(contentF2_showNumberUrls).hide() 
-				$(submitF2_DownloadURLs).hide()
 				
-				$(legendF3_numberTextsDownloaded).hide()
 				$(contentF3_numberTextsDownloaded).hide() 
-				$(submitF3_identifyWikicats).hide()
 				
-				$(legendF4_numberTextsValid).hide()
 				$(contentF4_numberTextsValid).hide() 
-				$(submitF4_computeSimilarities).hide()
 				
-				$(legendF5_similarities).hide()
 				$(contentF5_similarities).hide() 
-				$(submitF5_trainD2V).hide()
 				
-				$(legendF6_D2V).hide()
 				$(contentF6_D2V).hide() 
 				
 				// click to request server to get the wikicats of the original text 
-				// Flask "/getWikicatsFromText" is requested
+				// Flask "/doPh1getWikicatsFromText" is requested
 				// receives a wikicat list to present on the interface
 				$(submitF0_getGetWikicats).click(function() {
 					$("#spinner").modal("show");
+					originalText =  $(contentF0_corpusText).val()
 					$.ajax({
 						type: "POST",
-						url: "/getWikicatsFromText",
-						data: {"text":  $(contentF0_corpusText).val()},  // send the text with 'text' key
+						url: "/doPh1getWikicatsFromText",
+						data: {"originalText": originalText},  // send the text with 'text' key
 						success: function(result) {
 							$("#spinner").modal("hide");
-							$(legendF1_selectWikicats).show()
 							if (result.hasOwnProperty("error")) {
 								results = "<b style='color: red'>"+result["error"]+"</b>"
 							}
 							else {
-								lenOriginalText = result["lenOriginalText"]
-								formerSelectedWikicats =  result["formerSelectedWikicats"]
-								console.log("Result of phase 1: wikicats selected in the past")
-								console.log(formerSelectedWikicats)
+								console.log("Result of phase 1")
+								console.log(result)
 								
+								lenOriginalText = result["lenOriginalText"]
 								wikicatList = result["wikicats"]   // this is the list of wikicats in text
+								formerSelectedWikicats =  result["formerSelectedWikicats"]
+
 								results = "<b>"+wikicatList.length+" wikicats</b> (click on anyone to see its wikicat components)<br>\n"
 								results += "<table>"
 								fila=0
@@ -277,8 +279,6 @@
 								results += "</table>"
 								$(contentF1_showWikicats).html(results)
 								$(contentF1_showWikicats).show() 
-								$(submitF1_findURLs).show()
-								$(spanOverwriteCorpus).show()
 							
 								/*	
 								wl1 = ["5th-centuryBCGreekPeople", "AncientPeople", "GreekPeople", "5th-centuryBCRulers", "PeopleOfTheGreco-PersianWars", "RulersOfSparta", "Kings"]
@@ -337,10 +337,11 @@
 				
 				
 				// click to request server to find URLs from selected wikicats
-				// Flask "/getURLsCandidateFiles" is requested
+				// Flask "/doPh2getURLsCandidateFiles" is requested
 				// receives number of DB and WK URLs for each wikicat
 				$(submitF1_findURLs).click(function(event) {
-					var overwriteCorpus = $("input[name='overwriteCorpus']:checked").val() == "on" ? true : false;
+					originalText =  $(contentF0_corpusText).val()
+					var fromStart = $("input[name='fromStartF1']:checked").val() == "on" ? true : false;
 
 					$("#spinner").modal("show");
 					selectedWikicats = [];
@@ -350,11 +351,10 @@
 					
 					$.ajax({
 						type: "POST",
-						url: "getUrlsCandidateFiles",  // "/buildCorpus2",
-						data: {"overwriteCorpus": overwriteCorpus, "selectedWikicats":  JSON.stringify(selectedWikicats), "text":  $("#contentF0_corpusText").val()},  // send the selected wikicats and the context text
+						url: "doPh2getUrlsCandidateFiles", 
+						data: {"originalText": originalText, "lenOriginalText": lenOriginalText, "fromStart": fromStart, "selectedWikicats":  JSON.stringify(selectedWikicats)},  // send the selected wikicats and the context text
 						success: function(result) {
 							$("#spinner").modal("hide");
-							$(legendF2_numberURLsDiscovered).show()
 									
 							if (result.hasOwnProperty("error")) {
 								$(contentF2_showNumberUrls).hide()
@@ -369,6 +369,9 @@
 							console.log("List of pages without duplicates")
 							console.log(listWithoutDuplicates)
 							
+							selectedWikicats = result["selectedWikicats"]
+							lenOriginalText = result["lenOriginalText"]
+								
 							// present the summary of results
 							results = "<b>"+selectedWikicats.length+" wikicats</b><br>\n"
 							results += "<table style='border: 1px solid'>"
@@ -390,7 +393,6 @@
 							
 							$(contentF2_showNumberUrls).html(results)
 							$(contentF2_showNumberUrls).show()
-							$(submitF2_DownloadURLs).show()
 						}
 					});
 				});
@@ -440,19 +442,19 @@
 				
 				
 				
-				
 				// click to request server to download candidate files
-				// Flask "/getDownloadCandidateTexts" is requested
+				// Flask "/doPh3downloadCandidateTexts" is requested
 				// receives number of files with enough content
 				$(submitF2_DownloadURLs).click(function(event) {
+					originalText =  $(contentF0_corpusText).val()
+					var fromStart = $("input[name='fromStartF2']:checked").val() == "on" ? true : false;
 					$("#spinner").modal("show");
 					$.ajax({
 						type: "POST",
-						url: "getDownloadCandidateTexts",
-						data: {"listWithoutDuplicates": JSON.stringify(listWithoutDuplicates)},  // send the listWithoutDuplicates received in the previous phase
+						url: "doPh3downloadCandidateTexts",
+						data: {"originalText": originalText, "fromStart": fromStart, "selectedWikicats": JSON.stringify(selectedWikicats), "listWithoutDuplicates": JSON.stringify(listWithoutDuplicates)},  // send the listWithoutDuplicates received in the previous phase
 						success: function(result) {
 							$("#spinner").modal("hide");
-							$(legendF3_numberTextsDownloaded).show()
 					
 							if (result.hasOwnProperty("error")) {
 								$(contentF3_numberTextsDownloaded).hide()
@@ -466,6 +468,8 @@
 							listEnoughContent = result["listEnoughContent"]   // list of texts available with enough content
 							console.log("List of pages with enough content")
 							console.log(listEnoughContent)
+							
+							selectedWikicats = result["selectedWikicats"]
 													
 							// present results
 							results = "<b>"+result['nowDownloaded']  + " new files have been downloaded in this iteration</b><br>\n"
@@ -475,7 +479,6 @@
 		
 							$(contentF3_numberTextsDownloaded).html(results)
 							$(contentF3_numberTextsDownloaded).show()
-							$(submitF3_identifyWikicats).show()
 						}
 					});
 				});
@@ -484,17 +487,18 @@
 				
 				
 				// click to request server to identify wikicats in candidate files
-				// Flask "/getIdentifyWikicats" is requested
+				// Flask "/doPh4identifyWikicats" is requested
 				// receives number of files with wikicats 
 				$(submitF3_identifyWikicats).click(function(event) {
+					originalText =  $(contentF0_corpusText).val()
+					var fromStart = $("input[name='fromStartF3']:checked").val() == "on" ? true : false;
 					$("#spinner").modal("show");
 					$.ajax({
 						type: "POST",
-						url: "getIdentifyWikicats",
-						data: {"listEnoughContent": JSON.stringify(listEnoughContent)},  // send the listEnoughContent received in the previous phase
+						url: "doPh4identifyWikicats",
+						data: {"originalText": originalText, "fromStart": fromStart, "selectedWikicats": JSON.stringify(selectedWikicats), "listEnoughContent": JSON.stringify(listEnoughContent)},  // send the listEnoughContent received in the previous phase
 						success: function(result) {
 							$("#spinner").modal("hide");
-							$(legendF4_numberTextsValid).show()
 													
 							if (result.hasOwnProperty("error")) {
 								$(contentF4_numberTextsValid).hide()
@@ -505,19 +509,20 @@
 							console.log("Result of phase 4:")
 							console.log(result)
 							
-							listWithWikicats = result["listWithWikicats"]   // list of texts available with wikicats
-							console.log("List of pages with wikicats")
-							console.log(listWithWikicats)
+							listWithWKSB = result["listWithWKSB"]   // list of texts available with wikicats or subjects
+							console.log("List of pages with wikicats or subjects")
+							console.log(listWithWKSB)
+							
+							selectedWikicats = result["selectedWikicats"]
 													
 							// present results
 							results = "<b>"+result['nowProcessed']  + " new files have been processed in this iteration</b><br>\n"
-							results += "<b>"+result['lenListWithWikicats']  + " files with wikicats are available</b><br>\n"
-							results += "<b>"+result['lenListWithoutWikicats']  + " files without wikicats have been discarded</b><br>\n"
+							results += "<b>"+result['lenListWithWKSB']  + " files with wikicats or subjects are available</b><br>\n"
+							results += "<b>"+result['lenListWithoutWKSB']  + " files without wikicats nor subjects have been discarded</b><br>\n"
 							results += "<b>Duration of F4: " + result['elapsedTimeF4']  + " seconds</b><br>\n"
 		
 							$(contentF4_numberTextsValid).html(results)
 							$(contentF4_numberTextsValid).show()
-							$(submitF4_computeSimilarities).show()
 						}
 					});
 				});
@@ -525,18 +530,19 @@
 			
 			
 				// click to request server to compute similarities for candidate files
-				// Flask "/getComputeSimilarities" is requested
+				// Flask "/doPh5computeSimilarities" is requested
 				// receives result 
 				$(submitF4_computeSimilarities).click(function(event) {
+					originalText =  $(contentF0_corpusText).val()
+					var fromStart = $("input[name='fromStartF4']:checked").val() == "on" ? true : false;
 					$("#spinner").modal("show");
 
 					$.ajax({
 						type: "POST",
-						url: "getComputeSimilarities",
-						data: {"lenOriginalText": lenOriginalText, "selectedWikicats":  JSON.stringify(selectedWikicats), "listWithWikicats": JSON.stringify(listWithWikicats)},  // send the listWithWikicats received in the previous phase
+						url: "doPh5computeSimilarities",
+						data: {"originalText": originalText, "fromStart": fromStart, "selectedWikicats":  JSON.stringify(selectedWikicats), "listWithWKSB": JSON.stringify(listWithWKSB)},  // send the listWithWKSB received in the previous phase
 						success: function(result) {
 							$("#spinner").modal("hide");
-							$(legendF5_similarities).show()
 				
 							if (result.hasOwnProperty("error")) {
 								$(contentF5_similarities).hide()
@@ -551,10 +557,10 @@
 													
 							// present results
 							results = "<b>Duration of F5: " + result['elapsedTimeF5']  + " seconds</b><br>\n"
-		
+							results += "<b>Number of files: " + listDocsCorpus.length  + " </b><br>\n"
+									
 							$(contentF5_similarities).html(results)
 							$(contentF5_similarities).show()
-							$(submitF5_trainD2V).show()
 						}
 					});
 				});
@@ -563,34 +569,34 @@
 
 	
 				// click to request server to train the Doc2Vec network
-				// Flask "/getTrainD2V" is requested
+				// Flask "/doPh6trainD2V" is requested
 				// receives result 
 				$(submitF5_trainD2V).click(function(event) {
+					originalText =  $(contentF0_corpusText).val()
+					var fromStart = $("input[name='fromStartF5']:checked").val() == "on" ? true : false;
 					$("#spinner").modal("show");
 
 					$.ajax({
 						type: "POST",
-						url: "getTrainD2V",
-						data: {"listDocsCorpus": JSON.stringify(listDocsCorpus)},  // send the listDocsCorpus received in the previous phase
+						url: "doPh6trainD2V",
+						data: {"originalText": originalText, "fromStart": fromStart, "listDocsCorpus": JSON.stringify(listDocsCorpus)},  // send the listDocsCorpus received in the previous phase
 						success: function(result) {
 							$("#spinner").modal("hide");
-							$(legendF6_D2V).show()
 				
+							console.log("Result of phase 6")
+							console.log(result)
+							
 							if (result.hasOwnProperty("error")) {
 								$(contentF6_D2V).hide()
 								alert("error received")
 								return
 							}
-
-							console.log("Result of phase 6")
-							console.log(result)
 																				
 							// present results
 							results = "<b>Duration of F6: " + result['elapsedTimeF6']  + " seconds</b><br>\n"
 		
 							$(contentF6_D2V).html(results)
 							$(contentF6_D2V).show()
-							// $(submitF5_trainD2V).show()
 						}
 					});
 				});

@@ -215,26 +215,35 @@ def processS3Folder(source):
 		print(source, "not found!")
 		return -1
 		
-	print("Processing folder "+source+"...")
+	print("\n\nProcessing folder "+source+"...")
+	
 	spw_folder = source + _SPW_FOLDER
 	if not os.path.exists(spw_folder):
 		print(spw_folder, "not found!")
 		return -1
 	
+	numFiles = 0
 	for sfilename in sorted(os.listdir(spw_folder)):
 		if not sfilename.endswith(".s"):
 			continue
-		else:
-			sfullfilename = spw_folder+"/"+sfilename
-			pfullfilename = sfullfilename+".p"
-			print("**************** Processing file ", sfullfilename)
-			result = getContentAfterChanges(sfullfilename, pfullfilename)
-			# save result in files with the same name and extension '.w'
-			_saveFile(sfullfilename+".w", result[0])
-			_saveFile(sfullfilename+".w.html", result[1])
-			
-			highlightedContent = _getContentMarked(sfullfilename+".w", "w")
-			_saveFile(sfullfilename+".w.p.html", highlightedContent)
+		
+		numFiles += 1
+		print(numFiles, "**************** Processing file ", sfilename)
+		
+		sfullfilename = spw_folder+sfilename
+				
+		if os.path.exists(sfullfilename+".w"):
+			print("W file already available in local DB: "+sfullfilename+".w")
+			continue
+
+		pfullfilename = sfullfilename+".p"
+		result = getContentAfterChanges(sfullfilename, pfullfilename)
+		# save result in files with the same name and extension '.w'
+		_saveFile(sfullfilename+".w", result[0])
+		_saveFile(sfullfilename+".w.html", result[1])
+		
+		highlightedContent = _getContentMarked(sfullfilename+".w", "w")
+		_saveFile(sfullfilename+".w.p.html", highlightedContent)
 
 	
 
