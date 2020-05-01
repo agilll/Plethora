@@ -222,7 +222,7 @@
 				
 				function buildF1contents (result) {
 					wikicatList = result["wikicats"]   // this is the list of wikicats in text
-					selectedWikicats =  result["selectedWikicats"]
+					selWikicats =  result["selectedWikicats"]
 
 					results = "<b>"+wikicatList.length+" wikicats</b> (click on anyone to see its wikicat components)<br>\n"
 					results += "<table>"
@@ -235,7 +235,7 @@
 						
 						results += "<input type='checkbox' name='checkboxWikicatList' value='"+w+"'";
 						
-						if (selectedWikicats.includes(w))
+						if (selWikicats.includes(w))
 							results += "checked>";
 						else
 							results += ">";
@@ -270,6 +270,8 @@
 								$(contentF1_showWikicats).html(results)
 							}
 							else {
+								selectedWikicats =  result["selectedWikicats"]
+								
 								results = buildF1contents(result)
 								$(contentF1_showWikicats).html(results)
 							
@@ -329,18 +331,14 @@
 				
 				
 				function buildF2contents (result) {
-					listWithoutDuplicates = result["listWithoutDuplicates"]   // list of unique URLs 
-					console.log("List of pages without duplicates")
-					console.log(listWithoutDuplicates)
-					
-					selectedWikicats = result["selectedWikicats"]
+					selWikicats = result["selectedWikicats"]
 						
 					// present the summary of results
-					results = "<b>"+selectedWikicats.length+" wikicats</b><br>\n"
+					results = "<b>"+selWikicats.length+" wikicats</b><br>\n"
 					results += "<table style='border: 1px solid'>"
 					fila=0
 					results += "<th style='text-align: center; border: 1px solid'> Wikicat <th style='text-align: center; border: 1px solid'> Wikicat"
-					selectedWikicats.forEach(function(w){
+					selWikicats.forEach(function(w){
 						if (fila++ % 2 == 0 ) {
 							results += "<tr style='border: 1px solid'><td style='padding-right:10px; padding-left:10px; border: 1px solid'>"
 						}
@@ -384,14 +382,19 @@
 								alert("error received!")
 								results = "<b style='color: red'>"+result["error"]+"</b>"
 								$(contentF2_showNumberUrls).html(results)
+								return
 							}
-							else {
-								results = buildF2contents(result)
-								$(contentF2_showNumberUrls).html(results)
-								if (fromStart) {
-                                    results = buildF1contents(result)
-									$(contentF1_showWikicats).html(results)
-                                }
+							
+							selectedWikicats = result["selectedWikicats"]
+							listWithoutDuplicates = result["listWithoutDuplicates"]   // list of unique URLs 
+							console.log("List of pages without duplicates")
+							console.log(listWithoutDuplicates)
+							
+							results = buildF2contents(result)
+							$(contentF2_showNumberUrls).html(results)
+							if (fromStart) {
+								results = buildF1contents(result)
+								$(contentF1_showWikicats).html(results)
 							}
 						}
 					});
@@ -442,6 +445,16 @@
 				
 				
 				
+				function buildF3contents (result) {
+					results = "<b>"+result['nowDownloaded']  + " new files have been downloaded in this iteration</b><br>\n"
+					results += "<b>"+result['lenListEnoughContent']  + " files with enough content are available</b><br>\n"
+					results += "<b>"+result['lenListNotEnoughContent']  + " files without enough content have been discarded</b><br>\n"
+					results += "<b>Duration of F3: " + result['elapsedTimeF3']  + " seconds</b><br>\n"
+					
+					return results
+				}
+				
+				
 				// click to request server to download candidate files
 				// Flask "/doPh3downloadCandidateTexts" is requested
 				// receives number of files with enough content
@@ -455,35 +468,45 @@
 						data: {"originalText": originalText, "fromStart": fromStart, "selectedWikicats": JSON.stringify(selectedWikicats), "listWithoutDuplicates": JSON.stringify(listWithoutDuplicates)},  // send the listWithoutDuplicates received in the previous phase
 						success: function(result) {
 							$("#spinner").modal("hide");
-					
-							if (result.hasOwnProperty("error")) {
-								$(contentF3_numberTextsDownloaded).hide()
-								alert("error received")
-								return
-							}
-							
 							console.log("Result of phase 3:")
 							console.log(result)
 							
+							if (result.hasOwnProperty("error")) {
+								alert("error received!")
+								results = "<b style='color: red'>"+result["error"]+"</b>"
+								$(contentF3_numberTextsDownloaded).html(results)
+								return
+							}
+							
+							selectedWikicats = result["selectedWikicats"]
 							listEnoughContent = result["listEnoughContent"]   // list of texts available with enough content
 							console.log("List of pages with enough content")
 							console.log(listEnoughContent)
-							
-							selectedWikicats = result["selectedWikicats"]
 													
-							// present results
-							results = "<b>"+result['nowDownloaded']  + " new files have been downloaded in this iteration</b><br>\n"
-							results += "<b>"+result['lenListEnoughContent']  + " files with enough content are available</b><br>\n"
-							results += "<b>"+result['lenListNotEnoughContent']  + " files without enough content have been discarded</b><br>\n"
-							results += "<b>Duration of F3: " + result['elapsedTimeF3']  + " seconds</b><br>\n"
-		
+							results = buildF3contents(result)
 							$(contentF3_numberTextsDownloaded).html(results)
-							//$(contentF3_numberTextsDownloaded).show()
+							
+							if (fromStart) {
+								results = buildF1contents(result)
+								$(contentF1_showWikicats).html(results)
+								
+								results = buildF2contents(result)
+								$(contentF2_showNumberUrls).html(results)
+							}
 						}
 					});
 				});
 				
 				
+				
+				function buildF4contents (result) {
+					results = "<b>"+result['nowProcessed']  + " new files have been processed in this iteration</b><br>\n"
+					results += "<b>"+result['lenListWithWKSB']  + " files with wikicats or subjects are available</b><br>\n"
+					results += "<b>"+result['lenListWithoutWKSB']  + " files without wikicats nor subjects have been discarded</b><br>\n"
+					results += "<b>Duration of F4: " + result['elapsedTimeF4']  + " seconds</b><br>\n"
+					
+					return results
+				}
 				
 				
 				// click to request server to identify wikicats in candidate files
@@ -499,35 +522,47 @@
 						data: {"originalText": originalText, "fromStart": fromStart, "selectedWikicats": JSON.stringify(selectedWikicats), "listEnoughContent": JSON.stringify(listEnoughContent)},  // send the listEnoughContent received in the previous phase
 						success: function(result) {
 							$("#spinner").modal("hide");
-													
-							if (result.hasOwnProperty("error")) {
-								$(contentF4_numberTextsValid).hide()
-								alert("error received")
-								return
-							}
-									
 							console.log("Result of phase 4:")
 							console.log(result)
 							
+							if (result.hasOwnProperty("error")) {
+								alert("error received!")
+								results = "<b style='color: red'>"+result["error"]+"</b>"
+								$(contentF4_numberTextsValid).html(results)
+								return
+							}
+							
+							selectedWikicats = result["selectedWikicats"]
 							listWithWKSB = result["listWithWKSB"]   // list of texts available with wikicats or subjects
 							console.log("List of pages with wikicats or subjects")
 							console.log(listWithWKSB)
-							
-							selectedWikicats = result["selectedWikicats"]
-													
-							// present results
-							results = "<b>"+result['nowProcessed']  + " new files have been processed in this iteration</b><br>\n"
-							results += "<b>"+result['lenListWithWKSB']  + " files with wikicats or subjects are available</b><br>\n"
-							results += "<b>"+result['lenListWithoutWKSB']  + " files without wikicats nor subjects have been discarded</b><br>\n"
-							results += "<b>Duration of F4: " + result['elapsedTimeF4']  + " seconds</b><br>\n"
-		
+																				
+							results = buildF4contents(result)
 							$(contentF4_numberTextsValid).html(results)
-							//$(contentF4_numberTextsValid).show()
+
+							if (fromStart) {
+								results = buildF1contents(result)
+								$(contentF1_showWikicats).html(results)
+								
+								results = buildF2contents(result)
+								$(contentF2_showNumberUrls).html(results)
+								
+								results = buildF3contents(result)
+								$(contentF3_numberTextsDownloaded).html(results)
+							}
+							
 						}
 					});
 				});
 			
 			
+			
+				function buildF5contents (result) {
+					results = "<b>Duration of F5: " + result['elapsedTimeF5']  + " seconds</b><br>\n"
+					results += "<b>Number of files: " + result['lenListDocsCorpus'] + " </b><br>\n"
+					
+					return results
+				}
 			
 				// click to request server to compute similarities for candidate files
 				// Flask "/doPh5computeSimilarities" is requested
@@ -543,30 +578,46 @@
 						data: {"originalText": originalText, "fromStart": fromStart, "selectedWikicats":  JSON.stringify(selectedWikicats), "listWithWKSB": JSON.stringify(listWithWKSB)},  // send the listWithWKSB received in the previous phase
 						success: function(result) {
 							$("#spinner").modal("hide");
-				
-							if (result.hasOwnProperty("error")) {
-								$(contentF5_similarities).hide()
-								alert("error received")
-								return
-							}
-
 							console.log("Result of phase 5")
 							console.log(result)
 							
+							if (result.hasOwnProperty("error")) {
+								alert("error received!")
+								results = "<b style='color: red'>"+result["error"]+"</b>"
+								$(contentF5_similarities).html(results)
+								return
+							}
+
 							listDocsCorpus = result["listDocsCorpus"]  
-													
-							// present results
-							results = "<b>Duration of F5: " + result['elapsedTimeF5']  + " seconds</b><br>\n"
-							results += "<b>Number of files: " + listDocsCorpus.length  + " </b><br>\n"
-									
+															
+							results = buildF5contents(result)
 							$(contentF5_similarities).html(results)
-							//$(contentF5_similarities).show()
+
+							if (fromStart) {
+								results = buildF1contents(result)
+								$(contentF1_showWikicats).html(results)
+								
+								results = buildF2contents(result)
+								$(contentF2_showNumberUrls).html(results)
+								
+								results = buildF3contents(result)
+								$(contentF3_numberTextsDownloaded).html(results)
+								
+								results = buildF4contents(result)
+								$(contentF4_numberTextsValid).html(results)
+							}					
 						}
 					});
 				});
 			
 	
 
+				function buildF6contents (result) {
+					results = "<b>Duration of F61 (preprocessing): " + result['elapsedTimeF61']  + " seconds</b><br>\n"
+					results += "<b>Duration of F62 (training): " + result['elapsedTimeF62']  + " seconds</b><br>\n"
+					
+					return results
+				}
 	
 				// click to request server to train the Doc2Vec network
 				// Flask "/doPh6trainD2V" is requested
@@ -582,22 +633,35 @@
 						data: {"originalText": originalText, "fromStart": fromStart, "listDocsCorpus": JSON.stringify(listDocsCorpus)},  // send the listDocsCorpus received in the previous phase
 						success: function(result) {
 							$("#spinner").modal("hide");
-				
 							console.log("Result of phase 6")
 							console.log(result)
 							
 							if (result.hasOwnProperty("error")) {
-								$(contentF6_D2V).hide()
-								alert("error received")
+								alert("error received!")
+								results = "<b style='color: red'>"+result["error"]+"</b>"
+								$(contentF6_D2V).html(results)
 								return
 							}
-																				
-							// present results
-							results = "<b>Duration of F61 (preprocessing): " + result['elapsedTimeF61']  + " seconds</b><br>\n"
-							results += "<b>Duration of F62 (training): " + result['elapsedTimeF62']  + " seconds</b><br>\n"
-		
+														
+							results = buildF6contents(result)
 							$(contentF6_D2V).html(results)
-							//$(contentF6_D2V).show()
+
+							if (fromStart) {
+								results = buildF1contents(result)
+								$(contentF1_showWikicats).html(results)
+								
+								results = buildF2contents(result)
+								$(contentF2_showNumberUrls).html(results)
+								
+								results = buildF3contents(result)
+								$(contentF3_numberTextsDownloaded).html(results)
+								
+								results = buildF4contents(result)
+								$(contentF4_numberTextsValid).html(results)
+								
+								results = buildF5contents(result)
+								$(contentF5_similarities).html(results)
+							}	
 						}
 					});
 				});

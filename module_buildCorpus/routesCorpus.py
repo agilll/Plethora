@@ -88,7 +88,7 @@ def doPh1 (originalText):
 	
 	for w in listWikicats:    # compute components for every wikicat and add all of them to result
 		wlc = _getWikicatComponents(w)   # function getWikicatComponets from aux_build.py
-		result[w] = {"components":wlc}  # one entry per wikicat
+		result[w] = {"components":wlc}  # one entry per wikicat, with a dict with only one key "components"
 	
 	filename_selected = _CORPUS_FOLDER+str(lenOriginalText)+".selected.wk"   # previously selected wikicats file for this text
 	
@@ -127,7 +127,18 @@ def doPh2getUrlsCandidateFiles():
 		selectedWikicats = json.loads(request.values.get("selectedWikicats"))   # get parameter with selected wikicats
 		
 	result = doPh2(lenOriginalText, selectedWikicats)
-	result["wikicats"] = selectedWikicats
+	
+	# result[wikicat] = {"db": numURLs, "wk": numURLs}
+	# add fields to update phase 1 interface
+	
+	if fromStart:  # add key "components" to each wikicat dict
+		result["wikicats"] = selectedWikicats
+		for w in selectedWikicats:	# all the wikicats, selected or not
+			components = resultPh1[w]["components"]
+			db = result[w]["db"]
+			wk = result[w]["wk"]
+			result[w] = {"components": components, "db": db, "wk": wk}
+		
 	return jsonify(result);  
 	
 	
@@ -300,6 +311,15 @@ def doPh3downloadCandidateTexts():
 		
 	result = doPh3(listWithoutDuplicates)
 	result["selectedWikicats"] = selectedWikicats
+	if fromStart:
+		result["wikicats"] = selectedWikicats
+		result["listWithoutDuplicates"] = listWithoutDuplicates
+		for w in selectedWikicats:	# all the wikicats, selected or not
+			components = resultPh1[w]["components"]
+			db = resultPh2[w]["db"]
+			wk = resultPh2[w]["wk"]
+			result[w] = {"components": components, "db": db, "wk": wk}
+
 	return jsonify(result);
 
 	
@@ -440,6 +460,18 @@ def doPh4identifyWikicats():
 		
 	result = doPh4(listEnoughContent)
 	result["selectedWikicats"] = selectedWikicats
+	if fromStart:
+		result["wikicats"] = selectedWikicats
+		result["listWithoutDuplicates"] = listWithoutDuplicates
+		for w in selectedWikicats:	# all the wikicats, selected or not
+			components = resultPh1[w]["components"]
+			db = resultPh2[w]["db"]
+			wk = resultPh2[w]["wk"]
+			result[w] = {"components": components, "db": db, "wk": wk}
+		result["nowDownloaded"] = resultPh3["nowDownloaded"]
+		result["lenListEnoughContent"] = resultPh3["lenListEnoughContent"]
+		result["lenListNotEnoughContent"] = resultPh3["lenListNotEnoughContent"]
+		result["elapsedTimeF3"] = resultPh3["elapsedTimeF3"]	
 	return jsonify(result);
 
 
@@ -574,6 +606,26 @@ def doPh5computeSimilarities():
 		listWithWKSB = json.loads(request.values.get("listWithWKSB"))  # get parameter with the list of candidate texts with wikicats or subjects
 		
 	result = doPh5(listWithWKSB, lenOriginalText, selectedWikicats)
+	result["selectedWikicats"] = selectedWikicats	
+	if fromStart:
+		result["wikicats"] = selectedWikicats
+		result["listWithoutDuplicates"] = listWithoutDuplicates
+		for w in selectedWikicats:	# all the wikicats, selected or not
+			components = resultPh1[w]["components"]
+			db = resultPh2[w]["db"]
+			wk = resultPh2[w]["wk"]
+			result[w] = {"components": components, "db": db, "wk": wk}
+			
+		result["nowDownloaded"] = resultPh3["nowDownloaded"]
+		result["lenListEnoughContent"] = resultPh3["lenListEnoughContent"]
+		result["lenListNotEnoughContent"] = resultPh3["lenListNotEnoughContent"]
+		result["elapsedTimeF3"] = resultPh3["elapsedTimeF3"]
+		
+		result["nowProcessed"] = resultPh4["nowProcessed"]
+		result["lenListWithWKSB"] = resultPh4["lenListWithWKSB"]
+		result["lenListWithoutWKSB"] = resultPh4["lenListWithoutWKSB"]
+		result["elapsedTimeF4"] = resultPh4["elapsedTimeF4"]
+		
 	return jsonify(result);
 
 
@@ -796,6 +848,7 @@ def doPh5(listWithWKSB, lenOriginalText, selectedWikicats):
 	result["distribution_wk"] = distribution_wk
 	result["distribution_sb"] = distribution_sb
 	result["listDocsCorpus"] = listDocsCorpus
+	result["lenListDocsCorpus"] = len(listDocsCorpus)
 		
 	return result
 
@@ -832,6 +885,30 @@ def doPh6trainD2V():
 		listDocsCorpus = json.loads(request.values.get("listDocsCorpus"))  # get parameter with the corpus docs
 		
 	result = doPh6(listDocsCorpus, lenOriginalText)
+	
+	result["selectedWikicats"] = selectedWikicats	
+	if fromStart:
+		result["wikicats"] = selectedWikicats
+		result["listWithoutDuplicates"] = listWithoutDuplicates
+		for w in selectedWikicats:	# all the wikicats, selected or not
+			components = resultPh1[w]["components"]
+			db = resultPh2[w]["db"]
+			wk = resultPh2[w]["wk"]
+			result[w] = {"components": components, "db": db, "wk": wk}
+			
+		result["nowDownloaded"] = resultPh3["nowDownloaded"]
+		result["lenListEnoughContent"] = resultPh3["lenListEnoughContent"]
+		result["lenListNotEnoughContent"] = resultPh3["lenListNotEnoughContent"]
+		result["elapsedTimeF3"] = resultPh3["elapsedTimeF3"]
+		
+		result["nowProcessed"] = resultPh4["nowProcessed"]
+		result["lenListWithWKSB"] = resultPh4["lenListWithWKSB"]
+		result["lenListWithoutWKSB"] = resultPh4["lenListWithoutWKSB"]
+		result["elapsedTimeF4"] = resultPh4["elapsedTimeF4"]
+		
+		result["lenListDocsCorpus"] = resultPh5["lenListDocsCorpus"]
+		result["elapsedTimeF5"] = resultPh5["elapsedTimeF5"]	
+		
 	return jsonify(result);	
 	
 	
