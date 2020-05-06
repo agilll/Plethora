@@ -8,7 +8,7 @@
 # it depends on px_DB_Manager and px_aux modules of the main tool, as well as the 
 
 import sys
-from smart_open import open as SOpen
+from smart_open import open as _Open
 
 # this program has been launched in the Plethora/buildCorpus folder
 # this is to search px_DB_Manager and px_aux in the Plethora folder
@@ -19,13 +19,13 @@ sys.path.append('../')
 from routesCorpus import doPh1getWikicatsFromText as _doPh1getWikicatsFromText, doPh2getUrlsCandidateFiles as _doPh2getUrlsCandidateFiles
 from routesCorpus import getWikicatUrls as _getWikicatUrls
 from routesCorpus import doPh3downloadCandidateTexts as _doPh3downloadCandidateTexts, doPh4identifyWikicats as _doPh4identifyWikicats
-from routesCorpus import doPh5computeSimilarities as _doPh5computeSimilarities, doPh6trainD2V as _doPh6trainD2V
+from routesCorpus import doPh5computeSimilarities as _doPh5computeSimilarities, doPh6trainD2V as _doPh6trainD2V, doPh7reviewCorpus as _doPh7reviewCorpus
 from aux_build import INITIAL_TEXT as _INITIAL_TEXT
 import aux_build
 
 
 # load the initial text shown at the beginning of the interface
-initialTextFile = SOpen(_INITIAL_TEXT, "r")
+initialTextFile = _Open(_INITIAL_TEXT, "r")
 initialText = initialTextFile.read()
 
 FLAB = False	# to control if buttons must show additional label details (change to True if argument -l)
@@ -70,6 +70,7 @@ app.add_url_rule("/doPh3downloadCandidateTexts", "doPh3downloadCandidateTexts", 
 app.add_url_rule("/doPh4identifyWikicats", "doPh4identifyWikicats", _doPh4identifyWikicats, methods=["POST"])  # to request the identification of wikicats in candidate files
 app.add_url_rule("/doPh5computeSimilarities", "doPh5computeSimilarities", _doPh5computeSimilarities, methods=["POST"])  # to request to compute similarities for candidate texts
 app.add_url_rule("/doPh6trainD2V", "doPh6trainD2V", _doPh6trainD2V, methods=["POST"])  # to request to train the Doc2Vec network
+app.add_url_rule("/doPh7reviewCorpus", "doPh7reviewCorpus", _doPh7reviewCorpus, methods=["POST"])  # to request to review the corpus with Doc2Vec
 app.add_url_rule("/getWikicatUrls", "getWikicatUrls", _getWikicatUrls, methods=["GET"])  # to send the Urls derived from a wikicat
 
 # this is the main entry point of the corpus builder tool (not done in the main tool, so always necessary)

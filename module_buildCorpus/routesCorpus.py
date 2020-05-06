@@ -1,3 +1,4 @@
+import sys
 import os
 from datetime import datetime
 import time
@@ -19,15 +20,16 @@ from aux_build import CORPUS_MIN_TXT_SIZE as _CORPUS_MIN_TXT_SIZE
 from aux_build import UNRETRIEVED_PAGES_FILENAME as _UNRETRIEVED_PAGES_FILENAME, DISCARDED_PAGES_FILENAME as _DISCARDED_PAGES_FILENAME
 	
 from scrap import scrapFunctions as _scrapFunctions
-from textSimilarities import textSimilarityFunctions as _textSimilarityFunctions
+from textSimilarities import textSimilarityFunctions as _textSimilarityFunctions, Doc2VecSimilarity as _Doc2VecSimilarity
 
-import sys
+# to preprocess corpus files
 sys.path.append('../module_processCorpus')
 from S1_AddSuffixToTexts import processS1List as _processS1List
 from S2_BuildDbpediaInfoFromTexts import processS2Folder as _processS2Folder
 from S3_UpdateTextsEntities import processS3Folder as _processS3Folder
 from S4_tokenize import processS4Folder as _processS4Folder
 
+# to train the D2V model
 sys.path.append('../module_train')
 from D2V_BuildOwnModel_t import buildDoc2VecModel as _buildDoc2VecModel
 
@@ -120,19 +122,22 @@ def doPh2getUrlsCandidateFiles():
 	originalText = request.values.get("originalText")
 	lenOriginalText = len(originalText)
 	
+	# in case execution from start, Phase 1 must be executed first
 	if fromStart:
 		resultPh1 = doPh1(originalText)
-		selectedWikicats = resultPh1["wikicats"]	# todas las wikicats seleccionadas
+		selectedWikicats = resultPh1["wikicats"]	# all selected wikicats 
 	else: 
 		selectedWikicats = json.loads(request.values.get("selectedWikicats"))   # get parameter with selected wikicats
 		
 	result = doPh2(lenOriginalText, selectedWikicats)
 	
-	# result[wikicat] = {"db": numURLs, "wk": numURLs}
-	# add fields to update phase 1 interface
-	
-	if fromStart:  # add key "components" to each wikicat dict
+	# in phase 1,  result[wikicat] = {"components": comp}
+	# in phase 2,  result[wikicat] = {"db": numURLs, "wk": numURLs}
+
+	# in case execution from start, fields needed to present data in previous phases must be added to the answer
+	if fromStart:  
 		result["wikicats"] = selectedWikicats
+		# both dicts for result[wikicat] must be combined
 		for w in selectedWikicats:	# all the wikicats, selected or not
 			components = resultPh1[w]["components"]
 			db = result[w]["db"]
@@ -300,6 +305,7 @@ def doPh3downloadCandidateTexts():
 	originalText = request.values.get("originalText")
 	lenOriginalText = len(originalText)
 	
+	# in case execution from start, Phases 1-2  must be executed first
 	if fromStart:
 		resultPh1 = doPh1(originalText)
 		selectedWikicats = resultPh1["wikicats"]
@@ -311,6 +317,8 @@ def doPh3downloadCandidateTexts():
 		
 	result = doPh3(listWithoutDuplicates)
 	result["selectedWikicats"] = selectedWikicats
+	
+	# in case execution from start, fields needed to present data in previous phases must be added to the answer
 	if fromStart:
 		result["wikicats"] = selectedWikicats
 		result["listWithoutDuplicates"] = listWithoutDuplicates
@@ -446,6 +454,7 @@ def doPh4identifyWikicats():
 	originalText = request.values.get("originalText")
 	lenOriginalText = len(originalText)
 	
+	# in case execution from start, Phases 1-2-3  must be executed first
 	if fromStart:
 		resultPh1 = doPh1(originalText)
 		selectedWikicats = resultPh1["wikicats"]
@@ -460,6 +469,8 @@ def doPh4identifyWikicats():
 		
 	result = doPh4(listEnoughContent)
 	result["selectedWikicats"] = selectedWikicats
+	
+	# in case execution from start, fields needed to present data in previous phases must be added to the answer
 	if fromStart:
 		result["wikicats"] = selectedWikicats
 		result["listWithoutDuplicates"] = listWithoutDuplicates
@@ -591,6 +602,7 @@ def doPh5computeSimilarities():
 	originalText = request.values.get("originalText")
 	lenOriginalText = len(originalText)
 	
+	# in case execution from start, Phases 1-2-3-4  must be executed first
 	if fromStart:
 		resultPh1 = doPh1(originalText)
 		selectedWikicats = resultPh1["wikicats"]
@@ -606,9 +618,11 @@ def doPh5computeSimilarities():
 		listWithWKSB = json.loads(request.values.get("listWithWKSB"))  # get parameter with the list of candidate texts with wikicats or subjects
 		
 	result = doPh5(listWithWKSB, lenOriginalText, selectedWikicats)
-	result["selectedWikicats"] = selectedWikicats	
+	
+	# in case execution from start, fields needed to present data in previous phases must be added to the answer
 	if fromStart:
 		result["wikicats"] = selectedWikicats
+		result["selectedWikicats"] = selectedWikicats
 		result["listWithoutDuplicates"] = listWithoutDuplicates
 		for w in selectedWikicats:	# all the wikicats, selected or not
 			components = resultPh1[w]["components"]
@@ -870,6 +884,7 @@ def doPh6trainD2V():
 	originalText = request.values.get("originalText")
 	lenOriginalText = len(originalText)
 	
+	# in case execution from start, Phases 1-2-3-4-5  must be executed first
 	if fromStart:
 		resultPh1 = doPh1(originalText)
 		selectedWikicats = resultPh1["wikicats"]
@@ -886,9 +901,10 @@ def doPh6trainD2V():
 		
 	result = doPh6(listDocsCorpus, lenOriginalText)
 	
-	result["selectedWikicats"] = selectedWikicats	
+	# in case execution from start, fields needed to present data in previous phases must be added to the answer
 	if fromStart:
 		result["wikicats"] = selectedWikicats
+		result["selectedWikicats"] = selectedWikicats
 		result["listWithoutDuplicates"] = listWithoutDuplicates
 		for w in selectedWikicats:	# all the wikicats, selected or not
 			components = resultPh1[w]["components"]
@@ -924,8 +940,6 @@ def doPh6(listDocsCorpus, lenOriginalText):
 	logFile.write(str(datetime.now())+"\n")
 	logFile.close()
 	
-	listDocsCorpus = json.loads(request.values.get("listDocsCorpus"))  # get parameter with the corpus docs
-	
 	startTime = datetime.now()
 	
 	listDocs = list(map(lambda x: x[0], listDocsCorpus))
@@ -938,13 +952,15 @@ def doPh6(listDocsCorpus, lenOriginalText):
 	
 	try:
 		_Print("Processing S1...")
-		_processS1List(str(corpusFolder), listDocs)
+		np1 = _processS1List(str(corpusFolder), listDocs)
 		_Print("Processing S2...")
-		_processS2Folder(str(corpusFolder))
+		np2 = _processS2Folder(str(corpusFolder))
 		_Print("Processing S3...")
-		_processS3Folder(str(corpusFolder))
+		np3 = _processS3Folder(str(corpusFolder))
 		_Print("Processing S4...")
-		_processS4Folder(str(corpusFolder))
+		np4 = _processS4Folder(str(corpusFolder))
+		
+		np = np1+np2+np3+np4
 		
 		endTime = datetime.now()
 		elapsedTimeF61 = endTime - startTime
@@ -962,16 +978,22 @@ def doPh6(listDocsCorpus, lenOriginalText):
 		distributed_memory = 1	# Defines the training algorithm. If dm=1, ‘distributed memory’ (PV-DM). Otherwise, distributed bag of words (PV-DBOW)
 		epochs = 100	# epochs (int, optional) – Number of iterations (epochs) over the corpus
 		
-		model_filename =  _CORPUS_FOLDER+str(lenOriginalText)+ "-t.model"
-		files_folder = corpusFolder+"files_t/"
-				
-		# Build a doc2vec model trained with files in 
-		r =_buildDoc2VecModel(files_folder, model_filename, vector_size, window, alpha, min_alpha, min_count, distributed_memory, epochs)
+
+		modelFilename = str(lenOriginalText)+ "-t.model"
+		globalModelFilename =  _CORPUS_FOLDER+modelFilename
 		
-		if (r == 0):
-			print("Training success!!")
+		if os.path.exists(globalModelFilename) and np == 0:
+			print("No changes, training not necessary!!")
 		else:
-			print("Training failed!")
+			files_folder = corpusFolder+"files_t/"
+
+			# Build a doc2vec model trained with files in 
+			r =_buildDoc2VecModel(files_folder, globalModelFilename, vector_size, window, alpha, min_alpha, min_count, distributed_memory, epochs)
+			
+			if (r == 0):
+				print("Training success!!")
+			else:
+				print("Training failed!")
 			
 	except Exception as e:
 		result["error"] = str(e)
@@ -983,6 +1005,155 @@ def doPh6(listDocsCorpus, lenOriginalText):
 	
 	result["elapsedTimeF61"] = elapsedTimeF61.seconds
 	result["elapsedTimeF62"] = elapsedTimeF62.seconds
+	result["modelName"] = modelFilename
+	
+	return result
+
+
+
+
+
+
+# QUERY (/doPh7reviewCorpus) to attend the query to review the corpus with D2V similarity
+# receives:
+# * 
+# returns: 
+		
+def doPh7reviewCorpus():
+	_Print("Requested Phase 7")
+	
+	fromStart = json.loads(request.values.get("fromStart"))
+	originalText = request.values.get("originalText")
+	lenOriginalText = len(originalText)
+	
+	# in case execution from start, Phases 1-2-3-4-5-6  must be executed first
+	if fromStart:
+		resultPh1 = doPh1(originalText)
+		selectedWikicats = resultPh1["wikicats"]
+		resultPh2 = doPh2(lenOriginalText, selectedWikicats)
+		listWithoutDuplicates = resultPh2["listWithoutDuplicates"]
+		resultPh3 = doPh3(listWithoutDuplicates)
+		listEnoughContent = resultPh3["listEnoughContent"]
+		resultPh4 = doPh4(listEnoughContent)
+		listWithWKSB = resultPh4["listWithWKSB"]
+		resultPh5 = doPh5(listWithWKSB, lenOriginalText, selectedWikicats)
+		listDocsCorpus = resultPh5["listDocsCorpus"]
+		resultPh6 = doPh6(listDocsCorpus, lenOriginalText)
+		modelName = resultPh6["modelName"]
+	else:
+		modelName = request.values.get("modelName")
+		listWithWKSB = json.loads(request.values.get("listWithWKSB"))  # get parameter with the full set of candidate docs
+		listDocsCorpus = json.loads(request.values.get("listDocsCorpus"))  # get parameter with the corpus docs
+		
+		
+	result = doPh7(originalText, modelName, listWithWKSB, listDocsCorpus)
+	
+	# in case execution from start, fields needed to present data in previous phases must be added to the answer
+	if fromStart:
+		result["wikicats"] = selectedWikicats
+		result["selectedWikicats"] = selectedWikicats
+		result["listWithoutDuplicates"] = listWithoutDuplicates
+		for w in selectedWikicats:	# all the wikicats, selected or not
+			components = resultPh1[w]["components"]
+			db = resultPh2[w]["db"]
+			wk = resultPh2[w]["wk"]
+			result[w] = {"components": components, "db": db, "wk": wk}
+			
+		result["nowDownloaded"] = resultPh3["nowDownloaded"]
+		result["lenListEnoughContent"] = resultPh3["lenListEnoughContent"]
+		result["lenListNotEnoughContent"] = resultPh3["lenListNotEnoughContent"]
+		result["elapsedTimeF3"] = resultPh3["elapsedTimeF3"]
+		
+		result["nowProcessed"] = resultPh4["nowProcessed"]
+		result["lenListWithWKSB"] = resultPh4["lenListWithWKSB"]
+		result["lenListWithoutWKSB"] = resultPh4["lenListWithoutWKSB"]
+		result["elapsedTimeF4"] = resultPh4["elapsedTimeF4"]
+		
+		result["lenListDocsCorpus"] = resultPh5["lenListDocsCorpus"]
+		result["elapsedTimeF5"] = resultPh5["elapsedTimeF5"]
+		
+		result["elapsedTimeF61"] = resultPh6["elapsedTimeF61"]
+		result["elapsedTimeF62"] = resultPh6["elapsedTimeF62"]
+		result["modelName"] = modelName
+		
+	return jsonify(result);	
+
+
+
+def doPh7(originalText, modelName, listWithWKSB, listDocsCorpus):
+	_Print("Executing Phase 7")
+		
+	result = {}  # object to store the results to be returned to the request
+	
+	logFilename = "corpus.log"
+	logFile = _Open(logFilename, "a")
+	logFile.write("\n\n")
+	logFile.write(str(datetime.now())+"\n")
+	logFile.close()
+
+	lenOriginalText = len(originalText)
+	
+	# try to read existing D2Vsims file
+	filenameD2VSims = _CORPUS_FOLDER+str(lenOriginalText)+".d2v.sims.csv"
+	simsD2V = {} # dict to read D2V sims stored in local DB
+	
+	try:
+		with _Open(filenameD2VSims, 'r') as csvFile:
+			reader = csv.reader(csvFile, delimiter=' ')
+			next(reader)  # to skip header
+			for row in reader:
+				simsD2V[row[0]] = float(row[1])
+		
+			csvFile.close()
+	except:
+		print("No D2V similarities file")
+		
+	startTime = datetime.now()
+	
+	print("Reviewing corpus with Doc2Vec similarity derived from model", modelName)
+	
+	modelFilename = _CORPUS_FOLDER+modelName
+	d2vSimilarity = _Doc2VecSimilarity(modelFilename, originalText)
+		
+	lenListWithWKSB = len(listWithWKSB)
+
+	for idx, candidateFile in enumerate(listWithWKSB, start=1):
+		if (idx % 5000) == 0:
+			print(".", end=' ', flush=True)
+		_Print("("+str(idx)+" of "+str(lenListWithWKSB)+") -- ", candidateFile)
+
+		if candidateFile in simsD2V:
+			print("Similarity found for candidate in local DB")
+			doc2vec_trained_cosineSimilarity = simsD2V[candidateFile]
+		else:
+			candidateTextFD = _Open(candidateFile, "r")
+			candidateText = candidateTextFD.read()
+			doc2vec_trained_cosineSimilarity = d2vSimilarity.doc2VecTextSimilarity(candidateText)
+			simsD2V[candidateFile] = doc2vec_trained_cosineSimilarity
+		
+		print("D2V similarity =", doc2vec_trained_cosineSimilarity)
+	
+	endTime = datetime.now()
+	elapsedTimeF7 = endTime - startTime
+	
+	# Update the csv file with all D2V similarities
+	
+	with _Open(filenameD2VSims, 'w') as csvFile:
+		fieldnames = ['Text', 'D2V Similarity']	# Name columns
+		writer = csv.DictWriter(csvFile, fieldnames=fieldnames, delimiter=" ") # Create csv headers
+		writer.writeheader()	# Write the column headers
+	
+		writer = csv.writer(csvFile, delimiter=' ')
+		for key in simsD2V:
+			try:
+				writer.writerow([key, simsD2V[key]])
+			except:
+				print("Error writing csv with D2V similarities", row)
+				_appendFile(logFilename, "Error writing csv with D2V similarities"+str(row))
+	
+		csvFile.close()
+	
+	result["elapsedTimeF7"] = elapsedTimeF7.seconds
 	
 	return result
 

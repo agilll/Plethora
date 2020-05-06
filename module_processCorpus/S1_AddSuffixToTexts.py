@@ -128,6 +128,7 @@ def processS1List (foldername, fileList):
 		os.makedirs(spw_folder)
 	
 	numFiles = 0
+	numProcessed = 0
 	for filename in fileList:
 		numFiles += 1
 		print(numFiles, "**************** Processing file ", filename)
@@ -138,6 +139,8 @@ def processS1List (foldername, fileList):
 		if os.path.exists(basename+".s"):  # this is case insensitive
 			print("S file already available in local DB: "+basename+".s")
 			continue
+		
+		numProcessed += 1
 		
 		with open(filename, 'r') as content_file:
 			content = content_file.read()  # the original content of file is read 
@@ -162,7 +165,7 @@ def processS1List (foldername, fileList):
 					_saveFile(basename+".s.nr", result[2])
 					_saveFile(basename+".s.nr.html", result[3])
 	
-	return 0
+	return numProcessed
 
 
 

@@ -56,6 +56,8 @@
 				$(submitF4_computeSimilarities).attr("value", COMPUTE_SIMS_LABEL);
 				TRAIN_D2V_LABEL = $(submitF5_trainD2V).attr("value") + " (/doPh6trainD2V)"
 				$(submitF5_trainD2V).attr("value", TRAIN_D2V_LABEL);
+				REVIEW_CORPUS_LABEL = $(submitF6_reviewCorpus).attr("value") + " (/doPh7reviewCorpus)"
+				$(submitF6_reviewCorpus).attr("value", REVIEW_CORPUS_LABEL);
 			}
 		}
 	</script>
@@ -181,11 +183,32 @@
 			
 			<h3 style="color: #0066cc" id='legendF6_D2V'>
 				<hr style="border-top: 1px solid red;">
-				6. Doc2Vec network training
+				6. Doc2Vec network training for initial model
 			</h3>
 		
 			<div id='contentF6_D2V'></div> <!-- empty div to later show the result -->
 			<p style="margin-bottom:5mm;"></p>
+			<div class="form-group" style="margin-bottom: 0px">
+				<input style="background-color: #0066cc; color: white" id="submitF6_reviewCorpus" type="button" value="Next Ph7: review corpus with D2V model"></input>
+				&nbsp;&nbsp;&nbsp;&nbsp;
+				<span id="spanFromStartF6">  <input id="fromStartF6" name="fromStartF6" type="checkbox"></input>
+				From start (Selected=this phase and previous, Non selected=only this phase)</span>
+			</div>
+			
+
+			<h3 style="color: #0066cc" id='legendF7_reviewCorpus'>
+				<hr style="border-top: 1px solid red;">
+				7. Review corpus with Doc2Vec similarity
+			</h3>
+			
+			<div id='contentF7_reviewCorpus'></div> <!-- empty div to later show the result -->
+			<p style="margin-bottom:5mm;"></p>
+			<!--<div class="form-group" style="margin-bottom: 0px">
+				<input style="background-color: #0066cc; color: white" id="submitF6_reviewCorpus" type="button" value="Next Ph7: review corpus with D2V model"></input>
+				&nbsp;&nbsp;&nbsp;&nbsp;
+				<span id="spanFromStartF6">  <input id="fromStartF6" name="fromStartF6" type="checkbox"></input>
+				From start (Selected=this phase and previous, Non selected=only this phase)</span>
+			</div>-->
 		</div>
 				
 	
@@ -210,6 +233,7 @@
 			listEnoughContent = [];
 			listWithWKSB = [];
 			listDocsCorpus = [];
+			modelName = "";
 			
 			$(document).ready(function () {
 				
@@ -615,6 +639,7 @@
 				function buildF6contents (result) {
 					results = "<b>Duration of F61 (preprocessing): " + result['elapsedTimeF61']  + " seconds</b><br>\n"
 					results += "<b>Duration of F62 (training): " + result['elapsedTimeF62']  + " seconds</b><br>\n"
+					results += "<b>Created Doc2Vec model named: " + result['modelName']  + "</b><br>\n"
 					
 					return results
 				}
@@ -642,7 +667,9 @@
 								$(contentF6_D2V).html(results)
 								return
 							}
-														
+										
+							modelName = result['modelName']
+							
 							results = buildF6contents(result)
 							$(contentF6_D2V).html(results)
 
@@ -665,6 +692,67 @@
 						}
 					});
 				});
+				
+				
+				
+				
+				
+				function buildF7contents (result) {
+					results = "<b>Duration of F7: " + result['elapsedTimeF7']  + " seconds</b><br>\n"
+					
+					return results
+				}
+	
+				// click to request server to review the corpus with the Doc2Vec similarity
+				// Flask "/doPh7reviewCorpus" is requested
+				// receives result 
+				$(submitF6_reviewCorpus).click(function(event) {
+					originalText =  $(contentF0_corpusText).val()
+					var fromStart = $("input[name='fromStartF6']:checked").val() == "on" ? true : false;
+					$("#spinner").modal("show");
+
+					$.ajax({
+						type: "POST",
+						url: "doPh7reviewCorpus",
+						data: {"originalText": originalText, "fromStart": fromStart, "modelName": modelName, "listWithWKSB": JSON.stringify(listWithWKSB), "listDocsCorpus": JSON.stringify(listDocsCorpus)},
+						success: function(result) {
+							$("#spinner").modal("hide");
+							console.log("Result of phase 7")
+							console.log(result)
+							
+							if (result.hasOwnProperty("error")) {
+								alert("error received!")
+								results = "<b style='color: red'>"+result["error"]+"</b>"
+								$(contentF6_D2V).html(results)
+								return
+							}
+														
+							results = buildF7contents(result)
+							$(contentF7_reviewCorpus).html(results)
+
+							if (fromStart) {
+								results = buildF1contents(result)
+								$(contentF1_showWikicats).html(results)
+								
+								results = buildF2contents(result)
+								$(contentF2_showNumberUrls).html(results)
+								
+								results = buildF3contents(result)
+								$(contentF3_numberTextsDownloaded).html(results)
+								
+								results = buildF4contents(result)
+								$(contentF4_numberTextsValid).html(results)
+								
+								results = buildF5contents(result)
+								$(contentF5_similarities).html(results)
+								
+								results = buildF6contents(result)
+								$(contentF6_D2V).html(results)
+							}	
+						}
+					});
+				});
+				
 	
 			});
 	

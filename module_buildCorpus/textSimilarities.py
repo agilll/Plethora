@@ -1,4 +1,5 @@
 import time
+from datetime import datetime
 
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import euclidean_distances
@@ -14,7 +15,83 @@ from aux_build import getSubjectComponents as _getSubjectComponents, filterSimpl
 
 from px_DB_Manager import getCategoriesInText as _getCategoriesInText
 from px_aux import saveFile as _saveFile,  appendFile as _appendFile
+
+from gensim.models.doc2vec import Doc2Vec		
+
+
+class Doc2VecSimilarity():
+	
+	def __init__(self, modelName, original_text):
+		self.model = Doc2Vec.load(modelName)
+		self.original_text_tokens = _myTokenizer(original_text)
+		# Generate a vector from the tokenized original text
+		self.original_text_inferred_vector = self.model.infer_vector(self.original_text_tokens)
 		
+		# Use our basic math functions instead of sklearn's cosine similarity and euclidean distance
+		self.ourMeasures = _ourSimilarityListsFunctions() 
+		return
+	
+	# Doc2Vec similarity: Calculate text similarity based on the trained model
+	
+	def doc2VecTextSimilarity (self, candidate_text):
+
+		# startTime1 = datetime.now()
+		candidate_text_tokens = _myTokenizer(candidate_text)
+		# endTime1 = datetime.now()
+		# elapsedTime1 = endTime1 - startTime1
+		# print("D2V: elapsed1 =", elapsedTime1.microseconds)
+		
+		# infer_vector(): Generates a vector from a document
+		# The document should be tokenized in the same way the model's training documents were tokenized
+		# The function may accept some optional parameters (alpha, min_alpha, epochs, steps)
+
+		# infer_vector(doc_words, alpha=None, min_alpha=None, epochs=None, steps=None)
+		# doc_words (list of str) – A document for which the vector representation will be inferred.
+		# alpha (float, optional) – The initial learning rate. If unspecified, value from model initialization will be reused.
+		# min_alpha (float, optional) – Learning rate will linearly drop to min_alpha over all inference epochs. If unspecified, value from model initialization will be reused.
+		# epochs (int, optional) – Number of times to train the new document. Larger values take more time, but may improve quality and run-to-run stability of inferred vectors. If unspecified, the epochs value from model initialization will be reused.
+		# steps (int, optional, deprecated) – Previous name for epochs, still available for now for backward compatibility: if epochs is unspecified but steps is, the steps value will be used.
+
+		# Generate a vector from the tokenized candidate text
+
+		# startTime2 = datetime.now()
+		candidate_text_inferred_vector = self.model.infer_vector(candidate_text_tokens)
+		# endTime2 = datetime.now()
+		# elapsedTime2 = endTime2 - startTime2
+		# print("D2V: elapsed2 =", elapsedTime2.microseconds)
+
+		# The sklearn math functions returns an array with the results
+		# We shall keep only one of them, either sklearn or ourSimilarityListsFunctions
+
+		# Measure vectors similarity using cosine similarity
+		# cos_similarity = cosine_similarity([original_text_inferred_vector], [text_inferred_vector])
+
+		# Measure vectors similarity using euclidean distance
+		# euc_distance = euclidean_distances([original_text_inferred_vector], [text_inferred_vector])
+
+		# Measure vectors similarity using cosine similarity
+
+		# startTime3 = datetime.now()
+		cos_similarity = self.ourMeasures.oCosineSimilarity(self.original_text_inferred_vector, candidate_text_inferred_vector)
+		# endTime3 = datetime.now()
+		# elapsedTime3 = endTime3 - startTime3
+		# print("D2V: elapsed3 =", elapsedTime3.microseconds)
+
+
+		# Measure vectors similarity using euclidean distance
+		# euc_distance = self.ourMeasures.oEuclideanDistance(self.original_text_inferred_vector, candidate_text_inferred_vector)
+
+		# Measure vectors similarity using manhattan distance
+		# man_distance = self.ourMeasures.oManhattanDistance(self.original_text_inferred_vector, candidate_text_inferred_vector)
+
+		return (cos_similarity)
+
+
+
+
+
+# other similarities
+
 class textSimilarityFunctions():
 	
 	# Load the nlp large package for spacy metrics
@@ -47,59 +124,6 @@ class textSimilarityFunctions():
 		spacy_similarity = original_text_tokens.similarity(candidate_text_tokens)
 
 		return spacy_similarity
-
-	#############################################################################################################################################
-
-	# Doc2Vec similarity: Calculate text similarity based on the trained model
-	
-	def doc2VecTextSimilarity (self, original_text, candidate_text, trained_model):
-		from gensim.models.doc2vec import Doc2Vec
-
-		original_text_tokens = _myTokenizer(original_text)
-		candidate_text_tokens = _myTokenizer(candidate_text)
-
-		# Load the model
-		model = Doc2Vec.load(trained_model)
-
-		# infer_vector(): Generates a vector from a document
-		# The document should be tokenized in the same way the model's training documents were tokenized
-		# The function may accept some optional parameters (alpha, min_alpha, epochs, steps)
-
-		# infer_vector(doc_words, alpha=None, min_alpha=None, epochs=None, steps=None)
-		# doc_words (list of str) – A document for which the vector representation will be inferred.
-		# alpha (float, optional) – The initial learning rate. If unspecified, value from model initialization will be reused.
-		# min_alpha (float, optional) – Learning rate will linearly drop to min_alpha over all inference epochs. If unspecified, value from model initialization will be reused.
-		# epochs (int, optional) – Number of times to train the new document. Larger values take more time, but may improve quality and run-to-run stability of inferred vectors. If unspecified, the epochs value from model initialization will be reused.
-		# steps (int, optional, deprecated) – Previous name for epochs, still available for now for backward compatibility: if epochs is unspecified but steps is, the steps value will be used.
-
-		# Generate a vector from the tokenized original text
-		original_text_inferred_vector = model.infer_vector(original_text_tokens)
-
-		# Generate a vector from the tokenized candidate text
-		candidate_text_inferred_vector = model.infer_vector(candidate_text_tokens)
-
-		# The sklearn math functions returns an array with the results
-		# We shall keep only one of them, either sklearn or ourSimilarityListsFunctions
-
-		# Measure vectors similarity using cosine similarity
-		# cos_similarity = cosine_similarity([original_text_inferred_vector], [text_inferred_vector])
-
-		# Measure vectors similarity using euclidean distance
-		# euc_distance = euclidean_distances([original_text_inferred_vector], [text_inferred_vector])
-
-		# Used our basic math functions instead of sklearn's cosine similarity and euclidean distance
-		self.measures = _ourSimilarityListsFunctions()   # Create an object from the ourSimilarityListsFunctions class
-
-		# Measure vectors similarity using cosine similarity
-		cos_similarity = self.measures.oCosineSimilarity(original_text_inferred_vector, candidate_text_inferred_vector)
-
-		# Measure vectors similarity using euclidean distance
-		euc_distance = self.measures.oEuclideanDistance(original_text_inferred_vector, candidate_text_inferred_vector)
-
-		# Measure vectors similarity using manhattan distance
-		man_distance = self.measures.oManhattanDistance(original_text_inferred_vector, candidate_text_inferred_vector)
-
-		return (cos_similarity, euc_distance)
 
 	#############################################################################################################################################
 

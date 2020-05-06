@@ -104,6 +104,8 @@ def processS2Folder(source, confidence=0.5, support=1):
 		return -1
 	
 	numFiles = 0
+	numProcessed = 0
+	
 	for sfilename in sorted(os.listdir(spw_folder)):
 		if not sfilename.endswith(".s"):
 			continue
@@ -117,6 +119,7 @@ def processS2Folder(source, confidence=0.5, support=1):
 			print("P file already available in local DB: "+sfullfilename+".p")
 			continue
 		
+		numProcessed += 1
 		entities = findEntities(sfullfilename, confidence, support)
 		time.sleep(1)
 		pickle.dump(entities, open(sfullfilename+".p", "wb" ))
@@ -124,7 +127,7 @@ def processS2Folder(source, confidence=0.5, support=1):
 		highlightedContent = _getContentMarked(sfullfilename, "s")
 		_saveFile(sfullfilename+".p.html", highlightedContent)
 		
-		
+	return numProcessed
 		
 		
 

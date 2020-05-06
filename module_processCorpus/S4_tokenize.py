@@ -112,6 +112,8 @@ def processS4Folder(source):
 		os.makedirs(t_folder)
 	
 	numFiles = 0
+	numProcessed = 0
+	
 	for wfilename in sorted(os.listdir(spw_folder)):
 		if not wfilename.endswith(".w"):
 			continue
@@ -125,10 +127,12 @@ def processS4Folder(source):
 			print("T file already available in local DB: "+tfullfilename)
 			continue
 		
+		numProcessed += 1
+		
 		result = processOneFile(spw_folder+wfilename)
 		pickle.dump(result, open(t_folder+wfilename+".t", "wb" ))
 		
-
+	return numProcessed
 	
 
 

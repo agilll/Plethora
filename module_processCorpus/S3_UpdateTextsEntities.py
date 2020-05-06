@@ -223,6 +223,8 @@ def processS3Folder(source):
 		return -1
 	
 	numFiles = 0
+	numProcessed = 0
+	
 	for sfilename in sorted(os.listdir(spw_folder)):
 		if not sfilename.endswith(".s"):
 			continue
@@ -236,6 +238,8 @@ def processS3Folder(source):
 			print("W file already available in local DB: "+sfullfilename+".w")
 			continue
 
+		numProcessed += 1
+		
 		pfullfilename = sfullfilename+".p"
 		result = getContentAfterChanges(sfullfilename, pfullfilename)
 		# save result in files with the same name and extension '.w'
@@ -245,7 +249,7 @@ def processS3Folder(source):
 		highlightedContent = _getContentMarked(sfullfilename+".w", "w")
 		_saveFile(sfullfilename+".w.p.html", highlightedContent)
 
-	
+	return numProcessed
 
 
 	
