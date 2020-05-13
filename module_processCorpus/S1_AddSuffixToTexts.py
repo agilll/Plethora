@@ -20,6 +20,7 @@
 import os
 import time
 import sys
+import glob
 sys.path.append('../')  # to search for imported files in the parent folder
 
 from px_aux import saveFile as _saveFile
@@ -60,65 +61,33 @@ def processS1File (filename):
 # outputs:	for each processed file, several files will be created in folder/files_s_p_w
 def processS1Folder (foldername):
 
+	if not foldername.endswith("/"):
+		foldername = foldername+"/"
+		
 	txt_folder = foldername + _TXT_FOLDER  # subfolder with the input .txt files
 	# check that the subfolder files_txt/  exists
 	if not os.path.exists(txt_folder):
 		print(txt_folder, "not found!")
 		return -1
-
-	filenames = sorted(os.listdir(txt_folder))   # read all the files to process
-			
-	# create the folder to store results
-	spw_folder = foldername + _SPW_FOLDER
-	if not os.path.exists(spw_folder):
-		os.makedirs(spw_folder)
 	
-	numFiles = 0
-	for filename in filenames:
-		if not filename.endswith(".txt"):   # only .txt files are processed
-			continue
-		else:
-			numFiles += 1
-			print("\n", numFiles, " **************** Processing file ", filename+"...\n")
+	listFullFilenamesTXT = sorted(glob.glob(txt_folder+"*.txt"))
 			
-			basename = spw_folder+filename
-			if os.path.exists(basename+".s"):
-				print("S file already available in local DB: "+basename+".s")
-				continue
-		
-			with open(txt_folder+filename, 'r') as content_file:
-				content = content_file.read()  # the original content of file is read 
-	
-				# to process a textual content
-				# returns a tupla (text changed, html text with highlighted changes, no changes report, HTML no changes report)
-				result = _processContent(content)  
-		
-				if result == None:
-					print("no change")
-					_saveFile(basename+".s", content)    # store result without changes in a file with '.s' extension 
-					_saveFile(basename+".s.html", content)  # store result without changes in an HTML report file
-				else:
-					print("changes")
-					_saveFile(basename+".s", result[0])     # store result with changes in a file with '.s' extension 
-					_saveFile(basename+".s.html", result[1])   # store result with changes in an HTML report file
-			
-					# store results reporting studied changes finally not done
-					if result[2] != "":
-						_saveFile(basename+".s.nr", result[2])
-						_saveFile(basename+".s.nr.html", result[3])
-	return 0
+	numProcessed = processS1List (foldername, listFullFilenamesTXT)	
 
-
+	return numProcessed
 
 
 
 # it receives a list with the input filenames of the the CORPUS
-# it receives the CORPUS base folder for output files
-# outputs:	for each processed file, several files will be created in folder/files_s_p_w
+# it receives the CORPUS base folder (FOLDER) for output files
+# outputs:	for each processed file, several files will be created in FOLDER/files_s_p_w
 def processS1List (foldername, fileList):
 	
-	print("\nProcessing list to folder "+foldername)
+	print("\nS1: Processing list of .txt files to folder "+foldername)
 
+	if not foldername.endswith("/"):
+		foldername = foldername+"/"
+		
 	if not os.path.exists(foldername):  # create CORPUS folder for output files if does not exist
 		os.makedirs(foldername)
 			
@@ -131,7 +100,7 @@ def processS1List (foldername, fileList):
 	numProcessed = 0
 	for filename in fileList:
 		numFiles += 1
-		print(numFiles, "**************** Processing file ", filename)
+		print(numFiles, "S1: Processing file ", filename)
 
 		final_name = filename[(1+filename.rfind("/")):]
 		basename = spw_folder+final_name
@@ -142,21 +111,21 @@ def processS1List (foldername, fileList):
 		
 		numProcessed += 1
 		
+		print("Creating .s file: "+basename+".s")
+		
 		with open(filename, 'r') as content_file:
 			content = content_file.read()  # the original content of file is read 
 
 			# to process a textual content
 			# returns a tupla (text changed, html text with highlighted changes, no changes report, HTML no changes report)
 			result = _processContent(content)  
-			time.sleep(2)
 			
 			if result == None:
-				print("no change")
-				print("saving .s", basename+".s")
+				print("no change, saving .s", basename+".s")
 				_saveFile(basename+".s", content)    # store result without changes in a file with '.s' extension 
 				_saveFile(basename+".s.html", content)  # store result without changes in an HTML report file
 			else:
-				print("changes")
+				print("changes, saving .s", basename+".s")
 				_saveFile(basename+".s", result[0])     # store result with changes in a file with '.s' extension 
 				_saveFile(basename+".s.html", result[1])   # store result with changes in an HTML report file
 		

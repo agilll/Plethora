@@ -1,7 +1,12 @@
-
-.DS_Store
 *~
 *.pyc
 MODELS/*
-module_buildCorpus/corpus.log
+CORPUS/*
+CORPUS/files_txt/*
+CORPUS/files_s_p_w/*
+CORPUS/files_t/*
 module_train/*.model
+module_buildCorpus/corpus.log
+*.log
+.gitignore
+.DS_Store

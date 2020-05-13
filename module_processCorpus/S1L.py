@@ -1,4 +1,4 @@
-# script to test function processList in S1_AddSuffixToTexts.py
+# script to test function processS1List in S1_AddSuffixToTexts.py
 
 # input: a folder, the base corpus folder for output files
 # outputs:	for each processed file, several files will be created 

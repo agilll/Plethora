@@ -583,6 +583,7 @@
 			
 				function buildF5contents (result) {
 					results = "<b>Duration of F5: " + result['elapsedTimeF5']  + " seconds</b><br>\n"
+					results += "<b>Used Similarity: " + result['usedSim'] + " </b><br>\n"
 					results += "<b>Number of files: " + result['lenListDocsCorpus'] + " </b><br>\n"
 					
 					return results
@@ -612,7 +613,9 @@
 								return
 							}
 
-							listDocsCorpus = result["listDocsCorpus"]  
+							listDocsCorpus = result["listDocsCorpus"]
+							lenListDocsCorpus = result["lenListDocsCorpus"]
+							listWithWKSB = result["listWithWKSB"]   // list of texts available with wikicats or subjects
 															
 							results = buildF5contents(result)
 							$(contentF5_similarities).html(results)
@@ -655,7 +658,7 @@
 					$.ajax({
 						type: "POST",
 						url: "doPh6trainD2V",
-						data: {"originalText": originalText, "fromStart": fromStart, "listDocsCorpus": JSON.stringify(listDocsCorpus)},  // send the listDocsCorpus received in the previous phase
+						data: {"originalText": originalText, "fromStart": fromStart, "listWithWKSB": JSON.stringify(listWithWKSB), "listDocsCorpus": JSON.stringify(listDocsCorpus)},  // send the listDocsCorpus received in the previous phase
 						success: function(result) {
 							$("#spinner").modal("hide");
 							console.log("Result of phase 6")
@@ -669,6 +672,8 @@
 							}
 										
 							modelName = result['modelName']
+							lenListDocsCorpus = result["lenListDocsCorpus"]
+							listWithWKSB = result["listWithWKSB"]   // list of texts available with wikicats or subjects
 							
 							results = buildF6contents(result)
 							$(contentF6_D2V).html(results)

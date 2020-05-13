@@ -1,4 +1,5 @@
 
+# script to test function processS3File and processS3Folder in S3_UpdateTextsEntities.py
 # This script changes in a .s file (or all .s files in a folder) every surface form detected (located in .s.p file) by the entity name 
 # input: a .s file, or a folder 
 #			if folder, folder/files_s_p_w must exist, and all '.s' files in folder/files_s_p_w will be processed  (for every .s file a .s.p file is supposed to exist with the entities)

@@ -1,4 +1,4 @@
-# script to test functions processFile and processFolder in S1_AddSuffixToTexts.py
+# script to test functions processS1File and processS1Folder in S1_AddSuffixToTexts.py
 
 # input: a file or folder received as parameter
 #			if folder, the subfolder folder/files_txt/ must exist, and all '.txt' files in folder/files_txt will be processed
@@ -54,7 +54,7 @@ if os.path.isfile(source):
 	if not source.endswith(".txt"):
 		print("The file "+source+" is not '.txt'")
 		exit(-1)
-	print("Processing file "+source+"...\n")
+	print("Processing file "+source)
 	_processS1File(source)
 	
 # source is a folder. It must be the base CORPUS folder
@@ -64,7 +64,7 @@ elif os.path.isdir(source):
 	if not os.path.exists(source):
 		print(source, "not found!")
 		exit()
-	print("Processing folder "+source+"...")
+	print("Processing folder "+source)
 	ok = _processS1Folder(source)
 	if ok == -1:
 		print("Could not process", source)

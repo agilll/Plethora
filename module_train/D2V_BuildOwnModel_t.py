@@ -6,9 +6,9 @@ import glob
 from gensim.models.doc2vec import Doc2Vec, TaggedDocument
 import pickle
 
-
 # A function to build a model based on Doc2Vec, trained by our own training .t documents
-def buildDoc2VecModel(tfiles_folder, model_name, vector_size, window, alpha, min_alpha, min_count, distributed_memory, epochs):
+# receives a folder with .t documents
+def buildDoc2VecModelFromFolder(tfiles_folder, model_name, vector_size, window, alpha, min_alpha, min_count, distributed_memory, epochs):
 
 	if not os.path.exists(tfiles_folder):
 		print(tfiles_folder, "not found!")
@@ -17,7 +17,17 @@ def buildDoc2VecModel(tfiles_folder, model_name, vector_size, window, alpha, min
 	print("Training with .t files in", tfiles_folder)
 	
 	training_files = glob.glob(tfiles_folder+"*.t")	# Get all .t files in the training documents folder
+	
+	buildDoc2VecModelFromList(training_files, model_name, vector_size, window, alpha, min_alpha, min_count, distributed_memory, epochs)
+	return 0
+	
 
+# A function to build a model based on Doc2Vec, trained by our own training .t documents
+# receives a list of filenames .t documents
+def buildDoc2VecModelFromList(training_files, model_name, vector_size, window, alpha, min_alpha, min_count, distributed_memory, epochs):
+
+	print("Training with", len(training_files), "files")
+	
 	training_lists = []	# each member is a list of words representing a file contents 
 
 	# Add the content of the training_files to the training_corpus
@@ -53,6 +63,5 @@ def buildDoc2VecModel(tfiles_folder, model_name, vector_size, window, alpha, min
 	# Save the trained model to file
 	model.save(model_name)
 	print(model_name, "model saved!")
-	
 	return 0
 

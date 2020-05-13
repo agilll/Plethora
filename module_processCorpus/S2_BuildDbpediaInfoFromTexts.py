@@ -24,6 +24,7 @@ import json
 import requests
 import time
 import sys
+import glob
 sys.path.append('../')  # to search for imported files in the parent folder
 
 
@@ -86,46 +87,68 @@ def processS2File(source, confidence=0.5, support=1):
 	highlightedContent = _getContentMarked(source, 's')
 	_saveFile(source+".p.html", highlightedContent)
 
-		
-
+	
+	
 # to process a folder and save results.
 # input: 'source' folder
-# output: for each .s file in source/files_s_p_w, both '.s.p' result file and '.s.p.html' with entities highlighted
-def processS2Folder(source, confidence=0.5, support=1):
-	if not os.path.exists(source):
-		print(source, "not found!")
-		return -1
+# output: for each .s file in source/files_s_p_w, both '.s.p' result file and '.s.p.html' with entities highlighted	
+def processS2Folder (foldername, confidence=0.5, support=1):
+
+	if not foldername.endswith("/"):
+		foldername = foldername+"/"
 		
-	print("\n\nProcessing folder "+source+"...")
-	
-	spw_folder = source + _SPW_FOLDER
+	spw_folder = foldername + _SPW_FOLDER
 	if not os.path.exists(spw_folder):
 		print(spw_folder, "not found!")
 		return -1
 	
+	print("\nS2: Processing folder "+foldername)
+	
+	listFullFilenamesS = sorted(glob.glob(spw_folder+"*.s"))
+			
+	numProcessed = processS2List(listFullFilenamesS, confidence=0.5, support=1)
+
+	return numProcessed
+
+
+
+
+# to process a list of .s files and save results.
+# input: list of .s files to process
+# output: for each .s file in list, both '.s.p' result file and '.s.p.html' with entities highlighted are saved
+def processS2List(fileList, confidence=0.5, support=1):
+
+	print("\nS2: Processing list of .s files")
+	
 	numFiles = 0
 	numProcessed = 0
 	
-	for sfilename in sorted(os.listdir(spw_folder)):
-		if not sfilename.endswith(".s"):
+	for sFullFilename in fileList:
+		if not sFullFilename.endswith(".s"):
 			continue
 		
 		numFiles += 1
-		print(numFiles, "**************** Processing file ", sfilename)
+		print(numFiles, "S2: Processing file ", sFullFilename)
 		
-		sfullfilename = spw_folder+sfilename
-		
-		if os.path.exists(sfullfilename+".p"):
-			print("P file already available in local DB: "+sfullfilename+".p")
+		if os.path.exists(sFullFilename+".p"):
+			print("P file already available in local DB: "+sFullFilename+".p")
 			continue
 		
 		numProcessed += 1
-		entities = findEntities(sfullfilename, confidence, support)
-		time.sleep(1)
-		pickle.dump(entities, open(sfullfilename+".p", "wb" ))
 		
-		highlightedContent = _getContentMarked(sfullfilename, "s")
-		_saveFile(sfullfilename+".p.html", highlightedContent)
+		print("Creating .p file: "+sFullFilename+".p")
+		
+		try:
+			entities = findEntities(sFullFilename, confidence, support)
+		except:
+			print("Could not process ", sFullFilename)
+			continue
+		
+		time.sleep(2)
+		pickle.dump(entities, open(sFullFilename+".p", "wb" ))
+		
+		highlightedContent = _getContentMarked(sFullFilename, "s")
+		_saveFile(sFullFilename+".p.html", highlightedContent)
 		
 	return numProcessed
 		

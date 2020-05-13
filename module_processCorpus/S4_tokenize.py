@@ -19,7 +19,7 @@ import re
 import pickle
 import os
 import sys
-
+import glob
 sys.path.append('../')  # to search for imported files in the parent folder
 
 from px_aux import StanfordBroker as _StanfordBroker
@@ -96,41 +96,71 @@ def processS4File(source):
 	
 
 
-# To process a folder, source. It must be the base CORPUS folder
+
+# To process a folder, foldername. It must be the base CORPUS folder
 # it must exist a files_s_p_w folder inside
-# process all '.w' files in source/files_s_p_w
-def processS4Folder(source):
-	spw_folder = source + _SPW_FOLDER
+# process all '.w' files in foldername/files_s_p_w
+def processS4Folder (foldername):
+	
+	if not foldername.endswith("/"):
+		foldername = foldername+"/"
+		
+	spw_folder = foldername + _SPW_FOLDER
 	if not os.path.exists(spw_folder):
 		print(spw_folder, "not found!")
 		return -1
+	
+	t_folder = foldername + _T_FOLDER
+	if not os.path.exists(t_folder):
+		os.makedirs(t_folder)
 		
-	print("\n\nProcessing folder "+spw_folder+"...")
+	print("\nS4: Processing folder "+foldername)
+	
+	listFullFilenamesW = sorted(glob.glob(spw_folder+"*.w"))
 			
-	t_folder = source + _T_FOLDER
+	numProcessed = processS4List(listFullFilenamesW, foldername)
+
+	return numProcessed
+
+
+
+
+# To process a list pf .w files.
+# input: a list of .w files
+# output: for each .w file, a .t file will be created in foldername/files_t
+def processS4List(fileList, foldername):
+		
+	print("\nS4: Processing list of .w files ")
+	
+	if not foldername.endswith("/"):
+		foldername = foldername+"/"
+			
+	t_folder = foldername + _T_FOLDER
 	if not os.path.exists(t_folder):
 		os.makedirs(t_folder)
 	
 	numFiles = 0
 	numProcessed = 0
 	
-	for wfilename in sorted(os.listdir(spw_folder)):
-		if not wfilename.endswith(".w"):
+	for wFullFilename in fileList:
+		if not wFullFilename.endswith(".w"):
 			continue
 
 		numFiles += 1
-		print(numFiles, "**************** Processing file ", wfilename)
+		print(numFiles, "**************** Processing file ", wFullFilename)
 				
-		tfullfilename = t_folder+wfilename+".t"
+		final_name = wFullFilename[(1+wFullFilename.rfind("/")):]
+		tFullFilename = t_folder+final_name+".t"
 		
-		if os.path.exists(tfullfilename):
-			print("T file already available in local DB: "+tfullfilename)
+		if os.path.exists(tFullFilename):
+			print("T file already available in local DB: "+tFullFilename)
 			continue
 		
 		numProcessed += 1
 		
-		result = processOneFile(spw_folder+wfilename)
-		pickle.dump(result, open(t_folder+wfilename+".t", "wb" ))
+		print("Creating .t file: "+tFullFilename)
+		result = processOneFile(wFullFilename)
+		pickle.dump(result, open(tFullFilename, "wb" ))
 		
 	return numProcessed
 	

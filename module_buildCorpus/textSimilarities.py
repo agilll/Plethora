@@ -33,8 +33,13 @@ class Doc2VecSimilarity():
 	
 	# Doc2Vec similarity: Calculate text similarity based on the trained model
 	
-	def doc2VecTextSimilarity (self, candidate_text):
+	# text or file parameter must be received
+	def doc2VecTextSimilarity (self, candidate_text=None, candidate_file=None):
 
+		if not candidate_text:
+			candidate_fileFD = _Open(candidate_file, "r")
+			candidate_text = candidate_fileFD.read()
+			
 		# startTime1 = datetime.now()
 		candidate_text_tokens = _myTokenizer(candidate_text)
 		# endTime1 = datetime.now()
@@ -84,7 +89,7 @@ class Doc2VecSimilarity():
 		# Measure vectors similarity using manhattan distance
 		# man_distance = self.ourMeasures.oManhattanDistance(self.original_text_inferred_vector, candidate_text_inferred_vector)
 
-		return (cos_similarity)
+		return cos_similarity
 
 
 
@@ -98,7 +103,9 @@ class textSimilarityFunctions():
 	# It is better to load it once at the class initialization, to save loading time each time it is used
 	nlp = spacy.load('en_core_web_lg')
 	
-	def __init__(self, original_text_wikicats, original_text_subjects):
+	def __init__(self, original_text, original_text_wikicats, original_text_subjects, logFilename):
+		self.logFilename = logFilename
+		self.original_text = original_text
 		self.original_text_wikicats = original_text_wikicats
 		self.pairs_original_text_wikicats = list(map(lambda x: (x, _getWikicatComponents(x)), original_text_wikicats))
 		self.original_text_subjects = original_text_subjects
@@ -110,26 +117,37 @@ class textSimilarityFunctions():
 
 	#############################################################################################################################################
 	
-	# spaCy similarity:    Takes two pieces of text and returns the text similarity based on spaCy
+	# spaCy similarity: Takes two pieces of text and returns the text similarity based on spaCy
 	
-	def spacyTextSimilarity (self, original_text, candidate_text):
+	def spacyTextSimilarity (self, candidate_text=None, candidate_file=None):
 		
+		def remove_stopwords(text):
+			doc = self.nlp(text.lower()) 
+			words = [token.text for token in doc if (token.lemma_ != '-PRON-') and (token.text not in self.nlp.Defaults.stop_words) and (not token.is_punct)]
+			return " ".join(words)
+
+		if not candidate_text:
+			candidate_fileFD = _Open(candidate_file, "r")
+			candidate_text = candidate_fileFD.read()
+
 		# Tokenize original text based on the nlp package
-		original_text_tokens = self.nlp(original_text)
+		original_text_tokens = self.nlp(remove_stopwords(self.original_text))  # this could be done only once, at the object creation stage
 
 		# Tokenize candidate text based on the nlp package
-		candidate_text_tokens = self.nlp(candidate_text)
+		candidate_text_tokens = self.nlp(remove_stopwords(candidate_text))
 
 		# Measure both texts similarity based on spaCy
 		spacy_similarity = original_text_tokens.similarity(candidate_text_tokens)
 
 		return spacy_similarity
+	
 
 	#############################################################################################################################################
 
-	# Jaccard similarity, using ourSimilarityListsFunctions
+	# Jaccard text similarity, using ourSimilarityListsFunctions
+	# not used, seems not interesting
 	
-	def jaccardTextSimilarity (self, original_text, candidate_text):
+	def jaccardTextSimilarity (self, candidate_text):
 		
 		original_text_tokens = _myTokenizer(original_text)
 		candidate_text_tokens = _myTokenizer(candidate_text)
@@ -137,14 +155,19 @@ class textSimilarityFunctions():
 		jaccard_similarity = self.measures.oJaccardSimilarity(original_text_tokens, candidate_text_tokens)
 		
 		return jaccard_similarity
+	
 
 	#############################################################################################################################################
 
 	# Euclidean similarity, using SKLEARN
 	
-	def euclideanTextSimilarity (self, original_text, candidate_text):
+	def euclideanTextSimilarity (self, candidate_text=None, candidate_file=None):
 
-		list_of_text = [original_text, candidate_text]   # Create a list of documents of the original text and the new candidate text
+		if not candidate_text:
+			candidate_fileFD = _Open(candidate_file, "r")
+			candidate_text = candidate_fileFD.read()
+			
+		list_of_text = [self.original_text, candidate_text]   # Create a list of documents of the original text and the new candidate text
 
 		vectorizer = CountVectorizer()   # Create a CountVectorizer Object
 
@@ -153,69 +176,49 @@ class textSimilarityFunctions():
 		features = vectorizer.fit_transform(list_of_text).todense()
 
 		# Measure the euclidean distance, returns an array with the euclidean distance
-		euclidean_distance = euclidean_distances(features[0], features[1])
+		euclideanDistances = euclidean_distances(features[0], features[1])
 
-		return euclidean_distance[0][0]
+		euclidean_distance = euclideanDistances[0][0]   # between 0 and N, 0 is the best
+		
+		euclidean_similarity = 1 / abs(1 - euclidean_distance) # between 0 and 1, 1 is the best
+
+		return euclidean_similarity
+
 
 	#############################################################################################################################################
 
-	# Full Wikicats and subjects similarity between two texts, using ourSimilarityListsFunctions
-	# it measures complete matching between wikicats/subjects
-	def fullWikicatsAndSubjectsSimilarity (self, original_text, candidate_text):
-		original_text_categories = _getCategoriesInText(original_text)  # this should be avoided
-		candidate_text_categories = _getCategoriesInText(candidate_text)
+	# Full Wikicats jaccard similarity between two texts, using ourSimilarityListsFunctions
+	# it measures complete matching between wikicats
+	def fullWikicatsJaccardSimilarity (self, fileNameCandidateWikicats):
+
+		try:  # try to read candidate text wikicats from local store
+			with _Open(fileNameCandidateWikicats) as fp:
+				candidate_text_wikicats = fp.read().splitlines()
+		except Exception as e:  # fetch candidate text wikicats if not in local store
+			_Print("Candidate wikicats file not found in local DB:", fileNameCandidateWikicats)
+			_appendFile(self.logFilename, "ERROR fullWikicatsJaccardSimilarity(): Candidate wikicats file not found: "+fileNameCandidateWikicats+" "+str(e))
+			return -1
+
+		if len(self.original_text_wikicats) == 0 or len(candidate_text_wikicats) == 0:
+			return 0
 	
-		try:
-			original_text_wikicats = original_text_categories["wikicats"]
-		except Exception as e:
-			original_text_wikicats = []
-	
-		try:
-			candidate_text_wikicats = candidate_text_categories["wikicats"]
-		except Exception as e:
-			# In case of long text, the function _getCategoriesInText returns an error  (length exceeds capacity limit)
-			# In this case, the similarity will be equal to zero
-			candidate_text_wikicats = []
-	
-	
-		try:
-			original_text_subjects = original_text_categories["subjects"]
-		except Exception as e:
-			original_text_subjects = []
-	
-		try:
-			candidate_text_subjects = candidate_text_categories["subjects"]
-		except Exception as e:
-			# In case of long text, the function _getCategoriesInText returns an error.
-			# In this case, the similarity will be equal to zero
-			candidate_text_subjects = []
-	
-	
-		if original_text_wikicats == []:
-			wikicats_jaccard_similarity = 0
-		else:
-			wikicats_jaccard_similarity = self.measures.oJaccardSimilarity(original_text_wikicats, candidate_text_wikicats)
-	
-		if candidate_text_subjects == []:
-			subjects_jaccard_similarity = 0
-		else:
-			subjects_jaccard_similarity = self.measures.oJaccardSimilarity(original_text_subjects, candidate_text_subjects)
-	
-		return wikicats_jaccard_similarity, subjects_jaccard_similarity
+		wikicats_jaccard_similarity = self.measures.oJaccardSimilarity(self.original_text_wikicats, candidate_text_wikicats)
+
+		return wikicats_jaccard_similarity
 
 
 #############################################################################################################################################
 
 	# Shared Wikicats similarity between two texts, using ourSimilarityListsFunctions
 	# it measures shared matching between wikicats (similarity among components of two wikicat names)
-	def sharedWikicatsSimilarity (self, fileNameCandidateWikicats, logFilename):
+	def sharedWikicatsJaccardSimilarity (self, fileNameCandidateWikicats):
 		
 		try:  # try to read candidate text wikicats from local store
 			with _Open(fileNameCandidateWikicats) as fp:
 				candidate_text_wikicats = fp.read().splitlines()
 		except Exception as e:  # fetch candidate text wikicats if not in local store
 			_Print("Candidate wikicats file not found in local DB:", fileNameCandidateWikicats)
-			_appendFile(logFilename, "ERROR sharedWikicatsSimilarity(): Candidate ikicats file not found: "+fileNameCandidateWikicats+" "+str(e))
+			_appendFile(self.logFilename, "ERROR sharedWikicatsJaccardSimilarity(): Candidate ikicats file not found: "+fileNameCandidateWikicats+" "+str(e))
 			return -1
 			
 		if len(candidate_text_wikicats) == 0:
@@ -241,12 +244,12 @@ class textSimilarityFunctions():
 			else:
 				wikicats_jaccard_similarity = sum_sims / denominator
 		except Exception as e:
-			_appendFile(logFilename, "ERROR sharedWikicatsSimilarity(): Exception while computing Jaccard wikicats similarity: "+str(e))
+			_appendFile(self.logFilename, "ERROR sharedWikicatsJaccardSimilarity(): Exception while computing Jaccard wikicats similarity: "+str(e))
 			return -1
 			
 		if wikicats_jaccard_similarity > 1:
 			_Print("Candidate with wikicats similarity > 1:", fileNameCandidateWikicats, sum_sims, denominator, wikicats_jaccard_similarity)
-			_appendFile(logFilename, "ERROR sharedWikicatsSimilarity(): similarity > 1")
+			_appendFile(self.logFilename, "ERROR sharedWikicatsJaccardSimilarity(): similarity > 1")
 			return -1
 			
 		return wikicats_jaccard_similarity
@@ -254,14 +257,14 @@ class textSimilarityFunctions():
 		
 	# Shared subjects similarity between two texts, using ourSimilarityListsFunctions
 	# it measures shared matching between subjects (similarity among components of subject names)
-	def sharedSubjectsSimilarity (self, fileNameCandidateSubjects, logFilename):
+	def sharedSubjectsJaccardSimilarity (self, fileNameCandidateSubjects):
 		
 		try:  # try to read candidate text subjects from local store
 			with _Open(fileNameCandidateSubjects) as fp:
 				candidate_text_subjects = fp.read().splitlines()
 		except Exception as e:  # fetch candidate text subjects if not in local store
 			_Print("Candidate subjects file not found in local DB:", fileNameCandidateSubjects)
-			_appendFile(logFilename, "ERROR sharedSubjectsSimilarity(): subjects file not available: "+fileNameCandidateSubjects+" "+str(e))
+			_appendFile(self.logFilename, "ERROR sharedSubjectsJaccardSimilarity(): subjects file not available: "+fileNameCandidateSubjects+" "+str(e))
 			return -1
 			
 		if len(candidate_text_subjects) == 0:
@@ -286,12 +289,12 @@ class textSimilarityFunctions():
 			else:
 				subjects_jaccard_similarity = sum_sims / denominator
 		except Exception as e:
-			_appendFile(logFilename, "ERROR sharedSubjectsSimilarity(): Exception while computing Jaccard subjects similarity: "+str(e))
+			_appendFile(self.logFilename, "ERROR sharedSubjectsJaccardSimilarity(): Exception while computing Jaccard subjects similarity: "+str(e))
 			return -1
 			
 		if subjects_jaccard_similarity > 1:
 			_Print("Candidate with subjects similarity > 1:", fileNameCandidateSubjects, sum_sims, denominator, subjects_jaccard_similarity)
-			_appendFile(logFilename, "ERROR sharedSubjectsSimilarity(): similarity > 1")
+			_appendFile(self.logFilename, "ERROR sharedSubjectsJaccardSimilarity(): similarity > 1")
 			return -1
 		
 		return subjects_jaccard_similarity

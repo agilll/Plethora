@@ -1,4 +1,4 @@
-# script to test functions processFile and processFolder in S2_BuildDbpediaInfoFromTexts.py
+# script to test functions processS2File and processS2Folder in S2_BuildDbpediaInfoFromTexts.py
 
 # This script receives as parameter a file (.s) or a folder and, for each file, it generate other (.s.p) with the entities identified in DB-SL 
 # input: a .s file or a folder

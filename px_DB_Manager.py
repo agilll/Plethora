@@ -45,19 +45,31 @@ def getCategoriesInText(texto):
 	if entities == []:
 		print("Warning getCategoriesInText(): No entities in text")
 
+	# to return the list of the wikicats of the entities identified in the text	
 	wikicats = []
 	for entity in entities:
 		wikicats.extend(entity["wikicats"])
-		
+
+	wikicats = list(set(wikicats))  # removes duplicates
+	result["wikicats"] = wikicats
+	
+	# to return the list of the subjects of the entities identified in the text			
 	subjects = []
 	for entity in entities:
 		subjects.extend(entity["subjects"])
 			
-	wikicats = list(set(wikicats))  # removes duplicates
-	result["wikicats"] = wikicats
-	
 	subjects = list(set(subjects))  # removes duplicates
 	result["subjects"] = [s.split(':')[-1] for s in subjects]   # original format = http://dbpedia.org/resource/Category:Ionian_Revolt, change to Ionian_Revolt
+	
+	# to return the list of URIs of the entities identified in the text
+	uris = []
+	for entity in entities:
+		listTypes = entity["combinedTypes"]
+		if ("Person" in listTypes) or ("Location" in listTypes) or ("Place" in listTypes) or ("City" in listTypes) or ("Country" in listTypes) or ("Event" in listTypes):
+			uris.append(entity["@URI"])
+	
+	uris = list(set(uris))  # removes duplicates
+	result["URIs_persons_places_events"] = uris
 	
 	return result;
 	

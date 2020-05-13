@@ -12,6 +12,7 @@ import re
 import os, os.path
 import pickle
 import sys
+import glob
 sys.path.append('../')    # to search for imported files in the parent folder
 
 from px_aux import getContentMarked as _getContentMarked, saveFile as _saveFile
@@ -206,48 +207,65 @@ def processS3File(source):
 	
 	
 	
+	
 # to process a folder and save results.
 # input: 'source' folder
-# output: for each .s file in source/files_s_p_w, both '.s.w' result file and '.s.w.html' with entities highlighted
+# output: for each .s file in source/files_s_p_w (a .p file must also exist), both '.s.w' result file and '.s.w.html' with entities highlighted
 # .s.w.p and .s.w.p.html are also created
-def processS3Folder(source):
-	if not os.path.exists(source):
-		print(source, "not found!")
-		return -1
+def processS3Folder (foldername):
+
+	if not foldername.endswith("/"):
+		foldername = foldername+"/"
 		
-	print("\n\nProcessing folder "+source+"...")
-	
-	spw_folder = source + _SPW_FOLDER
+	spw_folder = foldername + _SPW_FOLDER
 	if not os.path.exists(spw_folder):
 		print(spw_folder, "not found!")
 		return -1
 	
+	print("\nS3: Processing folder "+foldername)
+	
+	listFullFilenamesS = sorted(glob.glob(spw_folder+"*.s"))
+			
+	numProcessed = processS3List(listFullFilenamesS)
+
+	return numProcessed
+
+	
+	
+# to process a list of .s files (a .p file must also exist) and save results.
+# input: list of .s files to process
+# output: for each .s file in list, both '.s.w' result file and '.s.w.html' with entities highlighted
+# .s.w.p and .s.w.p.html are also created
+def processS3List(fileList):
+
+	print("\nS3: Processing list of .s files")
+	
 	numFiles = 0
 	numProcessed = 0
 	
-	for sfilename in sorted(os.listdir(spw_folder)):
-		if not sfilename.endswith(".s"):
+	for sFullFilename in fileList:
+		if not sFullFilename.endswith(".s"):
 			continue
 		
 		numFiles += 1
-		print(numFiles, "**************** Processing file ", sfilename)
-		
-		sfullfilename = spw_folder+sfilename
+		print(numFiles, "**************** Processing file ", sFullFilename)
 				
-		if os.path.exists(sfullfilename+".w"):
-			print("W file already available in local DB: "+sfullfilename+".w")
+		if os.path.exists(sFullFilename+".w"):
+			print("W file already available in local DB: "+sFullFilename+".w")
 			continue
 
 		numProcessed += 1
 		
-		pfullfilename = sfullfilename+".p"
-		result = getContentAfterChanges(sfullfilename, pfullfilename)
-		# save result in files with the same name and extension '.w'
-		_saveFile(sfullfilename+".w", result[0])
-		_saveFile(sfullfilename+".w.html", result[1])
+		print("Creating .w file: "+sFullFilename+".w")
 		
-		highlightedContent = _getContentMarked(sfullfilename+".w", "w")
-		_saveFile(sfullfilename+".w.p.html", highlightedContent)
+		pfullfilename = sFullFilename+".p"
+		result = getContentAfterChanges(sFullFilename, pfullfilename)
+		# save result in files with the same name and extension '.w'
+		_saveFile(sFullFilename+".w", result[0])
+		_saveFile(sFullFilename+".w.html", result[1])
+		
+		highlightedContent = _getContentMarked(sFullFilename+".w", "w")
+		_saveFile(sFullFilename+".w.p.html", highlightedContent)
 
 	return numProcessed
 

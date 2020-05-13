@@ -1,3 +1,4 @@
+# script to test function processS4File and processS4Folder in S4_tokenize.py
 
 # This script tokenizes .w files to get .t files
 # a .w file is a text file that has been preprocessed with previous scripts
