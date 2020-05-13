@@ -11,7 +11,4 @@ module_buildCorpus/corpus.log
 .gitignore
 .DS_Store
 *.p
-*.p
-*.p
-*.p
 *.log
