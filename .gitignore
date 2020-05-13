@@ -3,10 +3,15 @@
 MODELS/*
 CORPUS/*
 CORPUS/files_txt/*
-CORPUS/files_s_p_w/*
+CORPUS/files_s_p_w/*.p
 CORPUS/files_t/*
 module_train/*.model
 module_buildCorpus/corpus.log
 *.log
 .gitignore
 .DS_Store
+*.p
+*.p
+*.p
+*.p
+*.log
