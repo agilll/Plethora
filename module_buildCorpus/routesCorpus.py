@@ -37,7 +37,7 @@ from D2V_BuildOwnModel_t import buildDoc2VecModelFromList as _buildDoc2VecModelF
 
 
 # QUERY (/doPh1getWikicatsFromText) to attend the query to get wikicats from a text   
-# receives: the text
+# receives: the original text
 # computes and saves files with wikicats (length.wk) and subjects (length.sb)
 # returns:
 # result["lenOriginalText"]: the length of the original text
@@ -48,21 +48,21 @@ from D2V_BuildOwnModel_t import buildDoc2VecModelFromList as _buildDoc2VecModelF
 def doPh1getWikicatsFromText():
 	_Print("Requested Phase 1")
 	
-	originalText = request.values.get("originalText")
+	P0_originalText = request.values.get("P0_originalText")
 	
-	result = doPh1(originalText)
+	result = doPh1(P0_originalText)
 	return jsonify(result);
 	
 
-def doPh1 (originalText):
+def doPh1 (P0_originalText):
 	_Print("Executing Phase 1")
-	lenOriginalText = len(originalText)  # length of the received text
+	lenOriginalText = len(P0_originalText)  # length of the received text
 			
 	if not os.path.exists(_CORPUS_FOLDER):  # create KORPUS folder if not exists
 		os.makedirs(_CORPUS_FOLDER)
 		
 	filename = _CORPUS_FOLDER+str(lenOriginalText)+".txt"   # save the received text with length.txt filename
-	_saveFile(filename, originalText)
+	_saveFile(filename, P0_originalText)
 	
 	filename_wk = _CORPUS_FOLDER+str(lenOriginalText)+".wk"   # filename for wikicats (length.wk)
 	filename_sb = _CORPUS_FOLDER+str(lenOriginalText)+".sb"   # filename for subjects (length.sb)
@@ -73,26 +73,25 @@ def doPh1 (originalText):
 	try:  # open wikicats file if exists
 		with _Open(filename_wk) as fp:
 			listWikicats = fp.read().splitlines()
-			result["wikicats"] = listWikicats
+			result["P1_wikicats"] = listWikicats
 	except:  # fetch wikicats if file does not exist yet
-		data = _getCategoriesInText(originalText)  # function getCategoriesInText from px_DB_Manager.py
+		data = _getCategoriesInText(P0_originalText)  # function getCategoriesInText from px_DB_Manager.py
 	
 		if ("error" in data):   # return error if could not fetch wikicats
 			result["error"] = data["error"]
 			return result;
 		
 		listWikicats = list(filter(_filterSimpleWikicats, data["wikicats"])) # remove simple wikicats with function from aux_build.py
-		result["wikicats"] = listWikicats  # add result wikicats to return
+		result["P1_wikicats"] = listWikicats  # add result wikicats to return
 		
 		_saveFile(filename_wk, '\n'.join(listWikicats))  # save file (length.wk) with wikicats, one per line
 		
 		listSubjects = list(filter(_filterSimpleWikicats, data["subjects"]))  # remove simple subjects with function from aux_build.py
-		result["subjects"] = listSubjects # add result subjects to return
+		result["P1_subjects"] = listSubjects # add result subjects to return
 		
 		_saveFile(filename_sb, '\n'.join(listSubjects)) # save file (length.sb) with subjects, one per line
 		
 		listURIs = data["URIs_persons_places_events"]
-		result["URIs_persons_places_events"] = listURIs # add result URIs to return
 		
 		_saveFile(filename_en, '\n'.join(listURIs)) # save file (length.en) with URIs of identified entities, one per line
 		
@@ -109,7 +108,7 @@ def doPh1 (originalText):
 	except:
 		wkSelectedList = []    # no previously selected wikicats
 	
-	result["selectedWikicats"] = wkSelectedList
+	result["P1_selectedWikicats"] = wkSelectedList
 
 	return result;
 
@@ -121,42 +120,40 @@ def doPh1 (originalText):
 
 # QUERY (/doPh2getUrlsCandidateFiles)  to attend the query to find out URLs of candidate files
 # receives:
-# * the length of the original text
+# * the original text
 # * the list of selected wikicats
 # returns: the results, mainly the number of files identified for each wikicat
 def doPh2getUrlsCandidateFiles():
 	_Print("Requested Phase 2")
 		
 	fromStart = json.loads(request.values.get("fromStart")) 
-	originalText = request.values.get("originalText")
-	lenOriginalText = len(originalText)
+	P0_originalText = request.values.get("P0_originalText")
+	lenOriginalText = len(P0_originalText)
 	
 	# in case execution from start, Phase 1 must be executed first
 	if fromStart:
-		resultPh1 = doPh1(originalText)
-		selectedWikicats = resultPh1["wikicats"]	# all selected wikicats 
+		resultPh1 = doPh1(P0_originalText)
+		P1_selectedWikicats = resultPh1["P1_wikicats"]	# all selected wikicats 
 	else: 
-		selectedWikicats = json.loads(request.values.get("selectedWikicats"))   # get parameter with selected wikicats
+		P1_selectedWikicats = json.loads(request.values.get("P1_selectedWikicats"))   # get parameter with selected wikicats
 		
-	result = doPh2(lenOriginalText, selectedWikicats)
+	result = doPh2(lenOriginalText, P1_selectedWikicats)
+	result["P1_selectedWikicats"] = P1_selectedWikicats
 	
 	# in phase 1,  result[wikicat] = {"components": comp}
 	# in phase 2,  result[wikicat] = {"db": numURLs, "wk": numURLs}
 
 	# in case execution from start, fields needed to present data in previous phases must be added to the answer
 	if fromStart:  
-		result["wikicats"] = selectedWikicats
+		result["P1_wikicats"] = P1_selectedWikicats
 		# both dicts for result[wikicat] must be combined
-		for w in selectedWikicats:	# all the wikicats, selected or not
-			components = resultPh1[w]["components"]
-			db = result[w]["db"]
-			wk = result[w]["wk"]
-			result[w] = {"components": components, "db": db, "wk": wk}
+		for w in P1_selectedWikicats:	# all the wikicats, selected or not
+			result[w]["components"] = resultPh1[w]["components"]
 		
 	return jsonify(result);  
 	
 	
-def doPh2 (lenOriginalText, selectedWikicats):
+def doPh2 (lenOriginalText, P1_selectedWikicats):
 	_Print("Executing Phase 2")
 		
 	logFilename = "corpus.log"
@@ -167,15 +164,15 @@ def doPh2 (lenOriginalText, selectedWikicats):
 	
 	result = {}  # object to store the results to be returned to the request
 	
-	print("\nNumber of selected wikicats:", len(selectedWikicats))
+	print("\nNumber of selected wikicats:", len(P1_selectedWikicats))
 	numUrlsDB = 0
 	numUrlsWK = 0
 
 	# store the selected wikicats in the file $CORPUS_FOLDER/length.selected.wk
-	_saveFile(_CORPUS_FOLDER+str(lenOriginalText)+".selected.wk", '\n'.join(selectedWikicats))
+	_saveFile(_CORPUS_FOLDER+str(lenOriginalText)+".selected.wk", '\n'.join(P1_selectedWikicats))
 			
 	
-	# Now, we have wikicats in 'selectedWikicats' and subjects in 'listSubjectsOriginalText'
+	# Now, we have wikicats in 'P1_selectedWikicats' and subjects in 'listSubjectsOriginalText'
 	
 	# create the folder to store two files per wikicat, with the URLs linked to such wikicat coming from DB and WK
 	# it must be done before calling the getUrlsLinked2Wikicats function, that it stores there files if fetched
@@ -189,7 +186,7 @@ def doPh2 (lenOriginalText, selectedWikicats):
 	# now get the URLs associated to any of those wikicats (this function is below)
 	# it reads from local DB (URLs) if exist, otherwise it connects to Internet to fetch them and store them in local DB
 
-	urlsObjects = getUrlsLinked2Wikicats(selectedWikicats, logFilename)
+	urlsObjects = getUrlsLinked2Wikicats(P1_selectedWikicats, logFilename)
 
 	# it has been received a dictionary entry for each wikicat   urlsObjects[wikicat] = {"db": urlsDB, "wk": urlsWK}
 	# urlsDB and urlsWK are lists of URLs
@@ -200,7 +197,7 @@ def doPh2 (lenOriginalText, selectedWikicats):
 	
 	print("Number of URLs for every wikicat: ", end='')
 	
-	for wikicat in selectedWikicats:
+	for wikicat in P1_selectedWikicats:
 		
 		# first, the results from DB
 
@@ -234,33 +231,33 @@ def doPh2 (lenOriginalText, selectedWikicats):
 	_appendFile(logFilename, "Number of unique discovered URLs: "+str(lenListWithoutDuplicates))
 	
 	# returns number of results, the result items are only the numbers of discovered URLs
-	result["selectedWikicats"] = selectedWikicats
-	result["totalDB"] = numUrlsDB
-	result["totalWK"] = numUrlsWK
-	result["totalUrls"] = lenListWithoutDuplicates
-	result["listWithoutDuplicates"] = listWithoutDuplicates
+	result["P2_totalDB"] = numUrlsDB
+	result["P2_totalWK"] = numUrlsWK
+	result["P2_totalUrls"] = lenListWithoutDuplicates
+	result["P2_listWithoutDuplicates"] = listWithoutDuplicates
 	
 	return result  
 
 
 # remove elements that are duplicated if case-insensitive check
-def removeDup (lista):
-	listaLower = list(map(lambda x: x.lower(), lista)) 
-
-	dictDup = {}	# dict with keys urlLower and value urlOriginal
-	for url in lista:
-		num = listaLower.count(url.lower())
-		if num > 1:
-			if url.lower() in dictDup:
-				print(url, num)
-				continue
-			else:
-				dictDup[url.lower()] = url
-	
-	for url in dictDup:
-		lista.remove(dictDup[url])
-	
-	return lista
+# not used because is a costly procedure
+# def removeDup (lista):
+# 	listaLower = list(map(lambda x: x.lower(), lista)) 
+# 
+# 	dictDup = {}	# dict with keys urlLower and value urlOriginal
+# 	for url in lista:
+# 		num = listaLower.count(url.lower())
+# 		if num > 1:
+# 			if url.lower() in dictDup:
+# 				print(url, num)
+# 				continue
+# 			else:
+# 				dictDup[url.lower()] = url
+# 	
+# 	for url in dictDup:
+# 		lista.remove(dictDup[url])
+# 	
+# 	return lista
 			
 
 
@@ -311,27 +308,30 @@ def doPh3downloadCandidateTexts():
 	_Print("Requested Phase 3")
 		
 	fromStart = json.loads(request.values.get("fromStart")) 
-	originalText = request.values.get("originalText")
-	lenOriginalText = len(originalText)
+	P0_originalText = request.values.get("P0_originalText")
+	lenOriginalText = len(P0_originalText)
 	
 	# in case execution from start, Phases 1-2  must be executed first
 	if fromStart:
-		resultPh1 = doPh1(originalText)
-		selectedWikicats = resultPh1["wikicats"]
-		resultPh2 = doPh2(lenOriginalText, selectedWikicats)
-		listWithoutDuplicates = resultPh2["listWithoutDuplicates"]
+		resultPh1 = doPh1(P0_originalText)
+		P1_selectedWikicats = resultPh1["P1_wikicats"]
+		resultPh2 = doPh2(lenOriginalText, P1_selectedWikicats)
+		P2_listWithoutDuplicates = resultPh2["P2_listWithoutDuplicates"]
 	else:
-		listWithoutDuplicates = json.loads(request.values.get("listWithoutDuplicates"))  # get parameter with the list of URLs
-		selectedWikicats = json.loads(request.values.get("selectedWikicats"))  # get parameter with the list of wikicats
+		P1_selectedWikicats = json.loads(request.values.get("P1_selectedWikicats"))  # get parameter with the list of wikicats
+		P2_listWithoutDuplicates = json.loads(request.values.get("P2_listWithoutDuplicates"))  # get parameter with the list of URLs
 		
-	result = doPh3(listWithoutDuplicates)
-	result["selectedWikicats"] = selectedWikicats
+	result = doPh3(P2_listWithoutDuplicates)
+	result["P1_selectedWikicats"] = P1_selectedWikicats
 	
 	# in case execution from start, fields needed to present data in previous phases must be added to the answer
 	if fromStart:
-		result["wikicats"] = selectedWikicats
-		result["listWithoutDuplicates"] = listWithoutDuplicates
-		for w in selectedWikicats:	# all the wikicats, selected or not
+		result["P1_wikicats"] = P1_selectedWikicats
+		result["P2_listWithoutDuplicates"] = P2_listWithoutDuplicates
+		result["P2_totalDB"] = resultPh2["P2_totalDB"]
+		result["P2_totalWK"] = resultPh2["P2_totalWK"]
+		result["P2_totalUrls"] = resultPh2["P2_totalUrls"]		
+		for w in P1_selectedWikicats:	# all the wikicats, selected or not
 			components = resultPh1[w]["components"]
 			db = resultPh2[w]["db"]
 			wk = resultPh2[w]["wk"]
@@ -341,7 +341,7 @@ def doPh3downloadCandidateTexts():
 
 	
 	
-def doPh3(listWithoutDuplicates):
+def doPh3(P2_listWithoutDuplicates):
 	_Print("Executing Phase 3")	
 	result = {}  # object to store the results to be returned to the request
 	
@@ -351,7 +351,7 @@ def doPh3(listWithoutDuplicates):
 	logFile.write(str(datetime.now())+"\n")
 	logFile.close()
 	
-	lenListWithoutDuplicates  = len(listWithoutDuplicates)  # length of full list to process
+	lenListWithoutDuplicates  = len(P2_listWithoutDuplicates)  # length of full list to process
 		
 	#  We have teh set of URLs available in listWithoutDuplicates
 	#  Let's start the analysis of their contents 
@@ -364,7 +364,7 @@ def doPh3(listWithoutDuplicates):
 	scrap = _scrapFunctions()   # Create a scrapFunctions object to clean pages
 	unretrieved_pages_list = []  # a list for unsuccessful pages retrieval
 		
-	nowDownloaded = 0  # number of files downloaded from Internet in this iteration
+	P3_numUrlsDownloaded = 0  # number of urls downloaded from Internet in this iteration
 	
 	listEnoughContent = [] # list of pages with sufficient content to proceed  ( > _CORPUS_MIN_TXT_SIZE bytes, a constant from aux_build.py)
 	listNotEnoughContent = [] # list of pages with insufficient content to proceed
@@ -372,7 +372,7 @@ def doPh3(listWithoutDuplicates):
 	# download not locally stored pages, scrap them, and save them
 	startTime = datetime.now()
 	
-	for idx, page in enumerate(listWithoutDuplicates, start=1):
+	for idx, page in enumerate(P2_listWithoutDuplicates, start=1):
 		if (idx % 5000) == 0:
 			print(".", end=' ', flush=True)
 			
@@ -407,9 +407,9 @@ def doPh3(listWithoutDuplicates):
 		else:  # fetch file if not exists	
 			try:  # Retrieves the URL, and get the page title and the scraped page content
 				pageName, pageContent = scrap.scrapPage(page)  # pageName result is not used
-				nowDownloaded += 1
+				P3_numUrlsDownloaded += 1
 				_saveFile(fileNameCandidate, pageContent)  # Save to text file
-				_Print("File "+str(nowDownloaded)+" downloaded and saved it:", fileNameCandidate)
+				_Print("File "+str(P3_numUrlsDownloaded)+" downloaded and saved it:", fileNameCandidate)
 				
 				if (len(pageContent) < _CORPUS_MIN_TXT_SIZE):
 					listNotEnoughContent.append(fileNameCandidate)
@@ -431,16 +431,15 @@ def doPh3(listWithoutDuplicates):
 	_appendFile(logFilename, "Number of available pages with enough content: "+str(lenListEnoughContent))
 	
 	print("ALL PAGES AVAILABLE AND CLEANED.")
-	print("New pages downloaded in this iteration:", str(nowDownloaded))
+	print("New pages downloaded in this iteration:", str(P3_numUrlsDownloaded))
 	print("Number of texts with enough content:", str(lenListEnoughContent))
 	print("Number of texts without enough content:", str(len(listNotEnoughContent)))
 	print("Duration F3 (downloading and cleaning):", str(elapsedTimeF3.seconds))
 
-	result["nowDownloaded"] = nowDownloaded
-	result["listEnoughContent"] = listEnoughContent
-	result["lenListEnoughContent"] = lenListEnoughContent
-	result["lenListNotEnoughContent"] = len(listNotEnoughContent)
-	result["elapsedTimeF3"] = elapsedTimeF3.seconds
+	result["P3_numUrlsDownloaded"] = P3_numUrlsDownloaded
+	result["P3_listEnoughContent"] = listEnoughContent
+	result["P3_lenListNotEnoughContent"] = len(listNotEnoughContent)
+	result["P3_elapsedTimeF3"] = elapsedTimeF3.seconds
 	
 	return result
 
@@ -460,43 +459,46 @@ def doPh4identifyWikicats():
 	_Print("Requested Phase 4")
 		
 	fromStart = json.loads(request.values.get("fromStart")) 
-	originalText = request.values.get("originalText")
-	lenOriginalText = len(originalText)
+	P0_originalText = request.values.get("P0_originalText")
+	lenOriginalText = len(P0_originalText)
 	
 	# in case execution from start, Phases 1-2-3  must be executed first
 	if fromStart:
-		resultPh1 = doPh1(originalText)
-		selectedWikicats = resultPh1["wikicats"]
-		resultPh2 = doPh2(lenOriginalText, selectedWikicats)
-		listWithoutDuplicates = resultPh2["listWithoutDuplicates"]
-		resultPh3 = doPh3(listWithoutDuplicates)
-		listEnoughContent = resultPh3["listEnoughContent"]
+		resultPh1 = doPh1(P0_originalText)
+		P1_selectedWikicats = resultPh1["P1_wikicats"]
+		resultPh2 = doPh2(lenOriginalText, P1_selectedWikicats)
+		P2_listWithoutDuplicates = resultPh2["P2_listWithoutDuplicates"]
+		resultPh3 = doPh3(P2_listWithoutDuplicates)
+		P3_listEnoughContent = resultPh3["P3_listEnoughContent"]
 		
 	else:
-		listEnoughContent = json.loads(request.values.get("listEnoughContent"))  # get parameter with the list of candidate texts with enough content
-		selectedWikicats = json.loads(request.values.get("selectedWikicats"))  # get parameter with the list of wikicats
+		P3_listEnoughContent = json.loads(request.values.get("P3_listEnoughContent"))  # get parameter with the list of candidate texts with enough content
+		P1_selectedWikicats = json.loads(request.values.get("P1_selectedWikicats"))  # get parameter with the list of wikicats
 		
-	result = doPh4(listEnoughContent)
-	result["selectedWikicats"] = selectedWikicats
+	result = doPh4(P3_listEnoughContent)
+	result["P1_selectedWikicats"] = P1_selectedWikicats
 	
 	# in case execution from start, fields needed to present data in previous phases must be added to the answer
 	if fromStart:
-		result["wikicats"] = selectedWikicats
-		result["listWithoutDuplicates"] = listWithoutDuplicates
-		for w in selectedWikicats:	# all the wikicats, selected or not
+		result["P1_wikicats"] = P1_selectedWikicats
+		result["P2_listWithoutDuplicates"] = P2_listWithoutDuplicates
+		for w in P1_selectedWikicats:	# all the wikicats, selected or not
 			components = resultPh1[w]["components"]
 			db = resultPh2[w]["db"]
 			wk = resultPh2[w]["wk"]
 			result[w] = {"components": components, "db": db, "wk": wk}
-		result["nowDownloaded"] = resultPh3["nowDownloaded"]
-		result["lenListEnoughContent"] = resultPh3["lenListEnoughContent"]
-		result["lenListNotEnoughContent"] = resultPh3["lenListNotEnoughContent"]
-		result["elapsedTimeF3"] = resultPh3["elapsedTimeF3"]	
+		result["P3_numUrlsDownloaded"] = resultPh3["P3_numUrlsDownloaded"]
+		result["P3_listEnoughContent"] = resultPh3["P3_listEnoughContent"]
+		result["P3_lenListNotEnoughContent"] = resultPh3["P3_lenListNotEnoughContent"]
+		result["P3_elapsedTimeF3"] = resultPh3["P3_elapsedTimeF3"]
+		result["P2_totalDB"] = resultPh2["P2_totalDB"]
+		result["P2_totalWK"] = resultPh2["P2_totalWK"]
+		result["P2_totalUrls"] = resultPh2["P2_totalUrls"]
 	return jsonify(result);
 
 
 	
-def doPh4(listEnoughContent):
+def doPh4(P3_listEnoughContent):
 	_Print("Executing Phase 4")	
 	result = {}  # object to store the results to be returned to the request
 	
@@ -507,16 +509,16 @@ def doPh4(listEnoughContent):
 	logFile.close()
 
 
-	lenListEnoughContent  = len(listEnoughContent)  # length of full list to process
+	lenListEnoughContent  = len(P3_listEnoughContent)  # length of full list to process
 	
 	print("\n", "********** Identifying wikicats and subjects for", lenListEnoughContent, "candidate texts with DBpedia SpotLight...","\n")
-	nowProcessed = 0
+	P4_numUrlsProcessed = 0
 	
 	listWithWKSB = [] # list of docs with wikicats or subjects
 	listWithoutWKSB = [] # list of docs with no wikicats and no subjects
 	startTime = datetime.now()
 	
-	for idx, doc in enumerate(listEnoughContent, start=1):
+	for idx, doc in enumerate(P3_listEnoughContent, start=1):
 		if (idx % 5000) == 0:
 			print(".", end=' ', flush=True)
 		_Print("\n("+str(idx)+" of "+str(lenListEnoughContent)+") -- ", doc)
@@ -561,7 +563,7 @@ def doPh4(listEnoughContent):
 			
 			_saveFile(fileNameCandidateWikicats, '\n'.join(candidate_text_wikicats))  # save file with original text wikicats, one per line
 			_saveFile(fileNameCandidateSubjects, '\n'.join(candidate_text_subjects))  # save file with original text subjects, one per line
-			nowProcessed += 1
+			P4_numUrlsProcessed += 1
 			
 			# if no wikicats and no subjects, the page will not be used
 			if (len(candidate_text_wikicats) == 0) and (len(candidate_text_subjects) == 0):
@@ -577,16 +579,15 @@ def doPh4(listEnoughContent):
 	_appendFile(logFilename, "Number of available pages with wikicats or subjects: "+str(lenListWithWKSB))
 	
 	print("\n","ALL WIKICATs AND SUBJECTs COMPUTED")
-	print("New items processed in this iteration:", str(nowProcessed))
+	print("New items processed in this iteration:", str(P4_numUrlsProcessed))
 	print("Number of docs with wikicats or subjects:", str(lenListWithWKSB))
 	print("Number of docs without wikicats nor subjects:", str(len(listWithoutWKSB)))
 	print("Duration F4 (identifying wikicats):", str(elapsedTimeF4.seconds))
 		
-	result["nowProcessed"] = nowProcessed
-	result["listWithWKSB"] = listWithWKSB
-	result["lenListWithWKSB"] = lenListWithWKSB
-	result["lenListWithoutWKSB"] = len(listWithoutWKSB)
-	result["elapsedTimeF4"] = elapsedTimeF4.seconds
+	result["P4_numUrlsProcessed"] = P4_numUrlsProcessed
+	result["P4_listWithWKSB"] = listWithWKSB
+	result["P4_lenListWithoutWKSB"] = len(listWithoutWKSB)
+	result["P4_elapsedTimeF4"] = elapsedTimeF4.seconds
 
 	return result
 
@@ -608,55 +609,59 @@ def doPh5computeSimilarities():
 	_Print("Requested Phase 5")
 	
 	fromStart = json.loads(request.values.get("fromStart"))
-	originalText = request.values.get("originalText")
-	lenOriginalText = len(originalText)
+	P0_originalText = request.values.get("P0_originalText")
+	lenOriginalText = len(P0_originalText)
 	
 	# in case execution from start, Phases 1-2-3-4  must be executed first
 	if fromStart:
-		resultPh1 = doPh1(originalText)
-		selectedWikicats = resultPh1["wikicats"]
-		resultPh2 = doPh2(lenOriginalText, selectedWikicats)
-		listWithoutDuplicates = resultPh2["listWithoutDuplicates"]
-		resultPh3 = doPh3(listWithoutDuplicates)
-		listEnoughContent = resultPh3["listEnoughContent"]
-		resultPh4 = doPh4(listEnoughContent)
-		listWithWKSB = resultPh4["listWithWKSB"]
+		resultPh1 = doPh1(P0_originalText)
+		P1_selectedWikicats = resultPh1["P1_wikicats"]
+		resultPh2 = doPh2(lenOriginalText, P1_selectedWikicats)
+		P2_listWithoutDuplicates = resultPh2["P2_listWithoutDuplicates"]
+		resultPh3 = doPh3(P2_listWithoutDuplicates)
+		P3_listEnoughContent = resultPh3["P3_listEnoughContent"]
+		resultPh4 = doPh4(P3_listEnoughContent)
+		P4_listWithWKSB = resultPh4["P4_listWithWKSB"]
 		
 	else:
-		selectedWikicats = json.loads(request.values.get("selectedWikicats"))   # get parameter with selected wikicats
-		listWithWKSB = json.loads(request.values.get("listWithWKSB"))  # get parameter with the list of candidate texts with wikicats or subjects
+		P1_selectedWikicats = json.loads(request.values.get("P1_selectedWikicats"))   # get parameter with selected wikicats
+		P4_listWithWKSB = json.loads(request.values.get("P4_listWithWKSB"))  # get parameter with the list of candidate texts with wikicats or subjects
 		
-	result = doPh5(listWithWKSB, originalText, selectedWikicats)
+	result = doPh5(P4_listWithWKSB, P0_originalText, P1_selectedWikicats)
 	
-	result["listWithWKSB"] = listWithWKSB
+	result["P4_listWithWKSB"] = P4_listWithWKSB
 	
 	# in case execution from start, fields needed to present data in previous phases must be added to the answer
 	if fromStart:
-		result["wikicats"] = selectedWikicats
-		result["selectedWikicats"] = selectedWikicats
-		result["listWithoutDuplicates"] = listWithoutDuplicates
-		for w in selectedWikicats:	# all the wikicats, selected or not
+		result["P1_wikicats"] = P1_selectedWikicats
+		result["P1_selectedWikicats"] = P1_selectedWikicats
+		result["P2_listWithoutDuplicates"] = P2_listWithoutDuplicates
+		for w in P1_selectedWikicats:	# all the wikicats, selected or not
 			components = resultPh1[w]["components"]
 			db = resultPh2[w]["db"]
 			wk = resultPh2[w]["wk"]
 			result[w] = {"components": components, "db": db, "wk": wk}
-			
-		result["nowDownloaded"] = resultPh3["nowDownloaded"]
-		result["lenListEnoughContent"] = resultPh3["lenListEnoughContent"]
-		result["lenListNotEnoughContent"] = resultPh3["lenListNotEnoughContent"]
-		result["elapsedTimeF3"] = resultPh3["elapsedTimeF3"]
+
+		result["P2_totalDB"] = resultPh2["P2_totalDB"]
+		result["P2_totalWK"] = resultPh2["P2_totalWK"]
+		result["P2_totalUrls"] = resultPh2["P2_totalUrls"]
 		
-		result["nowProcessed"] = resultPh4["nowProcessed"]
-		result["lenListWithWKSB"] = resultPh4["lenListWithWKSB"]
-		result["lenListWithoutWKSB"] = resultPh4["lenListWithoutWKSB"]
-		result["elapsedTimeF4"] = resultPh4["elapsedTimeF4"]
+		result["P3_numUrlsDownloaded"] = resultPh3["P3_numUrlsDownloaded"]
+		result["P3_listEnoughContent"] = resultPh3["P3_listEnoughContent"]
+		result["P3_lenListNotEnoughContent"] = resultPh3["P3_lenListNotEnoughContent"]
+		result["P3_elapsedTimeF3"] = resultPh3["P3_elapsedTimeF3"]
+		
+		result["P4_numUrlsProcessed"] = resultPh4["P4_numUrlsProcessed"]
+		result["P4_listWithWKSB"] = resultPh4["P4_listWithWKSB"]
+		result["P4_lenListWithoutWKSB"] = resultPh4["P4_lenListWithoutWKSB"]
+		result["P4_elapsedTimeF4"] = resultPh4["P4_elapsedTimeF4"]
 		
 	return jsonify(result);
 
 
 
 
-def doPh5(listWithWKSB, originalText, selectedWikicats):
+def doPh5(P4_listWithWKSB, P0_originalText, P1_selectedWikicats):
 	_Print("Executing Phase 5")	
 	result = {}  # object to store the results to be returned to the request
 	
@@ -666,8 +671,8 @@ def doPh5(listWithWKSB, originalText, selectedWikicats):
 	logFile.write(str(datetime.now())+"\n")
 	logFile.close()
 	
-	lenOriginalText = len(originalText)
-	lenListWithWKSB  = len(listWithWKSB)  # length of full list of candidate files to process
+	lenOriginalText = len(P0_originalText)
+	lenListWithWKSB  = len(P4_listWithWKSB)  # length of full list of candidate files to process
 
 
 	# read the original text entities from local store, to later measure the quelity of similarities
@@ -728,14 +733,14 @@ def doPh5(listWithWKSB, originalText, selectedWikicats):
 	dict_sims2 = {} # dict to store existing and newly computed sims, for later updating DB file
 	
 	# Create a textSimilarityFunctions object to measure text similarities. It receives the wikicats and subjects of the original text.
-	similarities = _textSimilarityFunctions(originalText, selectedWikicats, listSubjectsOriginalText, logFilename)
+	similarities = _textSimilarityFunctions(P0_originalText, P1_selectedWikicats, listSubjectsOriginalText, logFilename)
 	
 	# create object to measure Doc2Vec similarity with LEE_D2V_MODEL
-	d2vLeeSimilarity = _Doc2VecSimilarity(_LEE_D2V_MODEL, originalText)
+	d2vLeeSimilarity = _Doc2VecSimilarity(_LEE_D2V_MODEL, P0_originalText)
 	
 	startTime = datetime.now()
 	
-	for idx, doc in enumerate(listWithWKSB, start=1):
+	for idx, doc in enumerate(P4_listWithWKSB, start=1):
 		if (idx % 5000) == 0:
 			print(".", end=' ', flush=True)
 		_Print("\n("+str(idx)+" of "+str(lenListWithWKSB)+") -- ", doc)
@@ -1052,11 +1057,11 @@ def doPh5(listWithWKSB, originalText, selectedWikicats):
 	nameBestRating = bestRating[0]
 	posBestRating = bestRating[2]
 	
-	result["bestSim"] = nameBestRating
+	result["P5_bestSim"] = nameBestRating
 		
-	print("Best rating = ", result["bestSim"])
+	print("Best rating = ", result["P5_bestSim"])
 	
-	result["usedSim"] = result["bestSim"]+" --> "+str(ratings[nameBestRating]["positionLast"])+" ("+str(positionLast1)+" - "+str(positionLast2)+" - "+str(positionLast3)+" - "+str(positionLast4)+" - "+str(positionLast5)+" - "+str(positionLast6)+")"
+	result["P5_usedSim"] = result["P5_bestSim"]+" --> "+str(ratings[nameBestRating]["positionLast"])+" ("+str(positionLast1)+" - "+str(positionLast2)+" - "+str(positionLast3)+" - "+str(positionLast4)+" - "+str(positionLast5)+" - "+str(positionLast6)+")"
 	
 	
 	
@@ -1086,11 +1091,10 @@ def doPh5(listWithWKSB, originalText, selectedWikicats):
 	
 	printSimsDistribution(lenListWithWKSB, distribution_wk, distribution_sb)
 	
-	result["elapsedTimeF5"] = elapsedTimeF5.seconds
-	result["distribution_wk"] = distribution_wk
-	result["distribution_sb"] = distribution_sb
-	result["listDocsCorpus"] = listDocsCorpus
-	result["lenListDocsCorpus"] = len(listDocsCorpus)
+	result["P5_elapsedTimeF5"] = elapsedTimeF5.seconds
+	result["P5_distribution_wk"] = distribution_wk
+	result["P5_distribution_sb"] = distribution_sb
+	result["P5_listDocsCorpus"] = listDocsCorpus
 		
 	return result
 
@@ -1109,61 +1113,63 @@ def doPh6trainD2V():
 	_Print("Requested Phase 6")
 	
 	fromStart = json.loads(request.values.get("fromStart"))
-	originalText = request.values.get("originalText")
-	lenOriginalText = len(originalText)
+	P0_originalText = request.values.get("P0_originalText")
+	lenOriginalText = len(P0_originalText)
 	
 	# in case execution from start, Phases 1-2-3-4-5  must be executed first
 	if fromStart:
-		resultPh1 = doPh1(originalText)
-		selectedWikicats = resultPh1["wikicats"]
-		resultPh2 = doPh2(lenOriginalText, selectedWikicats)
-		listWithoutDuplicates = resultPh2["listWithoutDuplicates"]
-		resultPh3 = doPh3(listWithoutDuplicates)
-		listEnoughContent = resultPh3["listEnoughContent"]
-		resultPh4 = doPh4(listEnoughContent)
-		listWithWKSB = resultPh4["listWithWKSB"]
-		resultPh5 = doPh5(listWithWKSB, originalText, selectedWikicats)
-		listDocsCorpus = resultPh5["listDocsCorpus"]
-		lenListDocsCorpus = resultPh5["lenListDocsCorpus"]
+		resultPh1 = doPh1(P0_originalText)
+		P1_selectedWikicats = resultPh1["P1_wikicats"]
+		resultPh2 = doPh2(lenOriginalText, P1_selectedWikicats)
+		P2_listWithoutDuplicates = resultPh2["P2_listWithoutDuplicates"]
+		resultPh3 = doPh3(P2_listWithoutDuplicates)
+		P3_listEnoughContent = resultPh3["P3_listEnoughContent"]
+		resultPh4 = doPh4(P3_listEnoughContent)
+		P4_listWithWKSB = resultPh4["P4_listWithWKSB"]
+		resultPh5 = doPh5(P4_listWithWKSB, P0_originalText, P1_selectedWikicats)
+		P5_listDocsCorpus = resultPh5["P5_listDocsCorpus"]
+		lenListDocsCorpus = len(P5_listDocsCorpus)
 	else:
-		listDocsCorpus = json.loads(request.values.get("listDocsCorpus"))  # get parameter with the corpus docs
-		listWithWKSB = json.loads(request.values.get("listWithWKSB"))  # get parameter with the full list of docs
+		P5_listDocsCorpus = json.loads(request.values.get("P5_listDocsCorpus"))  # get parameter with the corpus docs
+		P4_listWithWKSB = json.loads(request.values.get("P4_listWithWKSB"))  # get parameter with the full list of docs
 		
-	result = doPh6(listDocsCorpus, lenOriginalText)
+	result = doPh6(P5_listDocsCorpus, lenOriginalText)
 	
-	result["listDocsCorpus"] = listDocsCorpus
-	result["listWithWKSB"] = listWithWKSB
+	result["P5_listDocsCorpus"] = P5_listDocsCorpus
+	result["P4_listWithWKSB"] = P4_listWithWKSB
 	
 	# in case execution from start, fields needed to present data in previous phases must be added to the answer
 	if fromStart:
-		result["wikicats"] = selectedWikicats
-		result["selectedWikicats"] = selectedWikicats
-		result["listWithoutDuplicates"] = listWithoutDuplicates
-		for w in selectedWikicats:	# all the wikicats, selected or not
+		result["P1_wikicats"] = P1_selectedWikicats
+		result["P1_selectedWikicats"] = P1_selectedWikicats
+		result["P2_listWithoutDuplicates"] = P2_listWithoutDuplicates
+		for w in P1_selectedWikicats:	# all the wikicats, selected or not
 			components = resultPh1[w]["components"]
 			db = resultPh2[w]["db"]
 			wk = resultPh2[w]["wk"]
 			result[w] = {"components": components, "db": db, "wk": wk}
 			
-		result["nowDownloaded"] = resultPh3["nowDownloaded"]
-		result["lenListEnoughContent"] = resultPh3["lenListEnoughContent"]
-		result["lenListNotEnoughContent"] = resultPh3["lenListNotEnoughContent"]
-		result["elapsedTimeF3"] = resultPh3["elapsedTimeF3"]
+		result["P2_totalDB"] = resultPh2["P2_totalDB"]
+		result["P2_totalWK"] = resultPh2["P2_totalWK"]
+		result["P2_totalUrls"] = resultPh2["P2_totalUrls"]
 		
-		result["nowProcessed"] = resultPh4["nowProcessed"]
-		result["lenListWithWKSB"] = resultPh4["lenListWithWKSB"]
-		result["lenListWithoutWKSB"] = resultPh4["lenListWithoutWKSB"]
-		result["elapsedTimeF4"] = resultPh4["elapsedTimeF4"]
+		result["P3_numUrlsDownloaded"] = resultPh3["P3_numUrlsDownloaded"]
+		result["P3_listEnoughContent"] = resultPh3["P3_listEnoughContent"]
+		result["P3_lenListNotEnoughContent"] = resultPh3["P3_lenListNotEnoughContent"]
+		result["P3_elapsedTimeF3"] = resultPh3["P3_elapsedTimeF3"]
 		
-		result["usedSim"] = resultPh5["usedSim"]		
-		result["elapsedTimeF5"] = resultPh5["elapsedTimeF5"]
-		result["lenListDocsCorpus"] = lenListDocsCorpus		
+		result["P4_numUrlsProcessed"] = resultPh4["P4_numUrlsProcessed"]
+		result["P4_lenListWithoutWKSB"] = resultPh4["P4_lenListWithoutWKSB"]
+		result["P4_elapsedTimeF4"] = resultPh4["P4_elapsedTimeF4"]
+		
+		result["P5_usedSim"] = resultPh5["P5_usedSim"]		
+		result["P5_elapsedTimeF5"] = resultPh5["P5_elapsedTimeF5"]
 		
 	return jsonify(result);	
 	
 	
 	
-def doPh6(listDocsCorpus, lenOriginalText):
+def doPh6(P5_listDocsCorpus, lenOriginalText):
 	_Print("Executing Phase 6")
 		
 	result = {}  # object to store the results to be returned to the request
@@ -1176,7 +1182,7 @@ def doPh6(listDocsCorpus, lenOriginalText):
 	
 	startTime = datetime.now()
 	
-	listDocsTXT = list(map(lambda x: x[0], listDocsCorpus))
+	listDocsTXT = list(map(lambda x: x[0], P5_listDocsCorpus))
 	
 	corpusFolder = _CORPUS_FOLDER+str(lenOriginalText)+"/"
 	if not os.path.exists(corpusFolder):  # create CORPUS folder for output files if does not exist
@@ -1234,7 +1240,7 @@ def doPh6(listDocsCorpus, lenOriginalText):
 				print("Training failed!")
 			
 		
-		result["elapsedTimeF61"] = elapsedTimeF61.seconds
+		result["P6_elapsedTimeF61"] = elapsedTimeF61.seconds
 	except Exception as e:
 		result["error"] = str(e)
 		print("Exception in getTrainD2V", str(e))
@@ -1244,8 +1250,8 @@ def doPh6(listDocsCorpus, lenOriginalText):
 	endTime = datetime.now()
 	elapsedTimeF62 = endTime - startTime
 	
-	result["elapsedTimeF62"] = elapsedTimeF62.seconds
-	result["modelName"] = modelFilename
+	result["P6_elapsedTimeF62"] = elapsedTimeF62.seconds
+	result["P6_modelName"] = modelFilename
 	
 	return result
 
@@ -1263,65 +1269,69 @@ def doPh7reviewCorpus():
 	_Print("Requested Phase 7")
 	
 	fromStart = json.loads(request.values.get("fromStart"))
-	originalText = request.values.get("originalText")
-	lenOriginalText = len(originalText)
+	P0_originalText = request.values.get("P0_originalText")
+	lenOriginalText = len(P0_originalText)
 	
 	# in case execution from start, Phases 1-2-3-4-5-6  must be executed first
 	if fromStart:
-		resultPh1 = doPh1(originalText)
-		selectedWikicats = resultPh1["wikicats"]
-		resultPh2 = doPh2(lenOriginalText, selectedWikicats)
-		listWithoutDuplicates = resultPh2["listWithoutDuplicates"]
-		resultPh3 = doPh3(listWithoutDuplicates)
-		listEnoughContent = resultPh3["listEnoughContent"]
-		resultPh4 = doPh4(listEnoughContent)
-		listWithWKSB = resultPh4["listWithWKSB"]
-		resultPh5 = doPh5(listWithWKSB, originalText, selectedWikicats)
-		listDocsCorpus = resultPh5["listDocsCorpus"]
-		resultPh6 = doPh6(listDocsCorpus, lenOriginalText)
-		modelName = resultPh6["modelName"]
+		resultPh1 = doPh1(P0_originalText)
+		P1_selectedWikicats = resultPh1["P1_wikicats"]
+		resultPh2 = doPh2(lenOriginalText, P1_selectedWikicats)
+		P2_listWithoutDuplicates = resultPh2["P2_listWithoutDuplicates"]
+		resultPh3 = doPh3(P2_listWithoutDuplicates)
+		P3_listEnoughContent = resultPh3["P3_listEnoughContent"]
+		resultPh4 = doPh4(P3_listEnoughContent)
+		P4_listWithWKSB = resultPh4["P4_listWithWKSB"]
+		resultPh5 = doPh5(P4_listWithWKSB, P0_originalText, P1_selectedWikicats)
+		P5_listDocsCorpus = resultPh5["P5_listDocsCorpus"]
+		resultPh6 = doPh6(P5_listDocsCorpus, lenOriginalText)
+		P6_modelName = resultPh6["P6_modelName"]
 	else:
-		modelName = request.values.get("modelName")
-		listWithWKSB = json.loads(request.values.get("listWithWKSB"))  # get parameter with the full set of candidate docs
-		listDocsCorpus = json.loads(request.values.get("listDocsCorpus"))  # get parameter with the corpus docs
+		P6_modelName = request.values.get("P6_modelName")
+		P4_listWithWKSB = json.loads(request.values.get("P4_listWithWKSB"))  # get parameter with the full set of candidate docs
+		P5_listDocsCorpus = json.loads(request.values.get("P5_listDocsCorpus"))  # get parameter with the corpus docs
 		
 		
-	result = doPh7(originalText, modelName, listWithWKSB, listDocsCorpus)
+	result = doPh7(P0_originalText, P6_modelName, P4_listWithWKSB, P5_listDocsCorpus)
 	
 	# in case execution from start, fields needed to present data in previous phases must be added to the answer
 	if fromStart:
-		result["wikicats"] = selectedWikicats
-		result["selectedWikicats"] = selectedWikicats
-		result["listWithoutDuplicates"] = listWithoutDuplicates
-		for w in selectedWikicats:	# all the wikicats, selected or not
+		result["P1_wikicats"] = P1_selectedWikicats
+		result["P1_selectedWikicats"] = P1_selectedWikicats
+		result["P2_listWithoutDuplicates"] = P2_listWithoutDuplicates
+		for w in P1_selectedWikicats:	# all the wikicats, selected or not
 			components = resultPh1[w]["components"]
 			db = resultPh2[w]["db"]
 			wk = resultPh2[w]["wk"]
 			result[w] = {"components": components, "db": db, "wk": wk}
 			
-		result["nowDownloaded"] = resultPh3["nowDownloaded"]
-		result["lenListEnoughContent"] = resultPh3["lenListEnoughContent"]
-		result["lenListNotEnoughContent"] = resultPh3["lenListNotEnoughContent"]
-		result["elapsedTimeF3"] = resultPh3["elapsedTimeF3"]
+		result["P2_totalDB"] = resultPh2["P2_totalDB"]
+		result["P2_totalWK"] = resultPh2["P2_totalWK"]
+		result["P2_totalUrls"] = resultPh2["P2_totalUrls"]
 		
-		result["nowProcessed"] = resultPh4["nowProcessed"]
-		result["lenListWithWKSB"] = resultPh4["lenListWithWKSB"]
-		result["lenListWithoutWKSB"] = resultPh4["lenListWithoutWKSB"]
-		result["elapsedTimeF4"] = resultPh4["elapsedTimeF4"]
+		result["P3_numUrlsDownloaded"] = resultPh3["P3_numUrlsDownloaded"]
+		result["P3_listEnoughContent"] = resultPh3["P3_listEnoughContent"]
+		result["P3_lenListNotEnoughContent"] = resultPh3["P3_lenListNotEnoughContent"]
+		result["P3_elapsedTimeF3"] = resultPh3["P3_elapsedTimeF3"]
 		
-		result["lenListDocsCorpus"] = resultPh5["lenListDocsCorpus"]
-		result["usedSim"] = resultPh5["usedSim"]	
-		result["elapsedTimeF5"] = resultPh5["elapsedTimeF5"]
+		result["P4_numUrlsProcessed"] = resultPh4["P4_numUrlsProcessed"]
+		result["P4_listWithWKSB"] = resultPh4["P4_listWithWKSB"]
+		result["P4_lenListWithoutWKSB"] = resultPh4["P4_lenListWithoutWKSB"]
+		result["P4_elapsedTimeF4"] = resultPh4["P4_elapsedTimeF4"]
 		
-		result["elapsedTimeF61"] = resultPh6["elapsedTimeF61"]
-		result["elapsedTimeF62"] = resultPh6["elapsedTimeF62"]
-		result["modelName"] = modelName
+		result["P5_listDocsCorpus"] = resultPh5["P5_listDocsCorpus"]
+		result["P5_usedSim"] = resultPh5["P5_usedSim"]	
+		result["P5_elapsedTimeF5"] = resultPh5["P5_elapsedTimeF5"]
+		
+		result["P6_elapsedTimeF61"] = resultPh6["P6_elapsedTimeF61"]
+		result["P6_elapsedTimeF62"] = resultPh6["P6_elapsedTimeF62"]
+		result["P6_modelName"] = P6_modelName
 		
 	return jsonify(result);	
 
 
 
-def doPh7(originalText, modelName, listWithWKSB, listDocsCorpus):
+def doPh7(P0_originalText, P6_modelName, P4_listWithWKSB, P5_listDocsCorpus):
 	_Print("Executing Phase 7")
 		
 	result = {}  # object to store the results to be returned to the request
@@ -1332,7 +1342,7 @@ def doPh7(originalText, modelName, listWithWKSB, listDocsCorpus):
 	logFile.write(str(datetime.now())+"\n")
 	logFile.close()
 
-	lenOriginalText = len(originalText)
+	lenOriginalText = len(P0_originalText)
 	
 	# try to read existing D2Vsims file
 	filenameD2VSims = _CORPUS_FOLDER+str(lenOriginalText)+".d2v.sims.csv"
@@ -1349,14 +1359,14 @@ def doPh7(originalText, modelName, listWithWKSB, listDocsCorpus):
 	except:
 		print("No D2V similarities file")
 		
-	modelFilename = _MODELS_FOLDER+modelName
-	d2vSimilarity = _Doc2VecSimilarity(modelFilename, originalText)
-	lenListWithWKSB = len(listWithWKSB)
+	modelFilename = _MODELS_FOLDER+P6_modelName
+	d2vSimilarity = _Doc2VecSimilarity(modelFilename, P0_originalText)
+	lenListWithWKSB = len(P4_listWithWKSB)
 	
-	_Print("Reviewing corpus ("+str(lenListWithWKSB)+" files) with Doc2Vec similarity derived from model:", modelName)
+	_Print("Reviewing corpus ("+str(lenListWithWKSB)+" files) with Doc2Vec similarity derived from model:", P6_modelName)
 	startTime = datetime.now()
 
-	for idx, candidateFile in enumerate(listWithWKSB, start=1):
+	for idx, candidateFile in enumerate(P4_listWithWKSB, start=1):
 		if (idx % 5000) == 0:
 			print(".", end=' ', flush=True)
 		_Print("("+str(idx)+" of "+str(lenListWithWKSB)+") -- ", candidateFile)
@@ -1393,7 +1403,7 @@ def doPh7(originalText, modelName, listWithWKSB, listDocsCorpus):
 	
 		csvFile.close()
 	
-	result["elapsedTimeF7"] = elapsedTimeF7.seconds
+	result["P7_elapsedTimeF7"] = elapsedTimeF7.seconds
 	
 	return result
 
@@ -1546,21 +1556,21 @@ def printSimsDistribution (lenListWithWKSB, distribution_wk, distribution_sb):
 
 # aux function to get all the URLs associated to any wikicat from the set of selected wikicats
 # Receives:
-# - selectedWikicats: set of selected wikicats
+# - P1_selectedWikicats: set of selected wikicats
 # - logFilename: file to save errors
 # For each wikicat, if there is a file for such wikicat, it is read for returning contents
 # Otherwise, it connects to Internet to query DB and WK and parse the results to return, after storing them locally
 # it returns a dictionary entry for each wikicat   urlsObjects[wikicat] = {"db": urlsDB, "wk": urlsWK}
 # urlsDB and urlsWK are lists of URLs
 
-def getUrlsLinked2Wikicats (selectedWikicats, logFilename):
+def getUrlsLinked2Wikicats (P1_selectedWikicats, logFilename):
 	requestObjects = {} # dictionary to store request objects 
 	
 	futureSession = FuturesSession()  # to manage asynchronous requests 
 
 	# first phase, reading files or start requests for DBpedia and Wikidata foreach wikicat
 					
-	for wikicat in selectedWikicats:
+	for wikicat in P1_selectedWikicats:
 		
 		# first, read or fetch Wikicat results for DBpedia
 
@@ -1659,7 +1669,7 @@ def getUrlsLinked2Wikicats (selectedWikicats, logFilename):
 	
 	# Second phase. Now, read the results received from all queries
 	
-	for wikicat in selectedWikicats:
+	for wikicat in P1_selectedWikicats:
 		
 		# first, study results for DB
 		

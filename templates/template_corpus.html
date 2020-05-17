@@ -228,12 +228,12 @@
 	
 			// Here it starts what is executed when finishing to load the page  
 			
-			selectedWikicats = [];
-			listWithoutDuplicates = [];
-			listEnoughContent = [];
-			listWithWKSB = [];
-			listDocsCorpus = [];
-			modelName = "";
+			P1_selectedWikicats = [];
+			P2_listWithoutDuplicates = [];
+			P3_listEnoughContent = [];
+			P4_listWithWKSB = [];
+			P5_listDocsCorpus = [];
+			P6_modelName = "";
 			
 			$(document).ready(function () {
 				
@@ -245,8 +245,8 @@
 				
 				
 				function buildF1contents (result) {
-					wikicatList = result["wikicats"]   // this is the list of wikicats in text
-					selWikicats =  result["selectedWikicats"]
+					wikicatList = result["P1_wikicats"]   // this is the list of wikicats in text
+					selWikicats =  result["P1_selectedWikicats"]
 
 					results = "<b>"+wikicatList.length+" wikicats</b> (click on anyone to see its wikicat components)<br>\n"
 					results += "<table>"
@@ -282,7 +282,7 @@
 					$.ajax({
 						type: "POST",
 						url: "/doPh1getWikicatsFromText",
-						data: {"originalText": originalText},  // send the text with 'text' key
+						data: {"P0_originalText": originalText},  // send the text with 'text' key
 						success: function(result) {
 							$("#spinner").modal("hide");
 							console.log("Result of phase 1: wikicats of text")
@@ -294,7 +294,7 @@
 								$(contentF1_showWikicats).html(results)
 							}
 							else {
-								selectedWikicats =  result["selectedWikicats"]
+								P1_selectedWikicats =  result["P1_selectedWikicats"]
 								
 								results = buildF1contents(result)
 								$(contentF1_showWikicats).html(results)
@@ -355,7 +355,7 @@
 				
 				
 				function buildF2contents (result) {
-					selWikicats = result["selectedWikicats"]
+					selWikicats = result["P1_selectedWikicats"]
 						
 					// present the summary of results
 					results = "<b>"+selWikicats.length+" wikicats</b><br>\n"
@@ -374,7 +374,7 @@
 						results += wr["wk"]+" from <span style='color: blue; font-weight: bold; text-decoration: underline;' name='"+w+"'  class='wiki wikidata'>Wikidata</span>)";
 					});
 					results += "</table><p>"
-					results += "<p style='color: black'>Identified "+result['totalDB']+" URLs from DBpedia and "+result['totalWK']+" from Wikidata. Distinct URLs: "+result['totalUrls']		
+					results += "<p style='color: black'>Identified "+result['P2_totalDB']+" URLs from DBpedia and "+result['P2_totalWK']+" from Wikidata. Distinct URLs: "+result['P2_totalUrls']		
 					
 					return results
 				}
@@ -396,7 +396,7 @@
 					$.ajax({
 						type: "POST",
 						url: "doPh2getUrlsCandidateFiles", 
-						data: {"originalText": originalText, "fromStart": fromStart, "selectedWikicats":  JSON.stringify(selectedWikicats)},  // send the selected wikicats and the context text
+						data: {"P0_originalText": originalText, "fromStart": fromStart, "P1_selectedWikicats":  JSON.stringify(P1_selectedWikicats)},  // send the selected wikicats and the context text
 						success: function(result) {
 							$("#spinner").modal("hide");
 							console.log("Result of phase 2: number of URLs found for each wikicat")
@@ -409,10 +409,8 @@
 								return
 							}
 							
-							selectedWikicats = result["selectedWikicats"]
-							listWithoutDuplicates = result["listWithoutDuplicates"]   // list of unique URLs 
-							console.log("List of pages without duplicates")
-							console.log(listWithoutDuplicates)
+							P1_selectedWikicats = result["P1_selectedWikicats"]
+							P2_listWithoutDuplicates = result["P2_listWithoutDuplicates"]   // list of unique URLs 
 							
 							results = buildF2contents(result)
 							$(contentF2_showNumberUrls).html(results)
@@ -470,10 +468,10 @@
 				
 				
 				function buildF3contents (result) {
-					results = "<b>"+result['nowDownloaded']  + " new files have been downloaded in this iteration</b><br>\n"
-					results += "<b>"+result['lenListEnoughContent']  + " files with enough content are available</b><br>\n"
-					results += "<b>"+result['lenListNotEnoughContent']  + " files without enough content have been discarded</b><br>\n"
-					results += "<b>Duration of F3: " + result['elapsedTimeF3']  + " seconds</b><br>\n"
+					results = "<b>"+result['P3_numUrlsDownloaded']  + " new files have been downloaded in this iteration</b><br>\n"
+					results += "<b>"+result['P3_listEnoughContent'].length  + " files with enough content are available</b><br>\n"
+					results += "<b>"+result['P3_lenListNotEnoughContent']  + " files without enough content have been discarded</b><br>\n"
+					results += "<b>Duration of F3: " + result['P3_elapsedTimeF3']  + " seconds</b><br>\n"
 					
 					return results
 				}
@@ -489,7 +487,7 @@
 					$.ajax({
 						type: "POST",
 						url: "doPh3downloadCandidateTexts",
-						data: {"originalText": originalText, "fromStart": fromStart, "selectedWikicats": JSON.stringify(selectedWikicats), "listWithoutDuplicates": JSON.stringify(listWithoutDuplicates)},  // send the listWithoutDuplicates received in the previous phase
+						data: {"P0_originalText": originalText, "fromStart": fromStart, "P1_selectedWikicats": JSON.stringify(P1_selectedWikicats), "P2_listWithoutDuplicates": JSON.stringify(P2_listWithoutDuplicates)},  // send the listWithoutDuplicates received in the previous phase
 						success: function(result) {
 							$("#spinner").modal("hide");
 							console.log("Result of phase 3:")
@@ -502,10 +500,9 @@
 								return
 							}
 							
-							selectedWikicats = result["selectedWikicats"]
-							listEnoughContent = result["listEnoughContent"]   // list of texts available with enough content
-							console.log("List of pages with enough content")
-							console.log(listEnoughContent)
+							P1_selectedWikicats = result["P1_selectedWikicats"]
+							P2_listWithoutDuplicates = result["P2_listWithoutDuplicates"]   // list of unique URLs 
+							P3_listEnoughContent = result["P3_listEnoughContent"]   // list of texts available with enough content
 													
 							results = buildF3contents(result)
 							$(contentF3_numberTextsDownloaded).html(results)
@@ -524,10 +521,10 @@
 				
 				
 				function buildF4contents (result) {
-					results = "<b>"+result['nowProcessed']  + " new files have been processed in this iteration</b><br>\n"
-					results += "<b>"+result['lenListWithWKSB']  + " files with wikicats or subjects are available</b><br>\n"
-					results += "<b>"+result['lenListWithoutWKSB']  + " files without wikicats nor subjects have been discarded</b><br>\n"
-					results += "<b>Duration of F4: " + result['elapsedTimeF4']  + " seconds</b><br>\n"
+					results = "<b>"+result['P4_numUrlsProcessed']  + " new files have been processed in this iteration</b><br>\n"
+					results += "<b>"+result['P4_listWithWKSB'].length  + " files with wikicats or subjects are available</b><br>\n"
+					results += "<b>"+result['P4_lenListWithoutWKSB']  + " files without wikicats nor subjects have been discarded</b><br>\n"
+					results += "<b>Duration of F4: " + result['P4_elapsedTimeF4']  + " seconds</b><br>\n"
 					
 					return results
 				}
@@ -543,7 +540,7 @@
 					$.ajax({
 						type: "POST",
 						url: "doPh4identifyWikicats",
-						data: {"originalText": originalText, "fromStart": fromStart, "selectedWikicats": JSON.stringify(selectedWikicats), "listEnoughContent": JSON.stringify(listEnoughContent)},  // send the listEnoughContent received in the previous phase
+						data: {"P0_originalText": originalText, "fromStart": fromStart, "P1_selectedWikicats": JSON.stringify(P1_selectedWikicats), "P3_listEnoughContent": JSON.stringify(P3_listEnoughContent)},  // send the listEnoughContent received in the previous phase
 						success: function(result) {
 							$("#spinner").modal("hide");
 							console.log("Result of phase 4:")
@@ -556,10 +553,10 @@
 								return
 							}
 							
-							selectedWikicats = result["selectedWikicats"]
-							listWithWKSB = result["listWithWKSB"]   // list of texts available with wikicats or subjects
-							console.log("List of pages with wikicats or subjects")
-							console.log(listWithWKSB)
+							P1_selectedWikicats = result["P1_selectedWikicats"]
+							P2_listWithoutDuplicates = result["P2_listWithoutDuplicates"]   // list of unique URLs 
+							P3_listEnoughContent = result["P3_listEnoughContent"]   // list of texts available with enough content
+							P4_listWithWKSB = result["P4_listWithWKSB"]   // list of texts available with wikicats or subjects
 																				
 							results = buildF4contents(result)
 							$(contentF4_numberTextsValid).html(results)
@@ -582,9 +579,9 @@
 			
 			
 				function buildF5contents (result) {
-					results = "<b>Duration of F5: " + result['elapsedTimeF5']  + " seconds</b><br>\n"
-					results += "<b>Used Similarity: " + result['usedSim'] + " </b><br>\n"
-					results += "<b>Number of files: " + result['lenListDocsCorpus'] + " </b><br>\n"
+					results = "<b>Duration of F5: " + result['P5_elapsedTimeF5']  + " seconds</b><br>\n"
+					results += "<b>Used Similarity: " + result['P5_usedSim'] + " </b><br>\n"
+					results += "<b>Number of files: " + result['P5_listDocsCorpus'].length + " </b><br>\n"
 					
 					return results
 				}
@@ -600,7 +597,7 @@
 					$.ajax({
 						type: "POST",
 						url: "doPh5computeSimilarities",
-						data: {"originalText": originalText, "fromStart": fromStart, "selectedWikicats":  JSON.stringify(selectedWikicats), "listWithWKSB": JSON.stringify(listWithWKSB)},  // send the listWithWKSB received in the previous phase
+						data: {"P0_originalText": originalText, "fromStart": fromStart, "P1_selectedWikicats":  JSON.stringify(P1_selectedWikicats), "P4_listWithWKSB": JSON.stringify(P4_listWithWKSB)},  // send the listWithWKSB received in the previous phase
 						success: function(result) {
 							$("#spinner").modal("hide");
 							console.log("Result of phase 5")
@@ -613,9 +610,8 @@
 								return
 							}
 
-							listDocsCorpus = result["listDocsCorpus"]
-							lenListDocsCorpus = result["lenListDocsCorpus"]
-							listWithWKSB = result["listWithWKSB"]   // list of texts available with wikicats or subjects
+							P5_listDocsCorpus = result["P5_listDocsCorpus"]
+							P4_listWithWKSB = result["P4_listWithWKSB"]   // list of texts available with wikicats or subjects
 															
 							results = buildF5contents(result)
 							$(contentF5_similarities).html(results)
@@ -640,9 +636,9 @@
 	
 
 				function buildF6contents (result) {
-					results = "<b>Duration of F61 (preprocessing): " + result['elapsedTimeF61']  + " seconds</b><br>\n"
-					results += "<b>Duration of F62 (training): " + result['elapsedTimeF62']  + " seconds</b><br>\n"
-					results += "<b>Created Doc2Vec model named: " + result['modelName']  + "</b><br>\n"
+					results = "<b>Duration of F61 (preprocessing): " + result['P6_elapsedTimeF61']  + " seconds</b><br>\n"
+					results += "<b>Duration of F62 (training): " + result['P6_elapsedTimeF62']  + " seconds</b><br>\n"
+					results += "<b>Created Doc2Vec model named: " + result['P6_modelName']  + "</b><br>\n"
 					
 					return results
 				}
@@ -658,7 +654,7 @@
 					$.ajax({
 						type: "POST",
 						url: "doPh6trainD2V",
-						data: {"originalText": originalText, "fromStart": fromStart, "listWithWKSB": JSON.stringify(listWithWKSB), "listDocsCorpus": JSON.stringify(listDocsCorpus)},  // send the listDocsCorpus received in the previous phase
+						data: {"P0_originalText": originalText, "fromStart": fromStart, "P4_listWithWKSB": JSON.stringify(P4_listWithWKSB), "P5_listDocsCorpus": JSON.stringify(P5_listDocsCorpus)},  // send the listDocsCorpus received in the previous phase
 						success: function(result) {
 							$("#spinner").modal("hide");
 							console.log("Result of phase 6")
@@ -671,9 +667,9 @@
 								return
 							}
 										
-							modelName = result['modelName']
-							lenListDocsCorpus = result["lenListDocsCorpus"]
-							listWithWKSB = result["listWithWKSB"]   // list of texts available with wikicats or subjects
+							P6_modelName = result['P6_modelName']
+							P5_lenListDocsCorpus = result["P5_lenListDocsCorpus"]
+							P4_listWithWKSB = result["P4_listWithWKSB"]   // list of texts available with wikicats or subjects
 							
 							results = buildF6contents(result)
 							$(contentF6_D2V).html(results)
@@ -703,7 +699,7 @@
 				
 				
 				function buildF7contents (result) {
-					results = "<b>Duration of F7: " + result['elapsedTimeF7']  + " seconds</b><br>\n"
+					results = "<b>Duration of F7: " + result['P7_elapsedTimeF7']  + " seconds</b><br>\n"
 					
 					return results
 				}
@@ -719,7 +715,7 @@
 					$.ajax({
 						type: "POST",
 						url: "doPh7reviewCorpus",
-						data: {"originalText": originalText, "fromStart": fromStart, "modelName": modelName, "listWithWKSB": JSON.stringify(listWithWKSB), "listDocsCorpus": JSON.stringify(listDocsCorpus)},
+						data: {"P0_originalText": originalText, "fromStart": fromStart, "P6_modelName": P6_modelName, "P4_listWithWKSB": JSON.stringify(P4_listWithWKSB), "P5_listDocsCorpus": JSON.stringify(P5_listDocsCorpus)},
 						success: function(result) {
 							$("#spinner").modal("hide");
 							console.log("Result of phase 7")
