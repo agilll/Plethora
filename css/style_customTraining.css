@@ -1,0 +1,33 @@
+
+@import "https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700";
+
+body {
+    margin: 10px;
+    font-family: 'Poppins', sans-serif;
+    background: #fafafa;
+}
+
+h1, h3 {
+    color:  #0066cc;
+}
+
+p {
+    margin-bottom:5mm;
+}
+
+hr {
+    border-top: 1px solid red;
+}
+
+
+#hyperparamsTable {
+    border: 0px solid;
+}
+
+.hyperparams {
+    padding-left: 20px;
+}
+
+#trainTextArea {
+    border: 2px solid #888; width:1000px; height:300px;
+}
