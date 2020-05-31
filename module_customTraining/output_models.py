@@ -18,9 +18,13 @@ def save_new_test(test_name, models_list):
         model.save(new_model_path)
 
 
+def save_model(test_name, model_id, model: Doc2Vec):
+    model.save(MODELS_PATH + test_name + "/model_%s.m" % model_id)
+
+
 def get_models(test_name):
     models_names = os.listdir(MODELS_PATH + test_name)
-    return [Doc2Vec.load(mn) for mn in models_names]
+    return [Doc2Vec.load(MODELS_PATH + test_name + "/" + mn) for mn in models_names]
 
 
 def get_model(test_name, model_id):
