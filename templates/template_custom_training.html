@@ -21,28 +21,48 @@
 			<div>
 
 				<table id="hyperparamsTable">
+
 					<tr>
 
-						<td class="hyperparams">
+						<td class="paramsInputs">
+							<span>Algorithm: </span>
+							<br>
 							<select id="dmParam" size="2">
-								<option value="0">PV-DM</option>
-								<option value="1">PV-DBOW</option>
+								<option value="1">PV-DM</option>
+								<option value="0">PV-DBOW</option>
 							</select>
 						</td>
 
-						<td class="hyperparams">
-							<span>Vector Size: </span><br><input type="number" id="vectorSizeParam" placeholder="50">
+						<td class="paramsInputs">
+							<span>Window distance: </span>
+							<br>
+							<input type="text" id="windowParam" placeholder="[ 10 - 20 ]" required="required" pattern="^(\d+|\d+-\d+)((,(\d+|\d+-\d+))*)$">
+							<br>
+							<div>
+							  <input type="range" min="1" max="100" value="50" id="windowRangeMin">
+							</div>
+							<br>
+							<div>
+							  <input type="range" min="1" max="100" value="50" id="windowRangeMax">
+							</div>
 						</td>
 
-						<td class="hyperparams">
-							<input type="number" id="windowParam" placeholder="5">
-						</td>
-
-						<td class="hyperparams">
-							<input type="number" id="alphaParam" step="0.02" placeholder="0.2">
+						<td class="paramsInputs">
+							<span>Alpha: </span>
+							<br>
+							<input type="text" id="alphaParam" placeholder="[ 0.1 - 0.3 ]">
+							<br>
+							<div>
+							  <input type="range" min="1" max="100" value="50" id="alphaRangeMin">
+							</div>
+							<br>
+							<div>
+							  <input type="range" min="1" max="100" value="50" id="alphaRangeMax">
+							</div>
 						</td>
 
 					</tr>
+
 				</table>
 
 			</div>
@@ -57,6 +77,24 @@
 
 			<hr>
 
+			<h3>1. Training built models</h3>
+
+			<div>
+
+				<table id="trainingTable"> <!-- view all built models and select one corpus to train them -->
+
+					<tr>
+
+						<td><div id="modelsZone"></div></td>
+
+						<td><div id="corpusZone"></div><br></td>
+
+					</tr>
+
+				</table>
+
+			</div>
+
 		</div>
 
 	</body>
@@ -66,7 +104,35 @@
 
 	<script>
 
-		function build_d2v_models(data) {
+		$(createModelButton).click(() => {
+			checkInputsFormats()
+			return
+			var dm_field = $("#dmParam").val()
+			var vs_field = $("#vectorSizeParam").val()
+			var wd_field = $("#windowParam").val()
+			var ah_field = $("#alphaParam").val()
+			var dm_data  = [parseFloat(dm_field)]
+			var vs_data  = [parseFloat(vs_field)]
+			var wd_data  = [parseFloat(wd_field)]
+			var ah_data  = [parseFloat(ah_field)]
+			console.log(dm_data)
+			var data = {
+				"hyperparams":{
+					"dm":dm_data,
+					"vector_size":vs_data,
+					"window" :wd_data,
+					"alpha" :ah_data,
+				},
+				"test_name":"test_1"  // TODO nombre personalizado (habria que comprobar que sea unico) o nombre automatico en el back?
+			}
+			sendModelsParameters(data)
+		})
+
+		function checkInputsFormats() {
+			console.log($('#windowParam')[0].validity)
+		}
+
+		function sendModelsParameters(data) {
 			console.log(data)
 			$.ajax({
 				type: "POST",
@@ -74,23 +140,25 @@
 				dataType : 'json',
 				url: "build_d2v_models",
 				data: JSON.stringify(data),
-				success: (res) => {  // TODO deberia responder con un id o algo para idnetificar el modelo y poder entrenarlo despues
+				success: (res) => {  // TODO deberia responder con un id o algo para identificar el modelo y poder entrenarlo despues
 					console.log(res)
+					buildModelsZoneContent(res)
 				}
 			})
 		}
 
-		$(createModelButton).click(() => {
-			var data = {
-				"hyperparams":{
-					"epochs":[20,50,100],
-					"window":[5,10],
-					"alpha" :[0.2],
-				},
-				"test_name":"test_1"  // TODO nombre personalizado (habria que comprobar que sea unico) o nombre automatico en el back?
-			}
-			build_d2v_models(data)
-		})
+		function buildModelsZoneContent (result) {
+			modelsList = result["models"]   // this is the list of the built models
+			results = "<table>"
+			results = "<tr>"
+			modelsList.forEach(function(m){
+				results += "<td> <span>"+m+"</span> </td>"
+			});
+			results += "</tr>"
+			results += "</table>"
+			
+			$(modelsZone).html(results)
+		}
 
 	</script>
 

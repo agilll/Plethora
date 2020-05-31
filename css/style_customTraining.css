@@ -19,15 +19,19 @@ hr {
     border-top: 1px solid red;
 }
 
-
-#hyperparamsTable {
-    border: 0px solid;
+.paramsInputs {
+    padding-left: 20px;
 }
 
-.hyperparams {
-    padding-left: 20px;
+#trainingTable {
+    border: 1px solid;
+    width: 100%;
 }
 
 #trainTextArea {
     border: 2px solid #888; width:1000px; height:300px;
+}
+
+input {
+    text-align: center;
 }
