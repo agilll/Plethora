@@ -675,8 +675,8 @@ def doPh5(P4_listWithWKSB, P0_originalText, P1_selectedWikicats):
 	lenListWithWKSB  = len(P4_listWithWKSB)  # length of full list of candidate files to process
 
 
-	# read the original text entities from local store, to later measure the quelity of similarities
-	filename_en = _CORPUS_FOLDER+str(lenOriginalText)+".en"   # filename for entities (length.en)
+	# read the original text entities (E0) from local store, to later measure the quality of similarities
+	filename_en = _CORPUS_FOLDER+str(lenOriginalText)+".en"   # filename for entities E0 (length.en)
 	try:  
 		with _Open(filename_en) as fp:	# format    http://dbpedia.org/resource/Title
 			listEntitiesOriginalText = fp.read().splitlines()
@@ -730,9 +730,9 @@ def doPh5(P4_listWithWKSB, P0_originalText, P1_selectedWikicats):
 	except:
 		print("No similarities file")
 	
-	dict_sims2 = {} # dict to store existing and newly computed sims, for later updating DB file
+	dict_sims2 = {} # dict to store existing and newly computed sims, for later updating local DB file
 	
-	# Create a textSimilarityFunctions object to measure text similarities. It receives the wikicats and subjects of the original text.
+	# Create a textSimilarityFunctions object to measure text similarities. It requires the original text, its wikicats and subjects.
 	similarities = _textSimilarityFunctions(P0_originalText, P1_selectedWikicats, listSubjectsOriginalText, logFilename)
 	
 	# create object to measure Doc2Vec similarity with LEE_D2V_MODEL
@@ -754,16 +754,18 @@ def doPh5(P4_listWithWKSB, P0_originalText, P1_selectedWikicats):
 	
 		# Now compute similarities. First, check if already stored in length.sims.csv (previously read in dict_sims)
 		try:
-			sims = dict_sims[lastNameCandidate] # return tuple with (wk_sim, sb_sim, spacy_sim, doc2vec)
+			sims = dict_sims[lastNameCandidate] # return tuple with (wk_sim, sb_sim, spacy_sim, doc2vec_sim, euclidean_sim, full_wk_sim)
 			_Print("Found already computed similarities for", fileNameCandidate)
 			shared_wikicats_jaccard_similarity = sims[0]
 			shared_subjects_jaccard_similarity = sims[1]
 			spacy_similarity = sims[2]
 			d2v_lee_similarity = sims[3]
 			euclidean_similarity = sims[4]
-			full_wikicats_jaccard_similarity = sims[5]
+			full_wikicats_jaccard_similarity = sims[5]	
+			
 			
 		except Exception as e:
+			# no sims found, they must be computed
 			_Print("Sims could not be read:", str(e))
 			
 			# Measure shared wikicats jaccard similarity (requires shared matching). Code -1 is returned if some error
@@ -799,6 +801,9 @@ def doPh5(P4_listWithWKSB, P0_originalText, P1_selectedWikicats):
 			full_wikicats_jaccard_similarity = similarities.fullWikicatsJaccardSimilarity(fileNameCandidateWikicats)	
 			
 		
+		# all sims for this doc have been read or newly computed
+		
+		# add them to the dict_sims2 dict
 		dict_sims2[lastNameCandidate] = (shared_wikicats_jaccard_similarity, shared_subjects_jaccard_similarity, spacy_similarity, d2v_lee_similarity, euclidean_similarity, full_wikicats_jaccard_similarity)
 		
 		_Print("\nWikicats shared jaccard similarity =", str(shared_wikicats_jaccard_similarity))
@@ -808,7 +813,7 @@ def doPh5(P4_listWithWKSB, P0_originalText, P1_selectedWikicats):
 		_Print("Euclidean similarity =", str(euclidean_similarity))
 		_Print("Wikicats full jaccard similarity =", str(full_wikicats_jaccard_similarity))
 			
-		# to compute distributions foro shared wikicats and subjects jaccard
+		# to compute distributions for shared wikicats and subjects jaccard
 		
 		if shared_wikicats_jaccard_similarity < 0.1:
 			distribution_wk["0"] = distribution_wk["0"] + 1
@@ -853,7 +858,7 @@ def doPh5(P4_listWithWKSB, P0_originalText, P1_selectedWikicats):
 		else:
 			distribution_sb["9"] = distribution_sb["9"] + 1
 	
-	# end of loop for pages similarity computing
+	# end of loop for docs similarity computing
 	endTime = datetime.now()
 	elapsedTimeF5 = endTime - startTime
 
@@ -862,24 +867,23 @@ def doPh5(P4_listWithWKSB, P0_originalText, P1_selectedWikicats):
 	
 
 	# Update the csv file with all similarities
-	if len(dict_sims2) > 0:
-		with _Open(filenameSims, 'w') as csvFile:
-			fieldnames = ['Text', 'Shared Wikicats Similarity', 'Shared Subjects Similarity', 'Spacy Similarity', 'Doc2Vec Lee Similarity', 'Euclidean Similarity', 'Full Wikicats Similarity']	# Name columns
-			writer = csv.DictWriter(csvFile, fieldnames=fieldnames, delimiter=" ") # Create csv headers
-			writer.writeheader()	# Write the column headers
-		
-			writer = csv.writer(csvFile, delimiter=' ')
-			for key in dict_sims2:
-				try:
-					sims = dict_sims2[key]
-					writer.writerow([key, sims[0], sims[1], sims[2], sims[3], sims[4], sims[5]])
-				except:
-					print("Error writing csv with similarities", row)
-					_appendFile(logFilename, "Error writing csv with similarities"+str(row))
-		
-			csvFile.close()
+	with _Open(filenameSims, 'w') as csvFile:
+		fieldnames = ['Text', 'Shared Wikicats Similarity', 'Shared Subjects Similarity', 'Spacy Similarity', 'Doc2Vec Lee Similarity', 'Euclidean Similarity', 'Full Wikicats Similarity']	# Name columns
+		writer = csv.DictWriter(csvFile, fieldnames=fieldnames, delimiter=" ") # Create csv headers
+		writer.writeheader()	# Write the column headers
+	
+		writer = csv.writer(csvFile, delimiter=' ')
+		for key in dict_sims2:
+			try:
+				sims = dict_sims2[key]
+				writer.writerow([key, sims[0], sims[1], sims[2], sims[3], sims[4], sims[5]])
+			except:
+				print("Error writing csv with similarities", row)
+				_appendFile(logFilename, "Error writing csv with similarities"+str(row))
+	
+		csvFile.close()
 
-	# convert dict in list of tuplas (filenameCandidate, simWikicats, simSubjects, simSpacy, simD2V, simEuclidean, simFullWikicats) to be able to order them
+	# convert dict_sims2 in list of tuplas (filenameCandidate, simWikicats, simSubjects, simSpacy, simD2V, simEuclidean, simFullWikicats) to be able to order them
 	list_sims = [ (k, dict_sims2[k][0], dict_sims2[k][1], dict_sims2[k][2], dict_sims2[k][3], dict_sims2[k][4], dict_sims2[k][5]) for k in dict_sims2]
 	
 	
@@ -887,181 +891,230 @@ def doPh5(P4_listWithWKSB, P0_originalText, P1_selectedWikicats):
 
 
 
-	# compute ratings for similarities
+	# compute ratings for similarities to eval their quality and select the one used
 	
-	listRatings = []
+	listRatings = []  # list of tuplas (sim name, rating) to be able to order sims by rating
 	ratings = {}	# dict to store rating info
 	
-	# function to order a list of tuplas by the element in the position p (0,1,2,3...)
-	def Sort(tuplaList, p): 
-		tuplaList.sort(reverse=True, key = lambda x: x[p]) 
+	# function to order a list of tuplas by the element in the position 'pos' (1,2,3,4,5,6)
+	def Sort(tuplaList, pos): 
+		tuplaList.sort(reverse=True, key = lambda x: x[pos]) 
 		return tuplaList
 	
 
 	# compute rating for wikicat sim (sim1)
-	listEntities = listEntityFilesOriginalText.copy()
-	listOrdered = Sort(list_sims, 1)  # order sims list by wikicat similarity
-	listOrderedNamesSims1  = list(map(lambda x: (x[0], x[1]), listOrdered)) # keep only the names of the docs and its wikicats similarity
+	listEntities = listEntityFilesOriginalText.copy() # make a copy of the list E0
+	listOrdered = Sort(list_sims, 1)  # order sims list by shared wikicat similarity
+	listOrderedNamesSims1  = list(map(lambda x: (x[0], x[1]), listOrdered)) # keep only the names of the docs and its shared wikicats similarity
 	ratings["wikicats"] = {}
 	ratings["wikicats"]["orderedList"] = listOrderedNamesSims1
-	ratings["wikicats"]["originalEntities"] = {}
-	positionLast1 = 0
+	ratings["wikicats"]["originalEntities"] = []  # list of pairs (entity, position)
 	listOrderedOnlyNames1 = list(map(lambda x: x[0], listOrderedNamesSims1))  # keep only the names of the docs 
 	
 	for idx, name in enumerate(listOrderedOnlyNames1, start=1):
 		if name in listEntities:
-			listEntities.remove(name)
-			ratings["wikicats"]["originalEntities"][name] = idx
-		if len(listEntities) == 0:
-			positionLast1 = idx
+			ratings["wikicats"]["originalEntities"].append((name, idx))
+		if len(ratings["wikicats"]["originalEntities"]) == len(listEntities):
 			break
 		
-	ratings["wikicats"]["positionLast"]  = positionLast1
+	listPositions = [pos for name,pos in ratings["wikicats"]["originalEntities"]]
+	meanPosition1 = sum(listPositions) / len(listPositions)
+	
+	ratings["wikicats"]["mean"]  = meanPosition1
 
-	ratingSim1 = numEntitiesOriginalText / positionLast1
-	listRatings.append(("wikicats", ratingSim1, 1))
+	ratingSim1 = numEntitiesOriginalText / meanPosition1
+	listRatings.append(("wikicats", ratingSim1))
+	
 	
 	
 	# compute rating for subjects sim (sim2)
-	listEntities = listEntityFilesOriginalText.copy()
-	listOrdered = Sort(list_sims, 2)  # order sims list by subject similarity
-	listOrderedNamesSims2  = list(map(lambda x: (x[0], x[2]), listOrdered)) # keep only the names of the docs and its subjects similarity
+	listEntities = listEntityFilesOriginalText.copy()  # make a copy of the list E0
+	listOrdered = Sort(list_sims, 2)  # order sims list by shared subject similarity
+	listOrderedNamesSims2  = list(map(lambda x: (x[0], x[2]), listOrdered)) # keep only the names of the docs and its shared subjects similarity
 	ratings["subjects"] = {}
 	ratings["subjects"]["orderedList"] = listOrderedNamesSims2
-	ratings["subjects"]["originalEntities"] = {}
-	positionLast2 = 0
+	ratings["subjects"]["originalEntities"] = []
 	listOrderedOnlyNames2 = list(map(lambda x: x[0], listOrderedNamesSims2)) # keep only the names of the docs 
-	
+		
 	for idx, name in enumerate(listOrderedOnlyNames2, start=1):
 		if name in listEntities:
-			listEntities.remove(name)
-			ratings["subjects"]["originalEntities"][name] = idx
-		if len(listEntities) == 0:
-			positionLast2 = idx
+			ratings["subjects"]["originalEntities"].append((name, idx))
+		if len(ratings["subjects"]["originalEntities"]) == len(listEntities):
 			break
+
+	listPositions = [pos for name,pos in ratings["subjects"]["originalEntities"]]
+	meanPosition2 = sum(listPositions) / len(listPositions)
+	
+	ratings["subjects"]["mean"]  = meanPosition2
 		
-	ratings["subjects"]["positionLast"]  = positionLast2
-		
-	ratingSim2 = numEntitiesOriginalText / positionLast2
-	listRatings.append(("subjects", ratingSim2, 2))
+	ratingSim2 = numEntitiesOriginalText / meanPosition2
+	listRatings.append(("subjects", ratingSim2))
 	
 			
+			
 	# compute rating for spacy sim (sim3)
-	listEntities = listEntityFilesOriginalText.copy()
+	listEntities = listEntityFilesOriginalText.copy()  # make a copy of the list E0
 	listOrdered = Sort(list_sims, 3)  # order sims list by spacy similarity
 	listOrderedNamesSims3  = list(map(lambda x: (x[0], x[3]), listOrdered)) # keep only the names of the docs and its spacy similarity
 	ratings["spacy"] = {}
 	ratings["spacy"]["orderedList"] = listOrderedNamesSims3
-	ratings["spacy"]["originalEntities"] = {}
-	positionLast3 = 0
+	ratings["spacy"]["originalEntities"] = []
 	listOrderedOnlyNames3 = list(map(lambda x: x[0], listOrderedNamesSims3)) # keep only the names of the docs 
 	
 	for idx, name in enumerate(listOrderedOnlyNames3, start=1):
 		if name in listEntities:
-			listEntities.remove(name)
-			ratings["spacy"]["originalEntities"][name] = idx
-		if len(listEntities) == 0:
-			positionLast3 = idx
+			ratings["spacy"]["originalEntities"].append((name, idx))
+		if len(ratings["spacy"]["originalEntities"]) == len(listEntities):
 			break
+
+	listPositions = [pos for name,pos in ratings["spacy"]["originalEntities"]]
+	meanPosition3 = sum(listPositions) / len(listPositions)
 	
-	ratings["spacy"]["positionLast"]  = positionLast3
+	ratings["spacy"]["mean"]  = meanPosition3
 	
-	ratingSim3 = numEntitiesOriginalText / positionLast3
-	listRatings.append(("spacy", ratingSim3, 3))
+	ratingSim3 = numEntitiesOriginalText / meanPosition3
+	listRatings.append(("spacy", ratingSim3))
 
 	
+	
 	# compute rating for doc2vec sim (sim4)
-	listEntities = listEntityFilesOriginalText.copy()
+	listEntities = listEntityFilesOriginalText.copy()  # make a copy of the list E0
 	listOrdered = Sort(list_sims, 4)  # order sims list by doc2vec similarity
 	listOrderedNamesSims4  = list(map(lambda x: (x[0], x[4]), listOrdered)) # keep only the names of the docs and its d2v similarity
 	ratings["doc2vec"] = {}
 	ratings["doc2vec"]["orderedList"] = listOrderedNamesSims4
-	ratings["doc2vec"]["originalEntities"] = {}	
-	positionLast4 = 0
+	ratings["doc2vec"]["originalEntities"] = []	
 	listOrderedOnlyNames4 = list(map(lambda x: x[0], listOrderedNamesSims4)) # keep only the names of the docs 
-	
+
 	for idx, name in enumerate(listOrderedOnlyNames4, start=1):
 		if name in listEntities:
-			listEntities.remove(name)
-			ratings["doc2vec"]["originalEntities"][name] = idx
-		if len(listEntities) == 0:
-			positionLast4 = idx
+			ratings["doc2vec"]["originalEntities"].append((name, idx))
+		if len(ratings["doc2vec"]["originalEntities"]) == len(listEntities):
 			break
 
-	ratings["doc2vec"]["positionLast"]  = positionLast4
+	listPositions = [pos for name,pos in ratings["doc2vec"]["originalEntities"]]
+	meanPosition4 = sum(listPositions) / len(listPositions)
+
+	ratings["doc2vec"]["mean"]  = meanPosition4
 	
-	ratingSim4 = numEntitiesOriginalText / positionLast4
-	listRatings.append(("doc2vec", ratingSim4, 4))
+	ratingSim4 = numEntitiesOriginalText / meanPosition4	
+	listRatings.append(("doc2vec", ratingSim4))
+	
 	
 	
 	# compute rating for Euclidean sim (sim5)
-	listEntities = listEntityFilesOriginalText.copy()
+	listEntities = listEntityFilesOriginalText.copy() # make a copy of the list E0
 	listOrdered = Sort(list_sims, 5)  # order sims list by Euclidean similarity
 	listOrderedNamesSims5  = list(map(lambda x: (x[0], x[5]), listOrdered)) # keep only the names of the docs and its euclidean similarity
 	ratings["euclidean"] = {}
 	ratings["euclidean"]["orderedList"] = listOrderedNamesSims5
-	ratings["euclidean"]["originalEntities"] = {}	
-	positionLast5 = 0
+	ratings["euclidean"]["originalEntities"] = []	
 	listOrderedOnlyNames5 = list(map(lambda x: x[0], listOrderedNamesSims5)) # keep only the names of the docs 
-	
+
 	for idx, name in enumerate(listOrderedOnlyNames5, start=1):
 		if name in listEntities:
-			listEntities.remove(name)
-			ratings["euclidean"]["originalEntities"][name] = idx
-		if len(listEntities) == 0:
-			positionLast5 = idx
+			ratings["euclidean"]["originalEntities"].append((name, idx))
+		if len(ratings["euclidean"]["originalEntities"]) == len(listEntities):
 			break
 
-	ratings["euclidean"]["positionLast"]  = positionLast5
+	listPositions = [pos for name,pos in ratings["euclidean"]["originalEntities"]]
+	meanPosition5 = sum(listPositions) / len(listPositions)
 	
-	ratingSim5 = numEntitiesOriginalText / positionLast5
-	listRatings.append(("euclidean", ratingSim5, 5))
+	ratings["euclidean"]["mean"]  = meanPosition5
+	
+	ratingSim5 = numEntitiesOriginalText / meanPosition5			
+	listRatings.append(("euclidean", ratingSim5))
+	
 	
 	
 	# compute rating for Full wikicats sim (sim6)
-	listEntities = listEntityFilesOriginalText.copy()
+	listEntities = listEntityFilesOriginalText.copy()  # make a copy of the list E0
 	listOrdered = Sort(list_sims, 6)  # order sims list by full wikicats jaccard similarity
 	listOrderedNamesSims6  = list(map(lambda x: (x[0], x[6]), listOrdered)) # keep only the names of the docs and its full wikicats jaccard similarity
 	ratings["fullWikicats"] = {}
 	ratings["fullWikicats"]["orderedList"] = listOrderedNamesSims6
-	ratings["fullWikicats"]["originalEntities"] = {}	
-	positionLast6 = 0
+	ratings["fullWikicats"]["originalEntities"] = []	
 	listOrderedOnlyNames6 = list(map(lambda x: x[0], listOrderedNamesSims6)) # keep only the names of the docs 
-	
+
 	for idx, name in enumerate(listOrderedOnlyNames6, start=1):
 		if name in listEntities:
-			listEntities.remove(name)
-			ratings["fullWikicats"]["originalEntities"][name] = idx
-		if len(listEntities) == 0:
-			positionLast6 = idx
+			ratings["fullWikicats"]["originalEntities"].append((name, idx))
+		if len(ratings["fullWikicats"]["originalEntities"]) == len(listEntities):
 			break
 
-	ratings["fullWikicats"]["positionLast"]  = positionLast6
+	listPositions = [pos for name,pos in ratings["fullWikicats"]["originalEntities"]]
+	meanPosition6 = sum(listPositions) / len(listPositions)
 	
-	ratingSim6 = numEntitiesOriginalText / positionLast6
-	listRatings.append(("fullWikicats", ratingSim6, 6))
+	ratings["fullWikicats"]["mean"]  = meanPosition6
+	
+	ratingSim6 = numEntitiesOriginalText / meanPosition6			
+	listRatings.append(("fullWikicats", ratingSim6))
 	
 	
-	# all similarity ratings computed, select the best
+	# all similarity ratings computed 
+	
+	# save entities E0 used for measure rating quality
+	fileE0entitiesPositions = _CORPUS_FOLDER+str(lenOriginalText)+".entities.positions.csv"
+	
+	E0entitiesPositions = {}
+	for name, idx in ratings["fullWikicats"]["originalEntities"]:
+		E0entitiesPositions[name] = (next(i for (n,i) in ratings["wikicats"]["originalEntities"] if n == name), next(i for (n,i) in ratings["subjects"]["originalEntities"] if n == name),\
+									next(i for (n,i) in ratings["spacy"]["originalEntities"] if n == name), next(i for (n,i) in ratings["doc2vec"]["originalEntities"] if n == name),\
+									next(i for (n,i) in ratings["euclidean"]["originalEntities"] if n == name), next(i for (n,i) in ratings["fullWikicats"]["originalEntities"] if n == name))
+	
+	with _Open(fileE0entitiesPositions, 'w') as csvFile:
+		fieldnames = ['Entity', 'Wikicats', 'Subjects', 'spaCy', 'Doc2vec', 'Euclidean', 'Full wikicats']	# Name columns
+		writer = csv.DictWriter(csvFile, fieldnames=fieldnames, delimiter=" ") # Create csv headers
+		writer.writeheader()	# Write the column headers
+	
+		writer = csv.writer(csvFile, delimiter=' ')
+		for key in E0entitiesPositions:
+			try:
+				writer.writerow([key, E0entitiesPositions[key][0], E0entitiesPositions[key][1], E0entitiesPositions[key][2], E0entitiesPositions[key][3], E0entitiesPositions[key][4], E0entitiesPositions[key][5]])
+			except:
+				print("Error writing csv with corpus", row)
+				_appendFile(logFilename, "Error writing csv with corpus"+str(row))
+	
+		csvFile.close()
+		
+		
+	print("\n** wikicats")
+	for (page,idx)  in ratings["wikicats"]["originalEntities"]:
+		print(page, "=", idx)
+		
+	print("\n** subjects")
+	for (page,idx)  in ratings["subjects"]["originalEntities"]:
+		print(page, "=", idx)
+	
+	print("\n** spacy")
+	for (page,idx)  in ratings["spacy"]["originalEntities"]:
+		print(page, "=", idx)
+		
+	print("\n** doc2vec")
+	for (page,idx)  in ratings["doc2vec"]["originalEntities"]:
+		print(page, "=", idx)
+		
+	print("\n** euclidean")
+	for (page,idx)  in ratings["euclidean"]["originalEntities"]:
+		print(page, "=", idx)
+		
+	print("\n** fullWikicats")
+	for (page,idx) in ratings["fullWikicats"]["originalEntities"]:
+		print(page, "=", idx)
+		
+	
+	# select the best similarity (higher rating)
 	
 	listRatingsOrdered = Sort(listRatings, 1)
-	
-	print(ratings["wikicats"]["originalEntities"])
-	print(ratings["subjects"]["originalEntities"])
-	print(ratings["spacy"]["originalEntities"])
-	print(ratings["doc2vec"]["originalEntities"])
-	print(ratings["euclidean"]["originalEntities"])
-	print(ratings["fullWikicats"]["originalEntities"])
-	
+		
 	bestRating = listRatingsOrdered[0]
 	nameBestRating = bestRating[0]
-	posBestRating = bestRating[2]
 	
 	result["P5_bestSim"] = nameBestRating
 		
 	print("Best rating = ", result["P5_bestSim"])
 	
-	result["P5_usedSim"] = result["P5_bestSim"]+" --> "+str(ratings[nameBestRating]["positionLast"])+" ("+str(positionLast1)+" - "+str(positionLast2)+" - "+str(positionLast3)+" - "+str(positionLast4)+" - "+str(positionLast5)+" - "+str(positionLast6)+")"
+	result["P5_usedSim"] = result["P5_bestSim"]+" --> "+str()+" ("+str(meanPosition1)+" - "+str(meanPosition2)+" - "+str(meanPosition3)+" - "+str(meanPosition4)+" - "+str(meanPosition5)+" - "+str(meanPosition6)+")"
 	
 	
 	

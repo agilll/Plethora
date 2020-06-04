@@ -1,8 +1,17 @@
 from math import *
 from decimal import Decimal
 
+def printl(message):
+	try:
+		from studySims import ddgg
+		if ddgg == True:
+			print(message)
+	except Exception:
+		pass
+
 # Math similarities functions over lists
 class ourSimilarityListsFunctions():
+
 
 	# return cosine similarity between two lists of numbers
 	def oCosineSimilarity (self,x,y):
@@ -14,6 +23,13 @@ class ourSimilarityListsFunctions():
 	def oJaccardSimilarity (self,x,y):
 		intersection_cardinality = len(set.intersection(set(x), set(y)))
 		union_cardinality = len(set.union(set(x), set(y)))
+
+		# printl("len x = "+str(len(x)))
+		# printl("len y = "+str(len(y)))
+		# printl("len intersection = "+str(intersection_cardinality))
+		# printl(set.intersection(set(x), set(y)))
+		# printl("len union = "+str(union_cardinality))
+
 		return intersection_cardinality/float(union_cardinality)
 
 	# return euclidean distance between two lists of numbers

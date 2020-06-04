@@ -18,3 +18,26 @@ It creates a KORPUS folder (inside the one of the tool) with results:
 - Assesses if each text is related to the initial one. If related, adds it to the corpus
 
 It uses D2V for assessing relatedness, with a model trained with an initial corpus
+
+
+- This software uses the DBpedia SpotLight, located in a remote server indicated in ../ps_aux.py, that could be:
+
+1. Well-known DBpedia Spotlight endpoint
+
+URL_DB_SL_annotate = "http://model.dbpedia-spotlight.org/en/annotate"
+
+2. Our copy of DBpedia SpotLight. For example, running in gssi.det.uvigo.es
+
+URL_DB_SL_annotate = "http://gssi.det.uvigo.es:2222/rest/annotate"
+
+To run such server, we must install docker, pull the dbpedia spotlight image and run
+
+docker run -d -e JAVA_OPTS='-Xmx16g' -p 2222:80 dbpedia/spotlight-english spotlight.sh
+
+it takes some time to start
+
+You can also run 
+
+docker run -i -e JAVA_OPTS='-Xmx16g' -p 2222:80 dbpedia/spotlight-english spotlight.sh
+
+to see when the service is ready

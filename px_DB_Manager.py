@@ -50,8 +50,15 @@ def getCategoriesInText(texto):
 	for entity in entities:
 		wikicats.extend(entity["wikicats"])
 
-	wikicats = list(set(wikicats))  # removes duplicates
-	result["wikicats"] = wikicats
+	setWikicats = list(set(wikicats))  # removes duplicates
+	result["wikicats"] = setWikicats
+	
+	# from collections import Counter
+	# counts = Counter(wikicats)
+	# output = [value for value, count in counts.items() if count > 1]
+	# 
+	# print("\nwikicats repetidas = ", output)
+	# print("\nwikicats unicas = ", set(wikicats)-set(output))
 	
 	# to return the list of the subjects of the entities identified in the text			
 	subjects = []
@@ -65,8 +72,18 @@ def getCategoriesInText(texto):
 	uris = []
 	for entity in entities:
 		listTypes = entity["combinedTypes"]
-		if ("Person" in listTypes) or ("Location" in listTypes) or ("Place" in listTypes) or ("City" in listTypes) or ("Country" in listTypes) or ("Event" in listTypes):
+		if ("Person" in listTypes):
+			print(entity["@URI"]+" is a Person")
 			uris.append(entity["@URI"])
+			continue				
+		if ("Location" in listTypes) or ("Place" in listTypes) or ("City" in listTypes) or ("Country" in listTypes):
+			print(entity["@URI"]+" is a Place")
+			uris.append(entity["@URI"])
+			continue
+		if "Event" in listTypes:
+			print(entity["@URI"]+" is a Event")
+			uris.append(entity["@URI"])
+			continue
 	
 	uris = list(set(uris))  # removes duplicates
 	result["URIs_persons_places_events"] = uris
