@@ -16,36 +16,36 @@ from aux_build import getSubjectComponents as _getSubjectComponents, filterSimpl
 from px_DB_Manager import getCategoriesInText as _getCategoriesInText
 from px_aux import saveFile as _saveFile,  appendFile as _appendFile
 
-from gensim.models.doc2vec import Doc2Vec		
+from gensim.models.doc2vec import Doc2Vec
 
 
 class Doc2VecSimilarity():
-	
+
 	def __init__(self, modelName, original_text):
 		self.model = Doc2Vec.load(modelName)
 		self.original_text_tokens = _myTokenizer(original_text)
 		# Generate a vector from the tokenized original text
 		self.original_text_inferred_vector = self.model.infer_vector(self.original_text_tokens)
-		
+
 		# Use our basic math functions instead of sklearn's cosine similarity and euclidean distance
-		self.ourMeasures = _ourSimilarityListsFunctions() 
+		self.ourMeasures = _ourSimilarityListsFunctions()
 		return
-	
+
 	# Doc2Vec similarity: Calculate text similarity based on the trained model
-	
+
 	# text or file parameter must be received
 	def doc2VecTextSimilarity (self, candidate_text=None, candidate_file=None):
 
 		if not candidate_text:
 			candidate_fileFD = _Open(candidate_file, "r")
 			candidate_text = candidate_fileFD.read()
-			
+
 		# startTime1 = datetime.now()
 		candidate_text_tokens = _myTokenizer(candidate_text)
 		# endTime1 = datetime.now()
 		# elapsedTime1 = endTime1 - startTime1
 		# print("D2V: elapsed1 =", elapsedTime1.microseconds)
-		
+
 		# infer_vector(): Generates a vector from a document
 		# The document should be tokenized in the same way the model's training documents were tokenized
 		# The function may accept some optional parameters (alpha, min_alpha, epochs, steps)
@@ -98,11 +98,11 @@ class Doc2VecSimilarity():
 # other similarities
 
 class textSimilarityFunctions():
-	
+
 	# Load the nlp large package for spacy metrics
 	# It is better to load it once at the class initialization, to save loading time each time it is used
 	nlp = spacy.load('en_core_web_lg')
-	
+
 	def __init__(self, original_text, original_text_wikicats, original_text_subjects, logFilename):
 		self.logFilename = logFilename
 		self.original_text = original_text
@@ -110,19 +110,21 @@ class textSimilarityFunctions():
 		self.pairs_original_text_wikicats = list(map(lambda x: (x, _getWikicatComponents(x)), original_text_wikicats))
 		self.original_text_subjects = original_text_subjects
 		self.pairs_original_text_subjects = list(map(lambda x: (x, _getSubjectComponents(x)), original_text_subjects))
+
+		self.measures = _ourSimilarityListsFunctions()   # Create an object from the ourSimilarityListsFunctions class
 		return
-	
-	measures = _ourSimilarityListsFunctions()   # Create an object from the ourSimilarityListsFunctions class
+
+
 
 
 	#############################################################################################################################################
-	
+
 	# spaCy similarity: Takes two pieces of text and returns the text similarity based on spaCy
-	
+
 	def spacyTextSimilarity (self, candidate_text=None, candidate_file=None):
-		
+
 		def remove_stopwords(text):
-			doc = self.nlp(text.lower()) 
+			doc = self.nlp(text.lower())
 			words = [token.text for token in doc if (token.lemma_ != '-PRON-') and (token.text not in self.nlp.Defaults.stop_words) and (not token.is_punct)]
 			return " ".join(words)
 
@@ -140,33 +142,33 @@ class textSimilarityFunctions():
 		spacy_similarity = original_text_tokens.similarity(candidate_text_tokens)
 
 		return spacy_similarity
-	
+
 
 	#############################################################################################################################################
 
 	# Jaccard text similarity, using ourSimilarityListsFunctions
 	# not used, seems not interesting
-	
+
 	def jaccardTextSimilarity (self, candidate_text):
-		
+
 		original_text_tokens = _myTokenizer(original_text)
 		candidate_text_tokens = _myTokenizer(candidate_text)
-		
+
 		jaccard_similarity = self.measures.oJaccardSimilarity(original_text_tokens, candidate_text_tokens)
-		
+
 		return jaccard_similarity
-	
+
 
 	#############################################################################################################################################
 
 	# Euclidean similarity, using SKLEARN
-	
+
 	def euclideanTextSimilarity (self, candidate_text=None, candidate_file=None):
 
 		if not candidate_text:
 			candidate_fileFD = _Open(candidate_file, "r")
 			candidate_text = candidate_fileFD.read()
-			
+
 		list_of_text = [self.original_text, candidate_text]   # Create a list of documents of the original text and the new candidate text
 
 		vectorizer = CountVectorizer()   # Create a CountVectorizer Object
@@ -179,7 +181,7 @@ class textSimilarityFunctions():
 		euclideanDistances = euclidean_distances(features[0], features[1])
 
 		euclidean_distance = euclideanDistances[0][0]   # between 0 and N, 0 is the best
-		
+
 		euclidean_similarity = 1 / abs(1 - euclidean_distance) # between 0 and 1, 1 is the best
 
 		return euclidean_similarity
@@ -187,7 +189,8 @@ class textSimilarityFunctions():
 
 	#############################################################################################################################################
 
-	# Full Wikicats jaccard similarity between two texts, using ourSimilarityListsFunctions
+	# Full Wikicats jaccard similarity between the original text and a new one, using ourSimilarityListsFunctions
+	# the original text wikicats were received in object creation phase
 	# it measures complete matching between wikicats
 	def fullWikicatsJaccardSimilarity (self, fileNameCandidateWikicats):
 
@@ -201,7 +204,7 @@ class textSimilarityFunctions():
 
 		if len(self.original_text_wikicats) == 0 or len(candidate_text_wikicats) == 0:
 			return 0
-	
+
 		wikicats_jaccard_similarity = self.measures.oJaccardSimilarity(self.original_text_wikicats, candidate_text_wikicats)
 
 		return wikicats_jaccard_similarity
@@ -212,7 +215,7 @@ class textSimilarityFunctions():
 	# Shared Wikicats similarity between two texts, using ourSimilarityListsFunctions
 	# it measures shared matching between wikicats (similarity among components of two wikicat names)
 	def sharedWikicatsJaccardSimilarity (self, fileNameCandidateWikicats):
-		
+
 		try:  # try to read candidate text wikicats from local store
 			with _Open(fileNameCandidateWikicats) as fp:
 				candidate_text_wikicats = fp.read().splitlines()
@@ -220,45 +223,56 @@ class textSimilarityFunctions():
 			_Print("Candidate wikicats file not found in local DB:", fileNameCandidateWikicats)
 			_appendFile(self.logFilename, "ERROR sharedWikicatsJaccardSimilarity(): Candidate ikicats file not found: "+fileNameCandidateWikicats+" "+str(e))
 			return -1
-			
+
 		if len(candidate_text_wikicats) == 0:
 			return 0
-			
-		# the wikicats lists for both texts are now available	
-		
+
+		# the wikicats lists for both texts are now available
+
 		try:
-				
 			# change every candidate wikicat by the pair (wikicat, list of wikicat components)
 			pairs_candidate_text_wikicats = list(map(lambda x: (x, _getWikicatComponents(x)), candidate_text_wikicats))
-						
+
+			num=0
 			sum_sims = 0
 			for (wko,wkocl) in self.pairs_original_text_wikicats:
-				for (wkc,wkccl) in pairs_candidate_text_wikicats:		
-					components_jaccard_similarity = self.measures.oJaccardSimilarity(wkocl, wkccl)
-					sum_sims += components_jaccard_similarity
-			
+				for (wkc,wkccl) in pairs_candidate_text_wikicats:
+					intersection_cardinality = len(set.intersection(set(wkocl), set(wkccl)))
+					if intersection_cardinality < 2:
+						continue
+					else:
+						union_cardinality = len(set.union(set(wkocl), set(wkocl)))
+						components_jaccard_similarity = intersection_cardinality/float(union_cardinality)
+						#components_jaccard_similarity = self.measures.oJaccardSimilarity(wkocl, wkccl)
+						sum_sims += components_jaccard_similarity
+					# if components_jaccard_similarity > 0 and intersection_cardinality == 1:
+					# 	num += 1
+					# 	print(num, "->", wko, ",", wkc, components_jaccard_similarity)
+
 			denominator = len(self.original_text_wikicats) * len(candidate_text_wikicats)
-			
+
 			if denominator == 0:  # possible?
-				return -1  
+				return -1
 			else:
 				wikicats_jaccard_similarity = sum_sims / denominator
 		except Exception as e:
 			_appendFile(self.logFilename, "ERROR sharedWikicatsJaccardSimilarity(): Exception while computing Jaccard wikicats similarity: "+str(e))
 			return -1
-			
+
 		if wikicats_jaccard_similarity > 1:
 			_Print("Candidate with wikicats similarity > 1:", fileNameCandidateWikicats, sum_sims, denominator, wikicats_jaccard_similarity)
 			_appendFile(self.logFilename, "ERROR sharedWikicatsJaccardSimilarity(): similarity > 1")
 			return -1
-			
+
 		return wikicats_jaccard_similarity
-		
-		
+
+
+
+
 	# Shared subjects similarity between two texts, using ourSimilarityListsFunctions
 	# it measures shared matching between subjects (similarity among components of subject names)
 	def sharedSubjectsJaccardSimilarity (self, fileNameCandidateSubjects):
-		
+
 		try:  # try to read candidate text subjects from local store
 			with _Open(fileNameCandidateSubjects) as fp:
 				candidate_text_subjects = fp.read().splitlines()
@@ -266,24 +280,24 @@ class textSimilarityFunctions():
 			_Print("Candidate subjects file not found in local DB:", fileNameCandidateSubjects)
 			_appendFile(self.logFilename, "ERROR sharedSubjectsJaccardSimilarity(): subjects file not available: "+fileNameCandidateSubjects+" "+str(e))
 			return -1
-			
+
 		if len(candidate_text_subjects) == 0:
 			return 0
-			
-		# the subjects lists for both texts are now available	
-		
-		try:	
+
+		# the subjects lists for both texts are now available
+
+		try:
 			# change every candidate subject by the pair (subject, list of subject components)
 			pairs_candidate_text_subjects = list(map(lambda x: (x, _getSubjectComponents(x)), candidate_text_subjects))
-						
+
 			sum_sims = 0
 			for (wko,wkocl) in self.pairs_original_text_subjects:
-				for (wkc,wkccl) in pairs_candidate_text_subjects:		
+				for (wkc,wkccl) in pairs_candidate_text_subjects:
 					components_jaccard_similarity = self.measures.oJaccardSimilarity(wkocl, wkccl)
 					sum_sims += components_jaccard_similarity
-			
+
 			denominator = len(self.original_text_subjects) * len(candidate_text_subjects)
-			
+
 			if denominator == 0:   # possible?
 				return -1
 			else:
@@ -291,11 +305,10 @@ class textSimilarityFunctions():
 		except Exception as e:
 			_appendFile(self.logFilename, "ERROR sharedSubjectsJaccardSimilarity(): Exception while computing Jaccard subjects similarity: "+str(e))
 			return -1
-			
+
 		if subjects_jaccard_similarity > 1:
 			_Print("Candidate with subjects similarity > 1:", fileNameCandidateSubjects, sum_sims, denominator, subjects_jaccard_similarity)
 			_appendFile(self.logFilename, "ERROR sharedSubjectsJaccardSimilarity(): similarity > 1")
 			return -1
-		
-		return subjects_jaccard_similarity
 
+		return subjects_jaccard_similarity

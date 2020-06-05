@@ -1,17 +1,19 @@
 from math import *
 from decimal import Decimal
 
-def printl(message):
+def printl(log, message):
 	try:
-		from studySims import ddgg
-		if ddgg == True:
+		if log == True:
 			print(message)
-	except Exception:
-		pass
+	except Exception as e:
+		print(str(e))
 
 # Math similarities functions over lists
 class ourSimilarityListsFunctions():
 
+	def __init__(self, log=False):
+		self.log = log
+		return
 
 	# return cosine similarity between two lists of numbers
 	def oCosineSimilarity (self,x,y):
@@ -24,13 +26,16 @@ class ourSimilarityListsFunctions():
 		intersection_cardinality = len(set.intersection(set(x), set(y)))
 		union_cardinality = len(set.union(set(x), set(y)))
 
-		# printl("len x = "+str(len(x)))
-		# printl("len y = "+str(len(y)))
-		# printl("len intersection = "+str(intersection_cardinality))
-		# printl(set.intersection(set(x), set(y)))
-		# printl("len union = "+str(union_cardinality))
+		printl(self.log, "len x = "+str(len(x)))
+		printl(self.log, "len y = "+str(len(y)))
+		printl(self.log, "len intersection = "+str(intersection_cardinality))
+		printl(self.log, set.intersection(set(x), set(y)))
+		printl(self.log, "len union = "+str(union_cardinality))
 
-		return intersection_cardinality/float(union_cardinality)
+		if union_cardinality == 0:
+			return 0
+		else:
+			return intersection_cardinality/float(union_cardinality)
 
 	# return euclidean distance between two lists of numbers
 	def oEuclideanDistance (self,x,y):
