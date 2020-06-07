@@ -26,11 +26,9 @@ class ourSimilarityListsFunctions():
 		intersection_cardinality = len(set.intersection(set(x), set(y)))
 		union_cardinality = len(set.union(set(x), set(y)))
 
-		printl(self.log, "len x = "+str(len(x)))
-		printl(self.log, "len y = "+str(len(y)))
-		printl(self.log, "len intersection = "+str(intersection_cardinality))
-		printl(self.log, set.intersection(set(x), set(y)))
-		printl(self.log, "len union = "+str(union_cardinality))
+		printl(self.log, "len x="+str(len(x))+", len y="+str(len(y)))
+		printl(self.log, "len intersection="+str(intersection_cardinality)+", len union="+str(union_cardinality))
+		#printl(self.log, set.intersection(set(x), set(y)))
 
 		if union_cardinality == 0:
 			return 0

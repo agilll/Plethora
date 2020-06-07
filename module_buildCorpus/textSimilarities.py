@@ -238,17 +238,17 @@ class textSimilarityFunctions():
 			for (wko,wkocl) in self.pairs_original_text_wikicats:
 				for (wkc,wkccl) in pairs_candidate_text_wikicats:
 					intersection_cardinality = len(set.intersection(set(wkocl), set(wkccl)))
-					if intersection_cardinality < 2:
+					#if intersection_cardinality < 2:
+					min_long = min(len(wkocl), len(wkccl))
+					if (min_long < 3) or (intersection_cardinality < (min_long - 1)):
 						continue
 					else:
 						num += 1
-						union_cardinality = len(set.union(set(wkocl), set(wkocl)))
+						union_cardinality = len(set.union(set(wkocl), set(wkccl)))
 						components_jaccard_similarity = intersection_cardinality/float(union_cardinality)
 						#components_jaccard_similarity = self.measures.oJaccardSimilarity(wkocl, wkccl)
 						sum_sims += components_jaccard_similarity
-					# if components_jaccard_similarity > 0 and intersection_cardinality == 1:
-					# 	num += 1
-					# 	print(num, "->", wko, ",", wkc, components_jaccard_similarity)
+						print(num, "->", wko, ",", wkc, components_jaccard_similarity)
 
 			# denominator = len(self.original_text_wikicats) * len(candidate_text_wikicats)
 
