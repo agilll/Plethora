@@ -241,6 +241,7 @@ class textSimilarityFunctions():
 					if intersection_cardinality < 2:
 						continue
 					else:
+						num += 1
 						union_cardinality = len(set.union(set(wkocl), set(wkocl)))
 						components_jaccard_similarity = intersection_cardinality/float(union_cardinality)
 						#components_jaccard_similarity = self.measures.oJaccardSimilarity(wkocl, wkccl)
@@ -249,12 +250,12 @@ class textSimilarityFunctions():
 					# 	num += 1
 					# 	print(num, "->", wko, ",", wkc, components_jaccard_similarity)
 
-			denominator = len(self.original_text_wikicats) * len(candidate_text_wikicats)
+			# denominator = len(self.original_text_wikicats) * len(candidate_text_wikicats)
 
-			if denominator == 0:  # possible?
+			if num == 0:  # possible?
 				return -1
 			else:
-				wikicats_jaccard_similarity = sum_sims / denominator
+				wikicats_jaccard_similarity = sum_sims / num
 		except Exception as e:
 			_appendFile(self.logFilename, "ERROR sharedWikicatsJaccardSimilarity(): Exception while computing Jaccard wikicats similarity: "+str(e))
 			return -1
