@@ -762,14 +762,7 @@ def doPh5(P4_listWithWKSB, P0_originalText, P1_selectedWikicats):
 			d2v_lee_similarity = sims[3]
 			euclidean_similarity = sims[4]
 			full_wikicats_jaccard_similarity = sims[5]
-
-			shared_wikicats_jaccard_similarity = similarities.sharedWikicatsJaccardSimilarity(fileNameCandidateWikicats)
-			if shared_wikicats_jaccard_similarity < 0:
-				_Print("ERROR computing sharedWikicatsJaccard:", fileNameCandidateWikicats)
-				_appendFile(logFilename, "ERROR computing sharedWikicatsJaccard: "+fileNameCandidateWikicats)
-				continue
-
-
+			
 		except Exception as e:
 			# no sims found, they must be computed
 			_Print("Sims could not be read:", str(e))
