@@ -410,8 +410,6 @@
 							}
 
 							P1_selectedWikicats = result["P1_selectedWikicats"]
-							P2_listWithoutDuplicates = result["P2_listWithoutDuplicates"]   // list of unique URLs
-
 							results = buildF2contents(result)
 							$(contentF2_showNumberUrls).html(results)
 							if (fromStart) {
@@ -469,7 +467,7 @@
 
 				function buildF3contents (result) {
 					results = "<b>"+result['P3_numUrlsDownloaded']  + " new files have been downloaded in this iteration</b><br>\n"
-					results += "<b>"+result['P3_listEnoughContent'].length  + " files with enough content are available</b><br>\n"
+					results += "<b>"+result['P3_lenListEnoughContent']  + " files with enough content are available</b><br>\n"
 					results += "<b>"+result['P3_lenListNotEnoughContent']  + " files without enough content have been discarded</b><br>\n"
 					results += "<b>Duration of F3: " + result['P3_elapsedTimeF3']  + " seconds</b><br>\n"
 
@@ -487,7 +485,7 @@
 					$.ajax({
 						type: "POST",
 						url: "doPh3downloadCandidateTexts",
-						data: {"P0_originalText": originalText, "fromStart": fromStart, "P1_selectedWikicats": JSON.stringify(P1_selectedWikicats), "P2_listWithoutDuplicates": JSON.stringify(P2_listWithoutDuplicates)},  // send the listWithoutDuplicates received in the previous phase
+						data: {"P0_originalText": originalText, "fromStart": fromStart, "P1_selectedWikicats": JSON.stringify(P1_selectedWikicats)},
 						success: function(result) {
 							$("#spinner").modal("hide");
 							console.log("Result of phase 3:")
@@ -501,8 +499,6 @@
 							}
 
 							P1_selectedWikicats = result["P1_selectedWikicats"]
-							P2_listWithoutDuplicates = result["P2_listWithoutDuplicates"]   // list of unique URLs
-							P3_listEnoughContent = result["P3_listEnoughContent"]   // list of texts available with enough content
 
 							results = buildF3contents(result)
 							$(contentF3_numberTextsDownloaded).html(results)
@@ -522,7 +518,7 @@
 
 				function buildF4contents (result) {
 					results = "<b>"+result['P4_numUrlsProcessed']  + " new files have been processed in this iteration</b><br>\n"
-					results += "<b>"+result['P4_listWithWKSB'].length  + " files with wikicats or subjects are available</b><br>\n"
+					results += "<b>"+result['P4_lenListWithWKSB']  + " files with wikicats or subjects are available</b><br>\n"
 					results += "<b>"+result['P4_lenListWithoutWKSB']  + " files without wikicats nor subjects have been discarded</b><br>\n"
 					results += "<b>Duration of F4: " + result['P4_elapsedTimeF4']  + " seconds</b><br>\n"
 
@@ -540,7 +536,7 @@
 					$.ajax({
 						type: "POST",
 						url: "doPh4identifyWikicats",
-						data: {"P0_originalText": originalText, "fromStart": fromStart, "P1_selectedWikicats": JSON.stringify(P1_selectedWikicats), "P3_listEnoughContent": JSON.stringify(P3_listEnoughContent)},  // send the listEnoughContent received in the previous phase
+						data: {"P0_originalText": originalText, "fromStart": fromStart, "P1_selectedWikicats": JSON.stringify(P1_selectedWikicats)},
 						success: function(result) {
 							$("#spinner").modal("hide");
 							console.log("Result of phase 4:")
@@ -554,9 +550,6 @@
 							}
 
 							P1_selectedWikicats = result["P1_selectedWikicats"]
-							P2_listWithoutDuplicates = result["P2_listWithoutDuplicates"]   // list of unique URLs
-							P3_listEnoughContent = result["P3_listEnoughContent"]   // list of texts available with enough content
-							P4_listWithWKSB = result["P4_listWithWKSB"]   // list of texts available with wikicats or subjects
 
 							results = buildF4contents(result)
 							$(contentF4_numberTextsValid).html(results)
@@ -581,7 +574,7 @@
 				function buildF5contents (result) {
 					results = "<b>Duration of F5: " + result['P5_elapsedTimeF5']  + " seconds</b><br>\n"
 					results += "<b>Used Similarity: " + result['P5_usedSim'] + " </b><br>\n"
-					results += "<b>Number of files: " + result['P5_listDocsCorpus'].length + " </b><br>\n"
+					results += "<b>Number of files: " + result['P5_lenListDocsCorpus'] + " </b><br>\n"
 
 					return results
 				}
@@ -597,7 +590,7 @@
 					$.ajax({
 						type: "POST",
 						url: "doPh5computeSimilarities",
-						data: {"P0_originalText": originalText, "fromStart": fromStart, "P1_selectedWikicats":  JSON.stringify(P1_selectedWikicats), "P4_listWithWKSB": JSON.stringify(P4_listWithWKSB)},  // send the listWithWKSB received in the previous phase
+						data: {"P0_originalText": originalText, "fromStart": fromStart, "P1_selectedWikicats":  JSON.stringify(P1_selectedWikicats)},
 						success: function(result) {
 							$("#spinner").modal("hide");
 							console.log("Result of phase 5")
@@ -609,9 +602,6 @@
 								$(contentF5_similarities).html(results)
 								return
 							}
-
-							P5_listDocsCorpus = result["P5_listDocsCorpus"]
-							P4_listWithWKSB = result["P4_listWithWKSB"]   // list of texts available with wikicats or subjects
 
 							results = buildF5contents(result)
 							$(contentF5_similarities).html(results)
@@ -635,6 +625,8 @@
 
 
 
+
+
 				function buildF6contents (result) {
 					results = "<b>Duration of F61 (preprocessing): " + result['P6_elapsedTimeF61']  + " seconds</b><br>\n"
 					results += "<b>Duration of F62 (training): " + result['P6_elapsedTimeF62']  + " seconds</b><br>\n"
@@ -654,7 +646,7 @@
 					$.ajax({
 						type: "POST",
 						url: "doPh6trainD2V",
-						data: {"P0_originalText": originalText, "fromStart": fromStart, "P4_listWithWKSB": JSON.stringify(P4_listWithWKSB), "P5_listDocsCorpus": JSON.stringify(P5_listDocsCorpus)},  // send the listDocsCorpus received in the previous phase
+						data: {"P0_originalText": originalText, "fromStart": fromStart},
 						success: function(result) {
 							$("#spinner").modal("hide");
 							console.log("Result of phase 6")
@@ -668,8 +660,6 @@
 							}
 
 							P6_modelName = result['P6_modelName']
-							P5_lenListDocsCorpus = result["P5_lenListDocsCorpus"]
-							P4_listWithWKSB = result["P4_listWithWKSB"]   // list of texts available with wikicats or subjects
 
 							results = buildF6contents(result)
 							$(contentF6_D2V).html(results)
@@ -715,7 +705,7 @@
 					$.ajax({
 						type: "POST",
 						url: "doPh7reviewCorpus",
-						data: {"P0_originalText": originalText, "fromStart": fromStart, "P6_modelName": P6_modelName, "P4_listWithWKSB": JSON.stringify(P4_listWithWKSB), "P5_listDocsCorpus": JSON.stringify(P5_listDocsCorpus)},
+						data: {"P0_originalText": originalText, "fromStart": fromStart, "P6_modelName": P6_modelName},
 						success: function(result) {
 							$("#spinner").modal("hide");
 							console.log("Result of phase 7")

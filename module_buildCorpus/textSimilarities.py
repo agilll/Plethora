@@ -252,11 +252,12 @@ class textSimilarityFunctions():
 
 			# denominator = len(self.original_text_wikicats) * len(candidate_text_wikicats)
 
-			if num == 0:  # possible?
-				return -1
+			if num == 0: # no intersection at all
+				return 0
 			else:
 				wikicats_jaccard_similarity = sum_sims / num
 		except Exception as e:
+			_Print("ERROR sharedWikicatsJaccardSimilarity(): Exception while computing Jaccard wikicats similarity: "+str(e))
 			_appendFile(self.logFilename, "ERROR sharedWikicatsJaccardSimilarity(): Exception while computing Jaccard wikicats similarity: "+str(e))
 			return -1
 
@@ -299,11 +300,12 @@ class textSimilarityFunctions():
 
 			denominator = len(self.original_text_subjects) * len(candidate_text_subjects)
 
-			if denominator == 0:   # possible?
-				return -1
+			if denominator == 0:   # no intersection at all
+				return 0
 			else:
 				subjects_jaccard_similarity = sum_sims / denominator
 		except Exception as e:
+			_Print("ERROR sharedSubjectsJaccardSimilarity(): Exception while computing Jaccard subjects similarity: "+str(e))
 			_appendFile(self.logFilename, "ERROR sharedSubjectsJaccardSimilarity(): Exception while computing Jaccard subjects similarity: "+str(e))
 			return -1
 

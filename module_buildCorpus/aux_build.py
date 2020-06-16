@@ -11,7 +11,7 @@ import os
 # initial text for corpus building
 INITIAL_TEXT = 'initialText.txt'
 
-CORPUS_FOLDER = os.getenv('HOME') + "/Google Drive/KORPUS/"
+CORPUS_FOLDER = os.getenv('HOME') + "/KORPUS/"
 
 MODELS_FOLDER = CORPUS_FOLDER+"MODELS/"
 LEE_D2V_MODEL = MODELS_FOLDER+"model_d2v_lee.model"
@@ -27,7 +27,7 @@ HTML_PAGES_FOLDER = CORPUS_FOLDER+"HTML_PAGES/"
 CORPUS_MIN_TXT_SIZE = 300  # this is the minimum size of a file to be added to the corpus
 
 # variable and function to control if program must pause after each phase (change to True if argument -s)
-FSTOP = False  
+FSTOP = False
 
 def Stop():
 	if FSTOP == True:
@@ -35,7 +35,7 @@ def Stop():
 	return
 
 # variable and function to control if program must print log messages (change to True if argument -m)
-FMES = False  
+FMES = False
 
 def Print (*args):
 	if FMES == True:
@@ -61,24 +61,24 @@ def hasFieldPT(x):
 		return True
 	except:
 		return False
-	
+
 
 
 # no longer used
 # function to get the N greatest elements in a list
 def NmaxElements(list1, N):
 	final_list = []
-	
+
 	for i in range(0, N):
 		max1 = 0
-		
+
 		for j in range(len(list1)):
 			if list1[j] > max1:
 				max1 = list1[j];
-				
+
 		list1.remove(max1);
 		final_list.append(max1)
-	
+
 	return final_list
 
 def NmaxElements3T(list1, N):
@@ -86,11 +86,11 @@ def NmaxElements3T(list1, N):
 	try:
 		for i in range(0, N):
 			max1 = ("","",0)
-			
+
 			for j in range(len(list1)):
 				if list1[j][2] > max1[2]:
 					max1 = list1[j];
-					
+
 			if max1 != ("","",0):
 				list1.remove(max1);
 			else:
@@ -99,9 +99,9 @@ def NmaxElements3T(list1, N):
 	except Exception as e:
 		print("Exception while computing NmaxElements3T:", e)
 		print(list1)
-	
+
 	return final_list
-###################### 			
+######################
 
 
 # to reject simple wikicats, with only one component
@@ -110,14 +110,14 @@ def filterSimpleWikicats (wikicat):
 		return False
 	else:
 		return True
-	
+
 # to reject simple subjects, with only one component
 def filterSimpleSubjects (subject):
 	if (len(getSubjectComponents(subject)) == 1):
 		return False
 	else:
 		return True
-	
+
 
 
 
@@ -136,7 +136,7 @@ def myTokenizer (text):
 
 	# Change words to lower case
 	text_words = list(map(lambda x: x.lower(), tokens))
-	
+
 	# remove the stopwords
 	words_filtered = list(filter(isNotStopWord, text_words))
 
@@ -147,17 +147,17 @@ def myTokenizer (text):
 
 # to transform some wikicats to unify for further comparison
 # this inserts a dash between nth and century (it returns nth-century). the same for nd and st
-def processCentury(cad):	
+def processCentury(cad):
 	pattern = re.compile(r"(\d)(th|st|nd)([cC]entury)")
 	newcad = pattern.sub(r"\1\2-\3", cad)
 	return newcad
 
 
-# to get the relevant components of a wikicat 
+# to get the relevant components of a wikicat
 def getWikicatComponents (wikicat):
 	components = separateWikicatComponents(wikicat)   # get all the components
 	#components_lower = list(map(lambda x: x.lower(), components))  # to lowercase
-	
+
 	components_filtered = list(filter(isNotStopWord, components))  # remove stopwords
 	return components_filtered
 
@@ -165,28 +165,28 @@ def getWikicatComponents (wikicat):
 
 # to get all the single components of a wikicat (format W1W2W3...Wn)
 def separateWikicatComponents (wikicat):
-	
+
 	wikicat = processCentury(wikicat)  # change 6thcentury to 6th-century, and similars
-	
+
 	components = []
 	word = ""
-	
+
 	long = len(wikicat)
 	idx = 0
-	
+
 	while idx < long:
 		l = wikicat[idx]
 		idx += 1  # idx always marks the char following the current one
-		
-		if len(word) == 0:			# if len(word)==0, then idx==1, this is the first char, put it in the word and continue 
+
+		if len(word) == 0:			# if len(word)==0, then idx==1, this is the first char, put it in the word and continue
 			word = word + str(l)
 			continue
-		
+
 		if l == '(' or l == ')':
 			components.append(word)
 			word = ""
 			continue
-			
+
 		if str(l).isdigit():    # l is a digit.   idx is 2 or higher, as the first char does not arrive here
 			if not str(wikicat[idx-2]).isdigit():  # if the previous one is not a digit,
 				components.append(word)  # the word was completed with the previous one
@@ -194,25 +194,25 @@ def separateWikicatComponents (wikicat):
 			else:
 				word = word + str(l)   # if the previous one is also a digit, add this digit to the digit sequence
 			continue
-				
+
 		if l.isupper():      # the new char is uppercase, probably a new word starts
 			if wikicat[idx-2] == '-':   # if the previous one is hyphen, it is not a new word, but a composed one
 				word = word + str(l)    # add char to this word
 				continue
-			
+
 			if (idx == long):   # this is the last char of the word
 				word = word + str(l)
 				continue
-			
+
 			if word.isupper():  # this char is uppercase, and all the previous chars are too
 				if wikicat[idx].islower():  # if the next one is lowercase, the current char is the start of a new word
 					components.append(word)  # add completed word and start a new one
 					word = str(l)
 				else:
 					word = word + str(l)
-			else:  # this char is uppercase, but not all the previous chars are 
+			else:  # this char is uppercase, but not all the previous chars are
 				if (l == 'B') and (wikicat[idx] == 'C'):  # check if the current char is the beginning of BC or AD
-					word = word + "BC" 
+					word = word + "BC"
 					idx += 1
 				else:
 					if (l == 'A') and (wikicat[idx] == 'D'):
@@ -224,20 +224,20 @@ def separateWikicatComponents (wikicat):
 
 		else:  # if current char is not uppercase nor digit, add to the current word
 			word = word + str(l)
-	
-		
+
+
 	if len(word) > 0:
 		components.append(word)
-	
+
 	return components
 
 
 
-# to get the relevant components of a subject 
+# to get the relevant components of a subject
 def getSubjectComponents (subject):
 	components = separateSubjectComponents(subject)   # get all the components
 	components_lower = list(map(lambda x: x.lower(), components))  # to lowercase
-	
+
 	components_filtered = list(filter(isNotStopWord, components_lower))  # remove stopwords
 	return components_filtered
 
