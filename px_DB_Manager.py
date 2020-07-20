@@ -45,11 +45,11 @@ def getCategoriesInText(texto):
 	if len(entities) == 0:
 		print("Warning getCategoriesInText(): No entities in text")
 
-	print("\n\nAl principio hay ", len(entities))
+	print("\nInitially, there are entities:", len(entities))
 	for entity in entities:
 		print(entity["@URI"])
 
-	# filter duplicated entities (same URI appearing in different parts of the text)
+	# filter duplicated entities (same entity identified in different parts of the text)
 	uniqueEntities = []
 	for entity in entities:
 		if entity["@URI"] in list(map(lambda x: x["@URI"], uniqueEntities)):
@@ -58,37 +58,38 @@ def getCategoriesInText(texto):
 
 	entities = uniqueEntities
 
-	print("\n\nPero unicas hay ", len(entities))
+	print("\nBut unique entities: ", len(entities))
 	for entity in entities:
 		print(entity["@URI"])
 
-	# filter probably wrong identified entities
-	# any entity is required to share wikicats with any other entity
-	print("\n\nFiltrando por compartición de wikicats")
-	newEntities = []
+	# filter entities probably erroneously identified
+	# a right entity is required to share wikicats with some other entity in the set
+	print("\nFiltering by wikicats sharing")
+	rightEntities = []
 	for entity in entities:
 		wki = entity["wikicats"]	# wikicats of this entity
-		wkic = []	# wikicats of all entities except this
+		wkic = []	# wikicats of all the entities in the set except this one
 		for ej in entities:
 			if entity["@URI"] == ej["@URI"]:
 				continue
+
 			wkic.extend(ej["wikicats"])
 		intersec = set(wkic).intersection(wki) # is there intersection?
 		if len(intersec) > 0:
-			newEntities.append(entity)
+			rightEntities.append(entity)
 		else:
 			print("Discarded entity: ", entity["@URI"])
 
-	entities = newEntities
+	entities = rightEntities
 
-	print("\nTras el filtrado por compartición de wikicats hay", len(entities))
+	print("\nAfter the filtering by wikicat sharing there are:", len(entities))
 	for entity in entities:
 		print(entity["@URI"])
 
 
-	# any entity is required to share subjects with any other entity
-	print("\n\nFiltrando por compartición de subjects")
-	newEntities = []
+	# a right entity is required to share subjects with some other entity in the set
+	print("\nFiltering by subject sharing")
+	rightEntities = []
 	for entity in entities:
 		sbi = entity["subjects"]	# subjects of this entity
 		sbic = []	# subjects of all entities except this
@@ -98,13 +99,13 @@ def getCategoriesInText(texto):
 			sbic.extend(ej["subjects"])
 		intersec = set(sbic).intersection(sbi) # is there intersection?
 		if len(intersec) > 0:
-			newEntities.append(entity)
+			rightEntities.append(entity)
 		else:
 			print("Discarded entity: ", entity["@URI"])
 
-	entities = newEntities
+	entities = rightEntities
 
-	print("\nTras el filtrado por compartición de subjects hay", len(entities))
+	print("\nAfter the filtering by subject sharing there are", len(entities))
 	for entity in entities:
 		print(entity["@URI"])
 

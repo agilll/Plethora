@@ -20,15 +20,15 @@ LEE_D2V_MODEL = MODELS_FOLDER+"model_d2v_lee.model"
 
 URLs_FOLDER = CORPUS_FOLDER+"URLs/"
 SCRAPPED_PAGES_FOLDER = CORPUS_FOLDER+"SCRAPPED_PAGES/"
-DISCARDED_PAGES_FILENAME = CORPUS_FOLDER+"discarded_pages.txt"
-UNRETRIEVED_PAGES_FILENAME = CORPUS_FOLDER+"unretrieved_pages.txt"
 HTML_PAGES_FOLDER = CORPUS_FOLDER+"HTML_PAGES/"
+
+UNRETRIEVED_PAGES_FILENAME = CORPUS_FOLDER+"unretrieved_pages.txt"  # URLs that could not be downloaded
+DISCARDED_PAGES_FILENAME = CORPUS_FOLDER+"discarded_pages.txt"  # pages discarded
 
 CORPUS_MIN_TXT_SIZE = 300  # this is the minimum size of a file to be added to the corpus
 
 # variable and function to control if program must pause after each phase (change to True if argument -s)
 FSTOP = False
-
 def Stop():
 	if FSTOP == True:
 		input("\nType ENTER to continue...")
@@ -36,14 +36,13 @@ def Stop():
 
 # variable and function to control if program must print log messages (change to True if argument -m)
 FMES = False
-
 def Print (*args):
 	if FMES == True:
 		print(" ".join(args))
 	return
 
 
-# set of english stopwords
+# set of english stopwords from nltk
 nltk_stopwords = nltk.corpus.stopwords.words('english')
 
 # function to check if a word is in the English stopwords set (to be used in a filter)
@@ -60,6 +59,7 @@ def hasFieldPT(x):
 		x["pt"]["value"]
 		return True
 	except:
+		print("Discarded because of no pt field:", x["url"]["value"])
 		return False
 
 
@@ -146,7 +146,8 @@ def myTokenizer (text):
 ########   compute wikicat and subject components
 
 # to transform some wikicats to unify for further comparison
-# this inserts a dash between nth and century (it returns nth-century). the same for nd and st
+# sometimes it appears 5thCentury, others 5th-Century (it is convenient to unify for further comparison)
+# this inserts a dash between nth and century (it returns nth-century). The same for nd and st
 def processCentury(cad):
 	pattern = re.compile(r"(\d)(th|st|nd)([cC]entury)")
 	newcad = pattern.sub(r"\1\2-\3", cad)
