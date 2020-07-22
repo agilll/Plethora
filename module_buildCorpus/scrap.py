@@ -18,47 +18,58 @@ class scrapFunctions():
 			print("*** Timeout ***", page)
 			raise Exception("Timeout")
 		except:
-			print("Connection broken: " + page)
-			return -1
+			print("scrapPage: Connection broken: " + page)
+			return ""
 
 
 		# Extract HTML from Response object and print
-		html = request.text
+		try:
+			html = request.text
+		except Exception as e:
+			print("scrapPage (text): " + str(e))
+			return ""
 
 		# Create a BeautifulSoup object from the HTML
-		soup = BeautifulSoup(html, "html5lib")
+		try:
+			soup = BeautifulSoup(html, "html5lib")
+		except Exception as e:
+			print("scrapPage (BeautifulSoup): " + str(e))
+			return ""
 
-		# Get the page title
-		pageTitle = soup.title.string
+		try:
+			# Get the page title
+			pageTitle = soup.title.string
+			# Create a page name from the page title after removing special characters
+			pageName = pageTitle.translate ({ord(c): "-" for c in "!@#$%^*()[]{};:,./<>?\|`=+"})
+		except Exception as e:
+			print("scrapPage (title.string): " + str(e))
 
-		# Create a page name from the page title after removing special characters
-		pageName = pageTitle.translate ({ord(c): "-" for c in "!@#$%^*()[]{};:,./<>?\|`=+"})
-		
+
 		# remove the footer div
 		try:
-			soup.find('div', id="footer").decompose()
-		except Exception:
-			print("not a wikipedia page")
+			soup.find('footer', id="footer").decompose()
+		except Exception as e:
+			print("scrapPage (footer): "+str(e))
 
 		# remove the mw-navigation div
 		try:
 			soup.find('div', id="mw-navigation").decompose()
-		except Exception:
-			print("not a wikipedia page")
+		except Exception as e:
+			print("scrapPage (div mw-navigation): "+str(e))
 
 		# remove navigation links
 		try:
 			for link in soup.find_all("a", {'class': 'mw-jump-link'}):
 				link.decompose()
-		except Exception:
-			print("not a wikipedia page")
+		except Exception as e:
+			print("scrapPage (a): "+str(e))
 
 		# remove navigation sections (Includes the head and the side panel)
 		try:
 			for link in soup.find_all("div", {'role': 'navigation'}):
 				link.decompose()
-		except Exception:
-			print("no navigation sections found")
+		except Exception as e:
+			print("scrapPage (no navigation sections found): "+str(e))
 
 		# Other elements that can be removed:
 		# Site notices: div with id = "siteNotice"
@@ -68,20 +79,24 @@ class scrapFunctions():
 		# remove the css
 		try:
 			soup.style.decompose()
-		except Exception:
-			pass
+		except Exception as e:
+			print("scrapPage (no style): "+str(e))
 
 
 		# remove all the js tags
 		try:
 			for tag in soup.find_all("script"):
 				tag.decompose()
-		except Exception:
-			pass
+		except Exception as e:
+			print("scrapPage (no script): "+str(e))
 
 
 		# Extract text from HTML
-		text = soup.get_text()
+		try:
+			text = soup.get_text()
+		except Exception as e:
+			print("scrapPage (get_text): "+str(e))
+			return ""
 
 		# Since we don't need the whole page components, it would be better to extract..
 		# ..the text only from paragraphs. This works for wikipedia pages.
@@ -106,10 +121,10 @@ class scrapFunctions():
 				# Separate paragraphs by break lines
 				cleanedText += plainParagraph + "\n"
 
-		except Exception:
-			pass
+		except Exception as e:
+			print("scrapPage (extracting p): "+str(e))
 
-		return pageName, cleanedText
+		return cleanedText
 
 
 

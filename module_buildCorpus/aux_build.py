@@ -46,7 +46,7 @@ def Print (*args):
 nltk_stopwords = nltk.corpus.stopwords.words('english')
 
 # function to check if a word is in the English stopwords set (to be used in a filter)
-def isNotStopWord (word):
+def isNotNLTKStopWord (word):
 	if word.lower() not in nltk_stopwords:
 		return True
 	return False
@@ -123,24 +123,17 @@ def filterSimpleSubjects (subject):
 
 
 # Tokenize text, and returns a list of words (lowercase) after removing the stopwords
-def myTokenizer (text):
+def tokenizeAndRemoveNLTKStopwords(text):
 
-	# Create a tokenizer
-	tokenizer = RegexpTokenizer('\w+')
+	tokenizer = RegexpTokenizer('\w+')  # Create a tokenizer
+	tokens = tokenizer.tokenize(text)  # Tokenize text
 
-	# Tokenize text
-	tokens = tokenizer.tokenize(text)
+	text_words = list(map(lambda x: x.lower(), tokens))   # Change words to lower case
 
-	# Get English stopwords from the NLTK (Natural Language Toolkit)
-	nltk_stopwords = nltk.corpus.stopwords.words('english')
-
-	# Change words to lower case
-	text_words = list(map(lambda x: x.lower(), tokens))
-
-	# remove the stopwords
-	words_filtered = list(filter(isNotStopWord, text_words))
+	words_filtered = list(filter(isNotNLTKStopWord, text_words))  # remove the stopwords from the NLTK (Natural Language Toolkit)
 
 	return words_filtered
+
 
 
 ########   compute wikicat and subject components
@@ -157,9 +150,8 @@ def processCentury(cad):
 # to get the relevant components of a wikicat
 def getWikicatComponents (wikicat):
 	components = separateWikicatComponents(wikicat)   # get all the components
-	#components_lower = list(map(lambda x: x.lower(), components))  # to lowercase
 
-	components_filtered = list(filter(isNotStopWord, components))  # remove stopwords
+	components_filtered = list(filter(isNotNLTKStopWord, components))  # remove NLTK stopwords
 	return components_filtered
 
 
@@ -237,9 +229,8 @@ def separateWikicatComponents (wikicat):
 # to get the relevant components of a subject
 def getSubjectComponents (subject):
 	components = separateSubjectComponents(subject)   # get all the components
-	components_lower = list(map(lambda x: x.lower(), components))  # to lowercase
 
-	components_filtered = list(filter(isNotStopWord, components_lower))  # remove stopwords
+	components_filtered = list(filter(isNotNLTKStopWord, components))  # remove NLTK stopwords
 	return components_filtered
 
 

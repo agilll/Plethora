@@ -30,6 +30,10 @@ URL_DB_SL_annotate = "http://model.dbpedia-spotlight.org/en/annotate"
 
 URL_DB_SL_annotate = "http://gssi.det.uvigo.es:2222/rest/annotate"
 
+IMPORTANT: when running in gssi.det.uvigo.es, the service must be
+URL_DB_SL_annotate = "http://localhost:2222/rest/annotate"
+
+
 To run such server, we must install docker, pull the dbpedia spotlight image and run
 
 docker run -d -e JAVA_OPTS='-Xmx16g' -p 2222:80 dbpedia/spotlight-english spotlight.sh

@@ -425,7 +425,7 @@ def doPh3(lenOriginalText):
 				listEnoughContent.append(fileNameCandidate)
 		else:  # fetch file if not exists
 			try:  # Retrieves the URL, and get the page title and the scraped page content
-				pageName, pageContent = scrap.scrapPage(page)  # pageName result is not used
+				pageContent = scrap.scrapPage(page)  # scrap page
 				P3_numUrlsDownloaded += 1
 				_saveFile(fileNameCandidate, pageContent)  # Save to text file
 				_Print("File "+str(P3_numUrlsDownloaded)+" downloaded and saved it:", fileNameCandidate)
@@ -769,7 +769,7 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 			next(reader)  # to skip header
 			for row in reader:
 				# row[0]=docName, row[1]=shared wk sim, row[2]=shared sb sim, row[3]=spaCy sim, row[4]=d2v sim, row[5] = euclidean sim, row[6] = full wk sim
-				dict_sims_db[row[0]] = (float(row[1]), float(row[2]), float(row[3]), float(row[4]), float(row[5]), float(row[6]))
+				dict_sims_db[row[0]] = (float(row[1]), float(row[2]), float(row[3]), float(row[4]), float(row[5]), float(row[6]), float(row[7]))
 
 			csvFile.close()
 	except:
@@ -808,6 +808,14 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 			d2v_lee_similarity = sims[3]
 			euclidean_similarity = sims[4]
 			full_wikicats_jaccard_similarity = sims[5]
+			full_subjects_jaccard_similarity = sims[6]
+
+			_Print("Computing shared subjects similarity for", fileNameCandidate)
+			shared_subjects_jaccard_similarity = similarities.sharedSubjectsJaccardSimilarity(fileNameCandidateSubjects)
+			if shared_subjects_jaccard_similarity < 0:
+				_Print("ERROR computing sharedSubjectsJaccard ("+str(shared_subjects_jaccard_similarity)+"):", fileNameCandidateSubjects)
+				_appendFile(logFilename, "ERROR computing sharedSubjectsJaccard: "+fileNameCandidateSubjects)
+				continue
 
 		except Exception as e:   # no sims found in local DB file, they must be computed
 			_Print("Sims not in local DB:", str(e))
@@ -844,11 +852,14 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 			_Print("Computing full wikicats jaccard similarity for", fileNameCandidate)
 			full_wikicats_jaccard_similarity = similarities.fullWikicatsJaccardSimilarity(fileNameCandidateWikicats)
 
+			# Measure the full subjects jaccard similarity
+			_Print("Computing full subjects jaccard similarity for", fileNameCandidate)
+			full_subjects_jaccard_similarity = similarities.fullSubjectsJaccardSimilarity(fileNameCandidateSubjects)
 
 		# all sims for this doc have been read or newly computed
 
 		# add them to the dict_sims_new dict
-		dict_sims_new[lastNameCandidate] = (shared_wikicats_jaccard_similarity, shared_subjects_jaccard_similarity, spacy_similarity, d2v_lee_similarity, euclidean_similarity, full_wikicats_jaccard_similarity)
+		dict_sims_new[lastNameCandidate] = (shared_wikicats_jaccard_similarity, shared_subjects_jaccard_similarity, spacy_similarity, d2v_lee_similarity, euclidean_similarity, full_wikicats_jaccard_similarity, full_subjects_jaccard_similarity)
 
 		_Print("Wikicats shared jaccard similarity =", str(shared_wikicats_jaccard_similarity))
 		_Print("Subjects shared jaccard similarity =", str(shared_subjects_jaccard_similarity))
@@ -856,6 +867,7 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 		_Print("Doc2Vec similarity =", str(d2v_lee_similarity))
 		_Print("Euclidean similarity =", str(euclidean_similarity))
 		_Print("Wikicats full jaccard similarity =", str(full_wikicats_jaccard_similarity))
+		_Print("Subjects full jaccard similarity =", str(full_subjects_jaccard_similarity))
 
 		# add this page value to compute distributions for shared wikicats and subjects jaccard
 
@@ -913,7 +925,7 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 
 	# Update the csv file with all similarities
 	with _Open(filenameSims, 'w') as csvFile:
-		fieldnames = ['Text', 'Shared Wikicats Similarity', 'Shared Subjects Similarity', 'Spacy Similarity', 'Doc2Vec Lee Similarity', 'Euclidean Similarity', 'Full Wikicats Similarity']	# Name columns
+		fieldnames = ['Text', 'SWikicats Sim', 'SSubjects Sim', 'Spacy Sim', 'Doc2Vec Lee Sim', 'Euclidean Sim', 'FWikicats Sim', 'FSubjects Sim']	# Name columns
 		writer = csv.DictWriter(csvFile, fieldnames=fieldnames, delimiter=" ") # Create csv headers
 		writer.writeheader()	# Write the column headers
 
@@ -921,13 +933,12 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 		for key in dict_sims_new:
 			try:
 				sims = dict_sims_new[key]
-				writer.writerow([key, sims[0], sims[1], sims[2], sims[3], sims[4], sims[5]])
-			except:
-				print("Error writing csv with similarities", row)
-				_appendFile(logFilename, "Error writing csv with similarities"+str(row))
+				writer.writerow([key, sims[0], sims[1], sims[2], sims[3], sims[4], sims[5], sims[6]])
+			except Exception as e:
+				print("Error writing csv with similarities ("+str(e)+"):", row)
+				_appendFile(logFilename, "Error writing csv with similarities  ("+str(e)+"):"+str(row))
 
 		csvFile.close()
-
 
 
 
@@ -943,13 +954,13 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 	# ratings[sim]["average"]
 
 
-	# function to order a list of tuplas (0,1,2,3,4,5,6) by the element in the position 'pos'=1-6
+	# function to order a list of tuplas (0,1,2,3,4,5,6,7) by the element in the position 'pos'=1-7
 	def SortTuplaList_byPosTupla(tuplaList, pos):
 		tuplaList.sort(reverse=True, key = lambda x: x[pos])
 		return tuplaList
 
-	# convert dict_sims_new in list of tuplas (filenameCandidate, simWikicats, simSubjects, simSpacy, simD2V, simEuclidean, simFullWikicats) to be able to order them
-	list_sims_tuplas = [ (k, dict_sims_new[k][0], dict_sims_new[k][1], dict_sims_new[k][2], dict_sims_new[k][3], dict_sims_new[k][4], dict_sims_new[k][5]) for k in dict_sims_new]
+	# convert dict_sims_new in list of tuplas (filenameCandidate, simWikicats, simSubjects, simSpacy, simD2V, simEuclidean, simFullWikicats, simFullSubjects) to be able to order them
+	list_sims_tuplas = [ (k, dict_sims_new[k][0], dict_sims_new[k][1], dict_sims_new[k][2], dict_sims_new[k][3], dict_sims_new[k][4], dict_sims_new[k][5], dict_sims_new[k][6]) for k in dict_sims_new]
 
 
 	# compute ratings for a general sim
@@ -986,6 +997,7 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 	computeRating(4, "doc2vec")
 	computeRating(5, "euclidean")
 	computeRating(6, "fullWikicats")
+	computeRating(7, "fullSubjects")
 
 
 	# name of the file to save the positions of E0 entities for all sims, used for measure rating quality
@@ -993,30 +1005,31 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 
 	E0entitiesPositions = {}  # dict with an entry for each entity, a 6-tupla with the positions for each sim
 
-	# build dict E0entitiesPositions to store the 6-possitions for every entity E0
+	# build dict E0entitiesPositions to store the 7-possitions for every entity E0
 	# range over list of tuplas (name_E0entity, position_in_this sim)
 	# it is only to process all names, idx is irrelevant
 	# next(i for (n,i) in ratings["wikicats"]["originalEntities"] if n == name) --> i of first tupla where n == name
 	for name, idx in ratings["fullWikicats"]["originalEntities"]:
-		# dict with an entry for each entity, a 6-tupla with the positions for each sim
+		# dict with an entry for each entity, a 7-tupla with the positions for each sim
 		E0entitiesPositions[name] = (next(i for (n,i) in ratings["wikicats"]["originalEntities"] if n == name), next(i for (n,i) in ratings["subjects"]["originalEntities"] if n == name),\
 									next(i for (n,i) in ratings["spacy"]["originalEntities"] if n == name), next(i for (n,i) in ratings["doc2vec"]["originalEntities"] if n == name),\
-									next(i for (n,i) in ratings["euclidean"]["originalEntities"] if n == name), next(i for (n,i) in ratings["fullWikicats"]["originalEntities"] if n == name))
+									next(i for (n,i) in ratings["euclidean"]["originalEntities"] if n == name), next(i for (n,i) in ratings["fullWikicats"]["originalEntities"] if n == name), \
+									next(i for (n,i) in ratings["fullSubjects"]["originalEntities"] if n == name))
 
 
 	# store all positions of E0 entities in a file
 	with _Open(fileE0entitiesPositions, 'w') as csvFile:
-		fieldnames = ['Entity', 'Wikicats', 'Subjects', 'spaCy', 'Doc2vec', 'Euclidean', 'Full wikicats']	# Name columns
+		fieldnames = ['Entity', 'Wikicats', 'Subjects', 'spaCy', 'Doc2vec', 'Euclidean', 'Full wikicats', 'Full subjects']	# Name columns
 		writer = csv.DictWriter(csvFile, fieldnames=fieldnames, delimiter=" ") # Create csv headers
 		writer.writeheader()	# Write the column headers
 
 		writer = csv.writer(csvFile, delimiter=' ')
 		for key in E0entitiesPositions:
 			try:
-				writer.writerow([key, E0entitiesPositions[key][0], E0entitiesPositions[key][1], E0entitiesPositions[key][2], E0entitiesPositions[key][3], E0entitiesPositions[key][4], E0entitiesPositions[key][5]])
+				writer.writerow([key, E0entitiesPositions[key][0], E0entitiesPositions[key][1], E0entitiesPositions[key][2], E0entitiesPositions[key][3], E0entitiesPositions[key][4], E0entitiesPositions[key][5], E0entitiesPositions[key][6]])
 			except:
-				print("Error writing csv with corpus", row)
-				_appendFile(logFilename, "Error writing csv with corpus"+str(row))
+				print("Error writing csv with entities E0 positions", row)
+				_appendFile(logFilename, "Error writing csv with entities E0 positions"+str(row))
 
 		csvFile.close()
 
