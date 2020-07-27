@@ -57,15 +57,27 @@ def doPh1getWikicatsFromText():
 
 def doPh1 (P0_originalText):
 	_Print("Executing Phase 1")
+
 	lenOriginalText = len(P0_originalText)  # length of the received text
 
 	if not os.path.exists(_CORPUS_FOLDER):  # create KORPUS folder if not exists
 		os.makedirs(_CORPUS_FOLDER)
 
+	if not os.path.exists(_MODELS_FOLDER):  # create MODELS folder if not exists
+		os.makedirs(_MODELS_FOLDER)
+
 	lengthFolder = _CORPUS_FOLDER+str(lenOriginalText)+"/"
 
 	if not os.path.exists(lengthFolder):  # create KORPUS/length folder if not exists
 		os.makedirs(lengthFolder)
+
+
+	# to log messages
+	logFilename = lengthFolder+str(lenOriginalText)+".log"
+	_appendFile(logFilename, "\n\n"+str(datetime.now()))
+
+	_appendFile(logFilename, "Executing Phase 1")
+
 
 	filename = lengthFolder+str(lenOriginalText)+".txt"   # save the received text with length.txt filename
 	_saveFile(filename, P0_originalText)
@@ -111,6 +123,7 @@ def doPh1 (P0_originalText):
 
 	result["P1_selectedWikicats"] = wkSelectedList
 
+	_appendFile(logFilename, "Returning wikicats: "+str(len(listWikicats)))
 	return result;
 
 
@@ -159,15 +172,15 @@ def doPh2getUrlsCandidateFiles():
 
 
 def doPh2 (lenOriginalText, P1_selectedWikicats):
-	_Print("Executing Phase 2")
-
-	logFilename = "corpus.log"
-	logFile = _Open(logFilename, "a")
-	logFile.write("\n\n")
-	logFile.write(str(datetime.now())+"\n")
-	logFile.close()
-
 	lengthFolder = _CORPUS_FOLDER+str(lenOriginalText)+"/"
+
+	logFilename = lengthFolder+str(lenOriginalText)+".log"
+	_appendFile(logFilename, "\n\n"+str(datetime.now()))
+
+	_Print("Executing Phase 2")
+	_appendFile(logFilename, "Executing Phase 2")
+
+
 
 	result = {}  # object to store the results to be returned to the request
 
@@ -241,6 +254,7 @@ def doPh2 (lenOriginalText, P1_selectedWikicats):
 	result["P2_totalWK"] = numUrlsWK
 	result["P2_totalUrls"] = lenListWithoutDuplicates
 
+	_appendFile(logFilename, "Computed URLs: "+str(lenListWithoutDuplicates))
 	return result
 
 
@@ -351,16 +365,16 @@ def doPh3downloadCandidateTexts():
 
 
 def doPh3(lenOriginalText):
+	lengthFolder = _CORPUS_FOLDER+str(lenOriginalText)+"/"
+
+	logFilename = lengthFolder+str(lenOriginalText)+".log"
+	_appendFile(logFilename, "\n\n"+str(datetime.now()))
+
 	_Print("Executing Phase 3")
+	_appendFile(logFilename, "Executing Phase 3")
+
 	result = {}  # object to store the results to be returned to the request
 
-	logFilename = "corpus.log"
-	logFile = _Open(logFilename, "a")
-	logFile.write("\n\n")
-	logFile.write(str(datetime.now())+"\n")
-	logFile.close()
-
-	lengthFolder = _CORPUS_FOLDER+str(lenOriginalText)+"/"
 	listWithoutDuplicatesFile =  lengthFolder+str(lenOriginalText)+".listWithoutDuplicates"  # name of the file with listWithoutDuplicates saved in previous phase
 
 	try:  # try to read listWithoutDuplicates file
@@ -464,6 +478,7 @@ def doPh3(lenOriginalText):
 	result["P3_lenListNotEnoughContent"] = len(listNotEnoughContent)
 	result["P3_elapsedTimeF3"] = elapsedTimeF3.seconds
 
+	_appendFile(logFilename, "Available pages with content: "+str(lenListEnoughContent))
 	return result
 
 
@@ -520,16 +535,17 @@ def doPh4identifyWikicats():
 
 
 def doPh4(lenOriginalText):
-	_Print("Executing Phase 4")
-	result = {}  # object to store the results to be returned to the request
-
-	logFilename = "corpus.log"
-	logFile = _Open(logFilename, "a")
-	logFile.write("\n\n")
-	logFile.write(str(datetime.now())+"\n")
-	logFile.close()
 
 	lengthFolder = _CORPUS_FOLDER+str(lenOriginalText)+"/"
+
+	logFilename = lengthFolder+str(lenOriginalText)+".log"
+	_appendFile(logFilename, "\n\n"+str(datetime.now()))
+
+	_Print("Executing Phase 4")
+	_appendFile(logFilename, "Executing Phase 4")
+
+	result = {}  # object to store the results to be returned to the request
+
 	listEnoughContentFile =  lengthFolder+str(lenOriginalText)+".listEnoughContent"  # name of the file with listEnoughContent stored in previous phase
 
 	try:  # try to read listEnoughContent file
@@ -623,6 +639,7 @@ def doPh4(lenOriginalText):
 	result["P4_lenListWithoutWKSB"] = len(listWithoutWKSB)
 	result["P4_elapsedTimeF4"] = elapsedTimeF4.seconds
 
+	_appendFile(logFilename, "Available pages with wikicats: "+str(lenListWithWKSB))
 	return result
 
 
@@ -689,17 +706,16 @@ def doPh5computeSimilarities():
 
 
 def doPh5(P0_originalText, P1_selectedWikicats):
-	_Print("Executing Phase 5")
-	result = {}  # object to store the results to be returned to the request
-
-	logFilename = "corpus.log"
-	logFile = _Open(logFilename, "a")
-	logFile.write("\n\n")
-	logFile.write(str(datetime.now())+"\n")
-	logFile.close()
-
 	lenOriginalText = len(P0_originalText)
 	lengthFolder = _CORPUS_FOLDER+str(lenOriginalText)+"/"
+
+	logFilename = lengthFolder+str(lenOriginalText)+".log"
+	_appendFile(logFilename, "\n\n"+str(datetime.now()))
+
+	_Print("Executing Phase 5")
+	_appendFile(logFilename, "Executing Phase 5")
+
+	result = {}  # object to store the results to be returned to the request
 
 	listWithWKSBFile =  lengthFolder+str(lenOriginalText)+".listWithWKSB"  # name of the file with listWithWKSB stored in previous phase
 
@@ -768,7 +784,7 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 			reader = csv.reader(csvFile, delimiter=' ')
 			next(reader)  # to skip header
 			for row in reader:
-				# row[0]=docName, row[1]=shared wk sim, row[2]=shared sb sim, row[3]=spaCy sim, row[4]=d2v sim, row[5] = euclidean sim, row[6] = full wk sim
+				# row[0]=docName, row[1]=shared wk sim, row[2]=shared sb sim, row[3]=spaCy sim, row[4]=d2v sim, row[5] = euclidean sim, row[6] = full wk sim, row[7] = full sb sim
 				dict_sims_db[row[0]] = (float(row[1]), float(row[2]), float(row[3]), float(row[4]), float(row[5]), float(row[6]), float(row[7]))
 
 			csvFile.close()
@@ -802,114 +818,111 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 		try:
 			sims = dict_sims_db[lastNameCandidate] # if exists, return tuple with (wk_sim, sb_sim, spacy_sim, doc2vec_sim, euclidean_sim, full_wk_sim)
 			_Print("Found already computed similarities for", fileNameCandidate)
-			shared_wikicats_jaccard_similarity = sims[0]
-			shared_subjects_jaccard_similarity = sims[1]
-			spacy_similarity = sims[2]
-			d2v_lee_similarity = sims[3]
-			euclidean_similarity = sims[4]
-			full_wikicats_jaccard_similarity = sims[5]
-			full_subjects_jaccard_similarity = sims[6]
+			full_wikicats_jaccard_sim = sims[0]
+			full_subjects_jaccard_sim = sims[1]
+			shared_wikicats_jaccard_sim = sims[2]
+			shared_subjects_jaccard_sim = sims[3]
+			spacy_sim = sims[4]
+			d2v_lee_sim = sims[5]
+			euclidean_sim = sims[6]
 
-			_Print("Computing shared subjects similarity for", fileNameCandidate)
-			shared_subjects_jaccard_similarity = similarities.sharedSubjectsJaccardSimilarity(fileNameCandidateSubjects)
-			if shared_subjects_jaccard_similarity < 0:
-				_Print("ERROR computing sharedSubjectsJaccard ("+str(shared_subjects_jaccard_similarity)+"):", fileNameCandidateSubjects)
-				_appendFile(logFilename, "ERROR computing sharedSubjectsJaccard: "+fileNameCandidateSubjects)
-				continue
 
 		except Exception as e:   # no sims found in local DB file, they must be computed
 			_Print("Sims not in local DB:", str(e))
 
+			# Measure the full wikicats jaccard similarity
+			_Print("Computing full wikicats jaccard similarity for", fileNameCandidate)
+			full_wikicats_jaccard_sim = similarities.fullWikicatsJaccardSimilarity(fileNameCandidateWikicats)
+
+			# Measure the full subjects jaccard similarity
+			_Print("Computing full subjects jaccard similarity for", fileNameCandidate)
+			full_subjects_jaccard_sim = similarities.fullSubjectsJaccardSimilarity(fileNameCandidateSubjects)
+
 			# Measure shared wikicats jaccard similarity (requires shared matching). Code -1 is returned if some error
 			_Print("Computing shared wikicats similarity for", fileNameCandidate)
-			shared_wikicats_jaccard_similarity = similarities.sharedWikicatsJaccardSimilarity(fileNameCandidateWikicats)
-			if shared_wikicats_jaccard_similarity < 0:
-				_Print("ERROR computing sharedWikicatsJaccard ("+str(shared_wikicats_jaccard_similarity)+"):", fileNameCandidateWikicats)
+			shared_wikicats_jaccard_sim = similarities.sharedWikicatsJaccardSimilarity(fileNameCandidateWikicats)
+			if shared_wikicats_jaccard_sim < 0:
+				_Print("ERROR computing sharedWikicatsJaccard ("+str(shared_wikicats_jaccard_sim)+"):", fileNameCandidateWikicats)
 				_appendFile(logFilename, "ERROR computing sharedWikicatsJaccard: "+fileNameCandidateWikicats)
 				continue
 
 			# Measure shared subjects jaccard similarity (requires shared matching). Code -1 is returned if some error
 			_Print("Computing shared subjects similarity for", fileNameCandidate)
-			shared_subjects_jaccard_similarity = similarities.sharedSubjectsJaccardSimilarity(fileNameCandidateSubjects)
-			if shared_subjects_jaccard_similarity < 0:
-				_Print("ERROR computing sharedSubjectsJaccard ("+str(shared_subjects_jaccard_similarity)+"):", fileNameCandidateSubjects)
+			shared_subjects_jaccard_sim = similarities.sharedSubjectsJaccardSimilarity(fileNameCandidateSubjects)
+			if shared_subjects_jaccard_sim < 0:
+				_Print("ERROR computing sharedSubjectsJaccard ("+str(shared_subjects_jaccard_sim)+"):", fileNameCandidateSubjects)
 				_appendFile(logFilename, "ERROR computing sharedSubjectsJaccard: "+fileNameCandidateSubjects)
 				continue
 
 			# Measure the spaCy distance
 			_Print("Computing spaCy similarity for", fileNameCandidate)
-			spacy_similarity = similarities.spacyTextSimilarity(candidate_file=fileNameCandidate)
+			spacy_sim = similarities.spacyTextSimilarity(candidate_file=fileNameCandidate)
 
 			# Measure the Doc2Vec (Lee) distance
 			_Print("Computing Doc2Vec Lee similarity for", fileNameCandidate)
-			d2v_lee_similarity = d2vLeeSimilarity.doc2VecTextSimilarity(candidate_file=fileNameCandidate)
+			d2v_lee_sim = d2vLeeSimilarity.doc2VecTextSimilarity(candidate_file=fileNameCandidate)
 
 			# Measure the euclidean distance using SKLEARN
 			_Print("Computing Euclidean similarity for", fileNameCandidate)
-			euclidean_similarity = similarities.euclideanTextSimilarity(candidate_file=fileNameCandidate)
+			euclidean_sim = similarities.euclideanTextSimilarity(candidate_file=fileNameCandidate)
 
-			# Measure the full wikicats jaccard similarity
-			_Print("Computing full wikicats jaccard similarity for", fileNameCandidate)
-			full_wikicats_jaccard_similarity = similarities.fullWikicatsJaccardSimilarity(fileNameCandidateWikicats)
 
-			# Measure the full subjects jaccard similarity
-			_Print("Computing full subjects jaccard similarity for", fileNameCandidate)
-			full_subjects_jaccard_similarity = similarities.fullSubjectsJaccardSimilarity(fileNameCandidateSubjects)
 
 		# all sims for this doc have been read or newly computed
 
 		# add them to the dict_sims_new dict
-		dict_sims_new[lastNameCandidate] = (shared_wikicats_jaccard_similarity, shared_subjects_jaccard_similarity, spacy_similarity, d2v_lee_similarity, euclidean_similarity, full_wikicats_jaccard_similarity, full_subjects_jaccard_similarity)
+		dict_sims_new[lastNameCandidate] = (full_wikicats_jaccard_sim, full_subjects_jaccard_sim, shared_wikicats_jaccard_sim, shared_subjects_jaccard_sim, spacy_sim, d2v_lee_sim, euclidean_sim)
 
-		_Print("Wikicats shared jaccard similarity =", str(shared_wikicats_jaccard_similarity))
-		_Print("Subjects shared jaccard similarity =", str(shared_subjects_jaccard_similarity))
-		_Print("Spacy similarity =", str(spacy_similarity))
-		_Print("Doc2Vec similarity =", str(d2v_lee_similarity))
-		_Print("Euclidean similarity =", str(euclidean_similarity))
-		_Print("Wikicats full jaccard similarity =", str(full_wikicats_jaccard_similarity))
-		_Print("Subjects full jaccard similarity =", str(full_subjects_jaccard_similarity))
+		_Print("Wikicats full jaccard similarity =", str(full_wikicats_jaccard_sim))
+		_Print("Subjects full jaccard similarity =", str(full_subjects_jaccard_sim))
+		_Print("Wikicats shared jaccard similarity =", str(shared_wikicats_jaccard_sim))
+		_Print("Subjects shared jaccard similarity =", str(shared_subjects_jaccard_sim))
+		_Print("Spacy similarity =", str(spacy_sim))
+		_Print("Doc2Vec similarity =", str(d2v_lee_sim))
+		_Print("Euclidean similarity =", str(euclidean_sim))
+
 
 		# add this page value to compute distributions for shared wikicats and subjects jaccard
 
-		if shared_wikicats_jaccard_similarity < 0.1:
+		if shared_wikicats_jaccard_sim < 0.1:
 			distribution_wk["0"] = distribution_wk["0"] + 1
-		elif shared_wikicats_jaccard_similarity < 0.2:
+		elif shared_wikicats_jaccard_sim < 0.2:
 			distribution_wk["1"] = distribution_wk["1"] + 1
-		elif shared_wikicats_jaccard_similarity < 0.3:
+		elif shared_wikicats_jaccard_sim < 0.3:
 			distribution_wk["2"] = distribution_wk["2"] + 1
-		elif shared_wikicats_jaccard_similarity < 0.4:
+		elif shared_wikicats_jaccard_sim < 0.4:
 			distribution_wk["3"] = distribution_wk["3"] + 1
-		elif shared_wikicats_jaccard_similarity < 0.5:
+		elif shared_wikicats_jaccard_sim < 0.5:
 			distribution_wk["4"] = distribution_wk["4"] + 1
-		elif shared_wikicats_jaccard_similarity < 0.6:
+		elif shared_wikicats_jaccard_sim < 0.6:
 			distribution_wk["5"] = distribution_wk["5"] + 1
-		elif shared_wikicats_jaccard_similarity < 0.7:
+		elif shared_wikicats_jaccard_sim < 0.7:
 			distribution_wk["6"] = distribution_wk["6"] + 1
-		elif shared_wikicats_jaccard_similarity < 0.8:
+		elif shared_wikicats_jaccard_sim < 0.8:
 			distribution_wk["7"] = distribution_wk["7"] + 1
-		elif shared_wikicats_jaccard_similarity < 0.9:
+		elif shared_wikicats_jaccard_sim < 0.9:
 			distribution_wk["8"] = distribution_wk["8"] + 1
 		else:
 			distribution_wk["9"] = distribution_wk["9"] + 1
 
 
-		if shared_subjects_jaccard_similarity < 0.1:
+		if shared_subjects_jaccard_sim < 0.1:
 			distribution_sb["0"] = distribution_sb["0"] + 1
-		elif shared_subjects_jaccard_similarity < 0.2:
+		elif shared_subjects_jaccard_sim < 0.2:
 			distribution_sb["1"] = distribution_sb["1"] + 1
-		elif shared_subjects_jaccard_similarity < 0.3:
+		elif shared_subjects_jaccard_sim < 0.3:
 			distribution_sb["2"] = distribution_sb["2"] + 1
-		elif shared_subjects_jaccard_similarity < 0.4:
+		elif shared_subjects_jaccard_sim < 0.4:
 			distribution_sb["3"] = distribution_sb["3"] + 1
-		elif shared_subjects_jaccard_similarity < 0.5:
+		elif shared_subjects_jaccard_sim < 0.5:
 			distribution_sb["4"] = distribution_sb["4"] + 1
-		elif shared_subjects_jaccard_similarity < 0.6:
+		elif shared_subjects_jaccard_sim < 0.6:
 			distribution_sb["5"] = distribution_sb["5"] + 1
-		elif shared_subjects_jaccard_similarity < 0.7:
+		elif shared_subjects_jaccard_sim < 0.7:
 			distribution_sb["6"] = distribution_sb["6"] + 1
-		elif shared_subjects_jaccard_similarity < 0.8:
+		elif shared_subjects_jaccard_sim < 0.8:
 			distribution_sb["7"] = distribution_sb["7"] + 1
-		elif shared_subjects_jaccard_similarity < 0.9:
+		elif shared_subjects_jaccard_sim < 0.9:
 			distribution_sb["8"] = distribution_sb["8"] + 1
 		else:
 			distribution_sb["9"] = distribution_sb["9"] + 1
@@ -925,7 +938,7 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 
 	# Update the csv file with all similarities
 	with _Open(filenameSims, 'w') as csvFile:
-		fieldnames = ['Text', 'SWikicats Sim', 'SSubjects Sim', 'Spacy Sim', 'Doc2Vec Lee Sim', 'Euclidean Sim', 'FWikicats Sim', 'FSubjects Sim']	# Name columns
+		fieldnames = ['Page', 'Fwikicats', 'Fsubjects', 'Swikicats', 'Ssubjects', 'Spacy', 'Doc2vec-Lee', 'Euclidean']	# Name columns
 		writer = csv.DictWriter(csvFile, fieldnames=fieldnames, delimiter=" ") # Create csv headers
 		writer.writeheader()	# Write the column headers
 
@@ -959,7 +972,7 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 		tuplaList.sort(reverse=True, key = lambda x: x[pos])
 		return tuplaList
 
-	# convert dict_sims_new in list of tuplas (filenameCandidate, simWikicats, simSubjects, simSpacy, simD2V, simEuclidean, simFullWikicats, simFullSubjects) to be able to order them
+	# convert dict_sims_new in list of tuplas (filenameCandidate, simFullWikicats, simFullSubjects, simSharedWikicats, simSharedSubjects, simSpacy, simD2V-Lee, simEuclidean) to be able to order them
 	list_sims_tuplas = [ (k, dict_sims_new[k][0], dict_sims_new[k][1], dict_sims_new[k][2], dict_sims_new[k][3], dict_sims_new[k][4], dict_sims_new[k][5], dict_sims_new[k][6]) for k in dict_sims_new]
 
 
@@ -991,13 +1004,14 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 
 		return
 
-	computeRating(1, "wikicats")
-	computeRating(2, "subjects")
-	computeRating(3, "spacy")
-	computeRating(4, "doc2vec")
-	computeRating(5, "euclidean")
-	computeRating(6, "fullWikicats")
-	computeRating(7, "fullSubjects")
+	computeRating(1, "Fwikicats")
+	computeRating(2, "Fsubjects")
+	computeRating(3, "Swikicats")
+	computeRating(4, "Ssubjects")
+	computeRating(5, "Spacy")
+	computeRating(6, "Doc2vec-Lee")
+	computeRating(7, "Euclidean")
+
 
 
 	# name of the file to save the positions of E0 entities for all sims, used for measure rating quality
@@ -1008,18 +1022,18 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 	# build dict E0entitiesPositions to store the 7-possitions for every entity E0
 	# range over list of tuplas (name_E0entity, position_in_this sim)
 	# it is only to process all names, idx is irrelevant
-	# next(i for (n,i) in ratings["wikicats"]["originalEntities"] if n == name) --> i of first tupla where n == name
-	for name, idx in ratings["fullWikicats"]["originalEntities"]:
+	# next(i for (n,i) in ratings["Fwikicats"]["originalEntities"] if n == name) --> i of first tupla where n == name
+	for name, idx in ratings["Fwikicats"]["originalEntities"]:
 		# dict with an entry for each entity, a 7-tupla with the positions for each sim
-		E0entitiesPositions[name] = (next(i for (n,i) in ratings["wikicats"]["originalEntities"] if n == name), next(i for (n,i) in ratings["subjects"]["originalEntities"] if n == name),\
-									next(i for (n,i) in ratings["spacy"]["originalEntities"] if n == name), next(i for (n,i) in ratings["doc2vec"]["originalEntities"] if n == name),\
-									next(i for (n,i) in ratings["euclidean"]["originalEntities"] if n == name), next(i for (n,i) in ratings["fullWikicats"]["originalEntities"] if n == name), \
-									next(i for (n,i) in ratings["fullSubjects"]["originalEntities"] if n == name))
+		E0entitiesPositions[name] = (next(i for (n,i) in ratings["Fwikicats"]["originalEntities"] if n == name), next(i for (n,i) in ratings["Fsubjects"]["originalEntities"] if n == name),\
+									next(i for (n,i) in ratings["Swikicats"]["originalEntities"] if n == name), next(i for (n,i) in ratings["Ssubjects"]["originalEntities"] if n == name),\
+									next(i for (n,i) in ratings["Spacy"]["originalEntities"] if n == name), next(i for (n,i) in ratings["Doc2vec-Lee"]["originalEntities"] if n == name), \
+									next(i for (n,i) in ratings["Euclidean"]["originalEntities"] if n == name))
 
 
 	# store all positions of E0 entities in a file
 	with _Open(fileE0entitiesPositions, 'w') as csvFile:
-		fieldnames = ['Entity', 'Wikicats', 'Subjects', 'spaCy', 'Doc2vec', 'Euclidean', 'Full wikicats', 'Full subjects']	# Name columns
+		fieldnames = ['Entity', 'Fwikicats', 'Fsubjects', 'Swikicats', 'Ssubjects', 'Spacy', 'Doc2vec-Lee', 'Euclidean']	# Name columns
 		writer = csv.DictWriter(csvFile, fieldnames=fieldnames, delimiter=" ") # Create csv headers
 		writer.writeheader()	# Write the column headers
 
@@ -1097,6 +1111,7 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 	result["P5_elapsedTimeF5"] = elapsedTimeF5.seconds
 	result["P5_lenListDocsCorpus"] = lenListDocsCorpus
 
+	_appendFile(logFilename, "Used sim: "+nameBestRating)
 	return result
 
 
@@ -1164,17 +1179,16 @@ def doPh6trainD2V():
 
 
 def doPh6(lenOriginalText):
-	_Print("Executing Phase 6")
-
-	result = {}  # object to store the results to be returned to the request
-
-	logFilename = "corpus.log"
-	logFile = _Open(logFilename, "a")
-	logFile.write("\n\n")
-	logFile.write(str(datetime.now())+"\n")
-	logFile.close()
 
 	lengthFolder = _CORPUS_FOLDER+str(lenOriginalText)+"/"
+
+	logFilename = lengthFolder+str(lenOriginalText)+".log"
+	_appendFile(logFilename, "\n\n"+str(datetime.now()))
+
+	_Print("Executing Phase 6")
+	_appendFile(logFilename, "Executing Phase 6")
+
+	result = {}  # object to store the results to be returned to the request
 
 	listDocsCorpusFile =  lengthFolder+str(lenOriginalText)+".listDocsCorpus"
 
@@ -1254,6 +1268,7 @@ def doPh6(lenOriginalText):
 	result["P6_elapsedTimeF62"] = elapsedTimeF62.seconds
 	result["P6_modelName"] = modelFilename
 
+	_appendFile(logFilename, "Computed model: "+modelFilename)
 	return result
 
 
@@ -1327,18 +1342,17 @@ def doPh7reviewCorpus():
 
 
 def doPh7(P0_originalText, P6_modelName):
-	_Print("Executing Phase 7")
-
-	result = {}  # object to store the results to be returned to the request
-
-	logFilename = "corpus.log"
-	logFile = _Open(logFilename, "a")
-	logFile.write("\n\n")
-	logFile.write(str(datetime.now())+"\n")
-	logFile.close()
 
 	lenOriginalText = len(P0_originalText)
 	lengthFolder = _CORPUS_FOLDER+str(lenOriginalText)+"/"
+
+	logFilename = lengthFolder+str(lenOriginalText)+".log"
+	_appendFile(logFilename, "\n\n"+str(datetime.now()))
+
+	_Print("Executing Phase 7")
+	_appendFile(logFilename, "Executing Phase 7")
+
+	result = {}  # object to store the results to be returned to the request
 
 	# try to read existing D2Vsims file
 	filenameD2VSims = lengthFolder+str(lenOriginalText)+".d2v.sims.csv"
@@ -1411,6 +1425,7 @@ def doPh7(P0_originalText, P6_modelName):
 
 	result["P7_elapsedTimeF7"] = elapsedTimeF7.seconds
 
+	_appendFile(logFilename, "Model reviewed: "+filenameD2VSims)
 	return result
 
 
