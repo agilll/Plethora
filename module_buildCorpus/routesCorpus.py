@@ -74,9 +74,7 @@ def doPh1 (P0_originalText):
 
 	# to log messages
 	logFilename = lengthFolder+str(lenOriginalText)+".log"
-	_appendFile(logFilename, "\n\n"+str(datetime.now()))
-
-	_appendFile(logFilename, "Executing Phase 1")
+	_appendFile(logFilename, "\n\nExecuting Phase 1")
 
 
 	filename = lengthFolder+str(lenOriginalText)+".txt"   # save the received text with length.txt filename
@@ -175,10 +173,8 @@ def doPh2 (lenOriginalText, P1_selectedWikicats):
 	lengthFolder = _CORPUS_FOLDER+str(lenOriginalText)+"/"
 
 	logFilename = lengthFolder+str(lenOriginalText)+".log"
-	_appendFile(logFilename, "\n\n"+str(datetime.now()))
-
 	_Print("Executing Phase 2")
-	_appendFile(logFilename, "Executing Phase 2")
+	_appendFile(logFilename, "\n\nExecuting Phase 2")
 
 
 
@@ -368,10 +364,8 @@ def doPh3(lenOriginalText):
 	lengthFolder = _CORPUS_FOLDER+str(lenOriginalText)+"/"
 
 	logFilename = lengthFolder+str(lenOriginalText)+".log"
-	_appendFile(logFilename, "\n\n"+str(datetime.now()))
-
 	_Print("Executing Phase 3")
-	_appendFile(logFilename, "Executing Phase 3")
+	_appendFile(logFilename, "\n\nExecuting Phase 3")
 
 	result = {}  # object to store the results to be returned to the request
 
@@ -539,10 +533,8 @@ def doPh4(lenOriginalText):
 	lengthFolder = _CORPUS_FOLDER+str(lenOriginalText)+"/"
 
 	logFilename = lengthFolder+str(lenOriginalText)+".log"
-	_appendFile(logFilename, "\n\n"+str(datetime.now()))
-
 	_Print("Executing Phase 4")
-	_appendFile(logFilename, "Executing Phase 4")
+	_appendFile(logFilename, "\n\nExecuting Phase 4")
 
 	result = {}  # object to store the results to be returned to the request
 
@@ -710,10 +702,8 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 	lengthFolder = _CORPUS_FOLDER+str(lenOriginalText)+"/"
 
 	logFilename = lengthFolder+str(lenOriginalText)+".log"
-	_appendFile(logFilename, "\n\n"+str(datetime.now()))
-
 	_Print("Executing Phase 5")
-	_appendFile(logFilename, "Executing Phase 5")
+	_appendFile(logFilename, "\n\nExecuting Phase 5")
 
 	result = {}  # object to store the results to be returned to the request
 
@@ -829,6 +819,7 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 
 		except Exception as e:   # no sims found in local DB file, they must be computed
 			_Print("Sims not in local DB:", str(e))
+			_appendFile(logFilename, "Sims not in local DB:"+str(e))
 
 			# Measure the full wikicats jaccard similarity
 			_Print("Computing full wikicats jaccard similarity for", fileNameCandidate)
@@ -1183,10 +1174,8 @@ def doPh6(lenOriginalText):
 	lengthFolder = _CORPUS_FOLDER+str(lenOriginalText)+"/"
 
 	logFilename = lengthFolder+str(lenOriginalText)+".log"
-	_appendFile(logFilename, "\n\n"+str(datetime.now()))
-
 	_Print("Executing Phase 6")
-	_appendFile(logFilename, "Executing Phase 6")
+	_appendFile(logFilename, "\n\nExecuting Phase 6")
 
 	result = {}  # object to store the results to be returned to the request
 
@@ -1347,10 +1336,8 @@ def doPh7(P0_originalText, P6_modelName):
 	lengthFolder = _CORPUS_FOLDER+str(lenOriginalText)+"/"
 
 	logFilename = lengthFolder+str(lenOriginalText)+".log"
-	_appendFile(logFilename, "\n\n"+str(datetime.now()))
-
 	_Print("Executing Phase 7")
-	_appendFile(logFilename, "Executing Phase 7")
+	_appendFile(logFilename, "\n\nExecuting Phase 7")
 
 	result = {}  # object to store the results to be returned to the request
 
