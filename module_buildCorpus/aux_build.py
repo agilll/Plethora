@@ -22,10 +22,17 @@ URLs_FOLDER = CORPUS_FOLDER+"URLs/"
 SCRAPPED_PAGES_FOLDER = CORPUS_FOLDER+"SCRAPPED_PAGES/"
 HTML_PAGES_FOLDER = CORPUS_FOLDER+"HTML_PAGES/"
 
-UNRETRIEVED_PAGES_FILENAME = CORPUS_FOLDER+"unretrieved_pages.txt"  # URLs that could not be downloaded
+UNRETRIEVED_PAGES_FILENAME = "unretrieved_pages.txt"  # URLs that could not be downloaded
 DISCARDED_PAGES_FILENAME = CORPUS_FOLDER+"discarded_pages.txt"  # pages discarded
 
 CORPUS_MIN_TXT_SIZE = 300  # this is the minimum size of a file to be added to the corpus
+
+
+# function to order a list of tuplas (0,1,2,3,4,5,6,7...) by the element in the position 'pos'=1,2...
+def SortTuplaList_byPosTupla(tuplaList, pos):
+	tuplaList.sort(reverse=True, key = lambda x: x[pos])
+	return tuplaList
+
 
 # variable and function to control if program must pause after each phase (change to True if argument -s)
 FSTOP = False
