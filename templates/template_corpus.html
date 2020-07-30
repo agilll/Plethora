@@ -173,6 +173,7 @@
 			<div id='contentF5_similarities'></div> <!-- empty div to later show the result -->
 			<p style="margin-bottom:5mm;"></p>
 			<div class="form-group" style="margin-bottom: 0px">
+				Percentage: <input id="inputF5_pctge" type="text" value="10" size="5"></input><br>
 				<input style="background-color: #0066cc; color: white" id="submitF5_trainD2V" type="button" value="Next Ph6: train D2V model with corpus"></input>
 				&nbsp;&nbsp;&nbsp;&nbsp;
 				<span id="spanFromStartF5">  <input id="fromStartF5" name="fromStartF5" type="checkbox"></input>
@@ -573,8 +574,8 @@
 
 				function buildF5contents (result) {
 					results = "<b>Duration of F5: " + result['P5_elapsedTimeF5']  + " seconds</b><br>\n"
-					results += "<b>Used Similarity: " + result['P5_usedSim'] + " </b><br>\n"
-					results += "<b>Number of files: " + result['P5_lenListDocsCorpus'] + " </b><br>\n"
+					results += "<b>Best Similarity: " + result['P5_bestSim'] + " </b><br>\n"
+					results += "<b>Ratings: " + result['P5_ratings'] + " </b><br>\n"
 
 					return results
 				}
@@ -640,13 +641,14 @@
 				// receives result
 				$(submitF5_trainD2V).click(function(event) {
 					originalText =  $(contentF0_corpusText).val()
+					P5_pctgeInitialCorpus =  $(inputF5_pctge).val()
 					var fromStart = $("input[name='fromStartF5']:checked").val() == "on" ? true : false;
 					$("#spinner").modal("show");
 
 					$.ajax({
 						type: "POST",
 						url: "doPh6trainD2V",
-						data: {"P0_originalText": originalText, "fromStart": fromStart},
+						data: {"P0_originalText": originalText, "fromStart": fromStart, "P5_pctgeInitialCorpus": P5_pctgeInitialCorpus},
 						success: function(result) {
 							$("#spinner").modal("hide");
 							console.log("Result of phase 6")

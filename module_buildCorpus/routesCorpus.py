@@ -435,6 +435,7 @@ def doPh3(lenOriginalText):
 		else:  # fetch file if not exists
 			try:  # Retrieves the URL, and get the page title and the scraped page content
 				pageContent = scrap.scrapPage(page)  # scrap page
+
 				P3_numUrlsDownloaded += 1
 				_saveFile(fileNameCandidate, pageContent)  # Save to text file
 				_Print("File "+str(P3_numUrlsDownloaded)+" downloaded and saved it:", fileNameCandidate)
@@ -1049,54 +1050,43 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 	bestRating = listRatingsOrdered[0]
 	nameBestRating = bestRating[0]
 
-	result["P5_bestSim"] = nameBestRating
+	result["P5_bestSim"] = nameBestRating+" ("+str(ratings[nameBestRating]["average"])+")"
 
-	print("\nBest rating = ", nameBestRating)
+	print("\nBest Sim = ", nameBestRating+" ("+str(ratings[nameBestRating]["average"])+")")
 
-	result["P5_usedSim"] = nameBestRating+"("+str(ratings[nameBestRating]["average"])+") --> "
+	result["P5_ratings"] = ""
 
 	for key in ratings:
-		result["P5_usedSim"] = result["P5_usedSim"] + key + "="+str(ratings[key]["average"])
+		result["P5_ratings"] = result["P5_ratings"] + key + "="+str(ratings[key]["average"])
 		if key !=  list(ratings.keys())[-1]:
-			result["P5_usedSim"] = result["P5_usedSim"] + ", "
+			result["P5_ratings"] = result["P5_ratings"] + ", "
 
 
-	# compute docCorpus with the 5% docs with higher wikicat similarity (second element [1] of the tupla)
-	sizeCorpus = int(len(list_sims_tuplas) / 20)   # size of 5%
-	listSimSelected = ratings[nameBestRating]["orderedList"]  # select the list of the best sim
-	docsCorpus = listSimSelected[:sizeCorpus]   # keep only first 5% of selected list
+	# list of sims for best Similarity
+	listSimsBest = ratings[nameBestRating]["orderedList"]  # select the list of the best sim
 
-	# to add full name in corpus list and to keep only selected similarity
-	listDocsCorpusAndSim = list(map(lambda x: (x[0],x[1]), docsCorpus))   # relative name page
-	listDocsCorpus = list(map(lambda x: x[0], listDocsCorpusAndSim))  # relative name page
-	lenListDocsCorpus = len(listDocsCorpus)
 
-	# save corpus filenames and selected similarity
-	filenameCorpus = lengthFolder+str(lenOriginalText)+".ph5-3.corpus.csv"  # file to store documents selected for initial corpus, with its value for selected similarity
+	# file to store sims for best similarity
+	filenameSimsBest = lengthFolder+str(lenOriginalText)+".ph5-3.simsBest.csv"  # file to store sims for best similarity
 
-	with _Open(filenameCorpus, 'w') as csvFile:
+	with _Open(filenameSimsBest, 'w') as csvFile:
 		fieldnames = ['Doc', nameBestRating]	# Name columns
 		writer = csv.DictWriter(csvFile, fieldnames=fieldnames, delimiter=" ") # Create csv headers
 		writer.writeheader()	# Write the column headers
 
 		writer = csv.writer(csvFile, delimiter=' ')
-		for row in listDocsCorpusAndSim:
+		for row in listSimsBest:
 			try:
-				writer.writerow([row[0], row[1]])
+				writer.writerow([row[0], row[1]])   # store (doc, sim)
 			except:
-				print("Error writing csv with corpus", row)
-				_appendFile(logFilename, "Error writing csv with corpus"+str(row))
+				print("Error writing csv with sims for best similarity", row)
+				_appendFile(logFilename, "Error writing csv with sims for best similarity"+str(row))
 
 		csvFile.close()
 
 	printSimsDistribution(lenListWithWKSB, distribution_wk, distribution_sb)
 
-	# store listDocsCorpus
-	listDocsCorpusFile =  lengthFolder+str(lenOriginalText)+".ph5-4.listDocsCorpus"
-	_saveFile(listDocsCorpusFile, '\n'.join(listDocsCorpus))
-
 	result["P5_elapsedTimeF5"] = elapsedTimeF5.seconds
-	result["P5_lenListDocsCorpus"] = lenListDocsCorpus
 
 	_appendFile(logFilename, "Used sim: "+nameBestRating)
 	return result
@@ -1117,6 +1107,8 @@ def doPh6trainD2V():
 
 	fromStart = json.loads(request.values.get("fromStart"))
 	P0_originalText = request.values.get("P0_originalText")
+	P5_pctgeInitialCorpus = int(request.values.get("P5_pctgeInitialCorpus"))
+
 	lenOriginalText = len(P0_originalText)
 	lengthFolder = _CORPUS_FOLDER+str(lenOriginalText)+"/"
 
@@ -1129,7 +1121,7 @@ def doPh6trainD2V():
 		resultPh4 = doPh4(lenOriginalText)
 		resultPh5 = doPh5(P0_originalText, P1_selectedWikicats)
 
-	result = doPh6(lenOriginalText)
+	result = doPh6(lenOriginalText, P5_pctgeInitialCorpus)
 	if "error" in result:
 		return jsonify(result);
 
@@ -1157,15 +1149,15 @@ def doPh6trainD2V():
 		result["P4_lenListWithoutWKSB"] = resultPh4["P4_lenListWithoutWKSB"]
 		result["P4_elapsedTimeF4"] = resultPh4["P4_elapsedTimeF4"]
 
-		result["P5_usedSim"] = resultPh5["P5_usedSim"]
+		result["P5_bestSim"] = resultPh5["P5_bestSim"]
+		result["P5_ratings"] = resultPh5["P5_ratings"]
 		result["P5_elapsedTimeF5"] = resultPh5["P5_elapsedTimeF5"]
-		result["P5_lenListDocsCorpus"] = resultPh5["P5_lenListDocsCorpus"]
 
 	return jsonify(result);
 
 
 
-def doPh6(lenOriginalText):
+def doPh6(lenOriginalText, P5_pctgeInitialCorpus):
 
 	lengthFolder = _CORPUS_FOLDER+str(lenOriginalText)+"/"
 
@@ -1175,22 +1167,37 @@ def doPh6(lenOriginalText):
 
 	result = {}  # object to store the results to be returned to the request
 
-	listDocsCorpusFile =  lengthFolder+str(lenOriginalText)+".ph5-4.listDocsCorpus"
+	listDocs = []
+	listDocsSimsFile =  lengthFolder+str(lenOriginalText)+".ph5-3.simsBest.csv"
 
-	try:  # try to read listDocsCorpus file
-		with _Open(listDocsCorpusFile) as fp:
-			listDocsCorpus = fp.read().splitlines()
+	# try to read existing sims file
+	try:
+		with _Open(listDocsSimsFile, 'r') as csvFile:
+			reader = csv.reader(csvFile, delimiter=' ')
+			next(reader)  # to skip header
+			for row in reader:
+				# row[0]=rDocName, row[1]=sim
+				listDocs.append(row[0])
+
+			csvFile.close()
 	except:
-		result["error"]  = "No file "+listDocsCorpusFile    # no file listDocsCorpusFile
-		return result
+		print("No sims file for best similarity")
 
+	lenListDocs = len(listDocs)
+	sizeCorpus = int(lenListDocs / (100 / P5_pctgeInitialCorpus))
+
+	listDocsCorpus = listDocs[:sizeCorpus]
 	listDocsCorpus = list(map(lambda x: _SCRAPPED_PAGES_FOLDER+x, listDocsCorpus))   # get the absolute names
 
-	lenListDocsCorpus  = len(listDocsCorpus)  # length of full list of candidate files to process
+	# store listDocsCorpus
+	listDocsCorpusFile =  lengthFolder+str(lenOriginalText)+".ph6."+str(P5_pctgeInitialCorpus)+".listDocsCorpus"
+	_saveFile(listDocsCorpusFile, '\n'.join(listDocsCorpus))
 
+
+    # initial corpus ready, do preprocessing
 	startTime = datetime.now()
 
-	_Print("Training with ", str(lenListDocsCorpus), "documents")
+	_Print("Training with ", str(sizeCorpus), "documents")
 
 	try:
 		_Print("Processing S1...")
@@ -1205,7 +1212,7 @@ def doPh6(lenOriginalText):
 
 		_Print("Processing S4...")
 		listDocsW = list(map(lambda x: x+".w", listDocsS))
-		np4 = _processS4List(listDocsW, lengthFolder)  # requires Standord CoreNLP server started
+		np4 = _processS4List(listDocsW, lengthFolder)  # WARNING!! requires Standord CoreNLP server launched
 
 		np = np1+np2+np3+np4
 
@@ -1226,11 +1233,11 @@ def doPh6(lenOriginalText):
 		epochs = 100	# epochs (int, optional) – Number of iterations (epochs) over the corpus
 
 
-		modelFilename = str(lenOriginalText)+ "-t.model"
+		modelFilename = str(lenOriginalText)+ "-t."+str(P5_pctgeInitialCorpus)+".model"
 		globalModelFilename =  _MODELS_FOLDER+modelFilename
 
 		if os.path.exists(globalModelFilename) and np == 0:
-			print("No changes, training not necessary!!")
+			print("No changes, training not necessary for "+modelFilename+"!!")
 		else:
 			listDocsT = list(map(lambda x: lengthFolder+"files_t/"+x[(1+x.rfind("/")):]+".t", listDocsW))
 			# Build a doc2vec model trained with files in list
@@ -1247,7 +1254,7 @@ def doPh6(lenOriginalText):
 		result["error"] = str(e)
 		print("Exception in doPh6:", str(e))
 		_appendFile(logFilename, "Exception in doPh6: "+str(e))
-		return
+		return result
 
 	endTime = datetime.now()
 	elapsedTimeF62 = endTime - startTime
@@ -1316,8 +1323,8 @@ def doPh7reviewCorpus():
 		result["P4_lenListWithoutWKSB"] = resultPh4["P4_lenListWithoutWKSB"]
 		result["P4_elapsedTimeF4"] = resultPh4["P4_elapsedTimeF4"]
 
-		result["P5_lenListDocsCorpus"] = resultPh5["P5_lenListDocsCorpus"]
-		result["P5_usedSim"] = resultPh5["P5_usedSim"]
+		result["P5_bestSim"] = resultPh5["P5_bestSim"]
+		result["P5_ratings"] = resultPh5["P5_ratings"]
 		result["P5_elapsedTimeF5"] = resultPh5["P5_elapsedTimeF5"]
 
 		result["P6_elapsedTimeF61"] = resultPh6["P6_elapsedTimeF61"]
@@ -1339,10 +1346,13 @@ def doPh7(P0_originalText, P6_modelName):
 
 	result = {}  # object to store the results to be returned to the request
 
-	# try to read existing AdHocD2VSims file
-	filenameAdHocD2VSims = lengthFolder+str(lenOriginalText)+".ph7.AdHocD2V.sims.csv"
+	modelFilename = _MODELS_FOLDER+P6_modelName
+
+	# try to read existing AdHocD2VSims file for such model
+	filenameAdHocD2VSims = lengthFolder+str(lenOriginalText)+".ph7.AdHocD2V."+P6_modelName+".sims.csv"
 	simsAdHocD2V = {} # dict to read AdHoc D2V sims stored in local DB (sims computed with the ad hoc trained model)
 
+	# ONLY if model exists and it is previous to this file?
 	try:
 		with _Open(filenameAdHocD2VSims, 'r') as csvFile:
 			reader = csv.reader(csvFile, delimiter=' ')
@@ -1354,7 +1364,7 @@ def doPh7(P0_originalText, P6_modelName):
 	except:
 		print("No ad hoc D2V similarities file")
 
-	modelFilename = _MODELS_FOLDER+P6_modelName
+
 	d2vSimilarity = _Doc2VecSimilarity(modelFilename, P0_originalText)
 
 	listWithWKSBFile =  lengthFolder+str(lenOriginalText)+".ph4.listWithWKSB"
@@ -1385,7 +1395,7 @@ def doPh7(P0_originalText, P6_modelName):
 			candidateTextFD = _Open(candidateFile, "r")
 			candidateText = candidateTextFD.read()
 			doc2vec_trained_cosineSimilarity = d2vSimilarity.doc2VecTextSimilarity(candidate_text=candidateText)
-			simsAdHocD2V[candidateFile] = doc2vec_trained_cosineSimilarity
+			simsAdHocD2V[rCandidateFile] = doc2vec_trained_cosineSimilarity
 
 		print("Ad hoc D2V similarity =", doc2vec_trained_cosineSimilarity)
 
@@ -1451,12 +1461,19 @@ def doPh7(P0_originalText, P6_modelName):
 		if len(positions) == len(listEntityFilesOriginalText):  # all entities of the original text have been found in the list
 			break
 
+	for name, pos in positions:
+		print(name,"=",pos)
+
 	listPositions = [pos for name,pos in positions]   # get a list with all the positions of the entities
-	averagePosition = sum(listPositions) / len(listPositions)  # average position
+
+	if len(listPositions) == 0:
+		averagePosition = -1
+	else:
+		averagePosition = sum(listPositions) / len(listPositions)  # average position
 
 	result["P7_adhocD2Vaverage"] = averagePosition
 
-	_Print("Ad hoc D2V average =", str(averagePosition))
+	_Print("Ad hoc D2V average for "+P6_modelName+" =", str(averagePosition))
 
 	return result
 

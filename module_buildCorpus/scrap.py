@@ -5,9 +5,76 @@ from bs4 import BeautifulSoup
 import glob
 from smart_open import open as _Open
 
+from px_aux import saveFile as _saveFile
+from aux_build import SCRAPPED_PAGES_FOLDER as _SCRAPPED_PAGES_FOLDER, HTML_PAGES_FOLDER as _HTML_PAGES_FOLDER
+
 class scrapFunctions():
-	from px_aux import saveFile as _saveFile
-	from aux_build import CORPUS_FOLDER as _CORPUS_FOLDER, URLs_FOLDER as _URLs_FOLDER, SCRAPPED_PAGES_FOLDER as _SCRAPPED_PAGES_FOLDER, HTML_PAGES_FOLDER as _HTML_PAGES_FOLDER
+
+	# Download HTML pages
+	def downloadPage(self, page):
+		# Make the request
+		try:
+			request = requests.get(page, timeout=10)
+		except Timeout as e:
+			print("*** Request Exception (Timeout): ", page)
+			raise Exception("Timeout")
+		except Exception as e:
+			print("*** Request Exception ("+str(e)+"): " + page)
+			raise Exception("Unknown")
+
+		# Extract HTML from Response object and print
+		try:
+			html = request.text
+		except Exception as e:
+			print("*** HTML Exception ("+str(e)+"): " + page)
+			raise Exception("Unknown")
+
+		return html
+
+
+	# Scrap HTML pages
+	def extractTextFromHTML(self, page):
+
+		try:
+			html = self.downloadPage(page)
+		except Exception as e:
+			print("*** extractTextFromHTML Exception: "+str(e))
+			raise Exception(str(e))
+
+		cleanedText = ""
+
+		# Create a BeautifulSoup object from the HTML
+		try:
+			soup = BeautifulSoup(html, "html5lib")
+		except Exception as e:
+			print("*** extractTextFromHTML Exception: "+str(e))
+			raise Exception(str(e))
+
+
+		# Scrap plain text from paragraphs
+		try:
+			# Extract all paragraphs
+			for p in soup.find_all("p"):
+				# Clean paragraphs
+				plainParagraph = p.get_text()
+
+				# Remove references from text
+				plainParagraph = re.sub("([\[]).*?([\]])", "", plainParagraph)
+				# print(plainParagraph)
+
+				# Append cleaned paragraph to cleanedText
+				# Separate paragraphs by break lines
+				cleanedText += plainParagraph + "\n"
+
+		except Exception as e:
+			print("*** extractTextFromHTML (extracting p): "+str(e))
+			raise Exception(str(e))
+
+		return cleanedText
+
+
+
+
 
 	# Scrap HTML pages
 	def scrapPage(self, page):
