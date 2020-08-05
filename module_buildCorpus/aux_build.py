@@ -3,6 +3,7 @@ from nltk.tokenize import RegexpTokenizer
 import nltk
 import re
 import os
+import os.path
 
 # folders and filenames involved in corpus construction
 
@@ -26,6 +27,15 @@ UNRETRIEVED_PAGES_FILENAME = "unretrieved_pages.txt"  # URLs that could not be d
 DISCARDED_PAGES_FILENAME = CORPUS_FOLDER+"discarded_pages.txt"  # pages discarded
 
 CORPUS_MIN_TXT_SIZE = 300  # this is the minimum size of a file to be added to the corpus
+
+
+# function to check if file f1 has a modification date more recent than file f2
+def moreRecent (f1, f2):
+	s1 = os.path.getmtime(f1)
+	s2 = os.path.getmtime(f2)
+	if s1 > s2:
+		return True
+	return False
 
 
 # function to order a list of tuplas (0,1,2,3,4,5,6,7...) by the element in the position 'pos'=1,2...

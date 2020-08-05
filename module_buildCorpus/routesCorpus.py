@@ -15,7 +15,7 @@ from px_aux import saveFile as _saveFile, appendFile as _appendFile, URL_DB as _
 from aux_build import hasFieldPT as _hasFieldPT, Print as _Print, SortTuplaList_byPosTupla as _SortTuplaList_byPosTupla
 from aux_build import CORPUS_FOLDER as _CORPUS_FOLDER, URLs_FOLDER as _URLs_FOLDER,  SCRAPPED_PAGES_FOLDER as _SCRAPPED_PAGES_FOLDER
 from aux_build import MODELS_FOLDER as _MODELS_FOLDER, LEE_D2V_MODEL as _LEE_D2V_MODEL
-from aux_build import getWikicatComponents as _getWikicatComponents
+from aux_build import getWikicatComponents as _getWikicatComponents, moreRecent as _moreRecent
 from aux_build import filterSimpleWikicats as _filterSimpleWikicats, filterSimpleSubjects as _filterSimpleSubjects
 from aux_build import CORPUS_MIN_TXT_SIZE as _CORPUS_MIN_TXT_SIZE
 from aux_build import UNRETRIEVED_PAGES_FILENAME as _UNRETRIEVED_PAGES_FILENAME, DISCARDED_PAGES_FILENAME as _DISCARDED_PAGES_FILENAME
@@ -76,9 +76,21 @@ def doPh1 (P0_originalText):
 	logFilename = lengthFolder+str(lenOriginalText)+".log"
 	_appendFile(logFilename, "\n\nExecuting Phase 1")
 
+	# file to store original text
+	filename_txt = lengthFolder+str(lenOriginalText)+".ph0.txt"   # save the received text with length.ph0.txt filename
 
-	filename = lengthFolder+str(lenOriginalText)+".ph0.txt"   # save the received text with length.ph0.txt filename
-	_saveFile(filename, P0_originalText)
+	# check if file for original text already exists and has equal contents
+	if not os.path.exists(filename_txt):
+		_Print("Saving original text")
+		_saveFile(filename_txt, P0_originalText)  # if not exists, save it
+	else:
+		with _Open(filename_txt) as fp:  # if already exists, save oinly if it has different contents
+			text = fp.read()
+			if text != P0_originalText:
+				_Print("Saving original text")
+				_saveFile(filename_txt, P0_originalText)
+			else:
+				_Print("No need to save original text")
 
 	filename_wk = lengthFolder+str(lenOriginalText)+".ph1.wk"   # filename for wikicats (length.ph1.wk)
 	filename_sb = lengthFolder+str(lenOriginalText)+".ph1.sb"   # filename for subjects (length.ph1.sb)
@@ -86,10 +98,16 @@ def doPh1 (P0_originalText):
 
 	result = {}
 
-	try:  # open wikicats file if exists
-		with _Open(filename_wk) as fp:
-			listWikicats = fp.read().splitlines()
-	except:  # if wikicats file does not exist yet, compute wikicats-subjects-entities files
+
+	try:  # open wikicats file if exists and it is newer than original text file
+		if os.path.exists(filename_wk) and _moreRecent(filename_wk, filename_txt):
+			with _Open(filename_wk) as fp:  # wikicats file exists and is newer than text file
+				_Print("Reading wikicats from local DB")
+				listWikicats = fp.read().splitlines()
+		else: # wikicats file does not exists o is nolder than text file
+			raise Exception("New text")
+	except:  # if wikicats file does not exist yet, or text is new, compute wikicats-subjects-entities files
+		_Print("Gathering wikicats from Internet")
 		data = _getCategoriesInText(P0_originalText)  # function getCategoriesInText from px_DB_Manager.py
 
 		if ("error" in data):   # return error if could not fetch wikicats
@@ -111,7 +129,8 @@ def doPh1 (P0_originalText):
 		wlc = _getWikicatComponents(w)   # function getWikicatComponets from aux_build.py
 		result[w] = {"components":wlc}  # one entry per wikicat, with a dict with only one key "components"
 
-	filename_selected_wk = lengthFolder+str(lenOriginalText)+".ph2-1.selected.wk"   # previously selected wikicats file for this text
+	# try to read file with previously selected wikicats for this text
+	filename_selected_wk = lengthFolder+str(lenOriginalText)+".ph2-1.selected.wk"
 
 	try:  # try to open previously selected wikicats file if exists
 		with _Open(filename_selected_wk) as fp:
@@ -130,7 +149,7 @@ def doPh1 (P0_originalText):
 
 
 
-# QUERY (/doPh2getUrlsCandidateFiles)  to attend the query to find out URLs of candidate files
+# QUERY (/doPh2getUrlsCandidateFiles)  to attend the query to discover URLs of candidate files
 # receives:
 # * the original text
 # * the list of selected wikicats
@@ -145,7 +164,7 @@ def doPh2getUrlsCandidateFiles():
 	# in case execution from start, Phase 1 must be executed first
 	if fromStart:
 		resultPh1 = doPh1(P0_originalText)
-		P1_selectedWikicats = resultPh1["P1_wikicats"]	# user does not select wikicats, we asume all of them are selected
+		P1_selectedWikicats = resultPh1["P1_wikicats"]	# user could not select wikicats, we asume all of them are selected
 	else:
 		P1_selectedWikicats = json.loads(request.values.get("P1_selectedWikicats"))   # get parameter with selected wikicats by user
 
@@ -188,7 +207,7 @@ def doPh2 (lenOriginalText, P1_selectedWikicats):
 	_saveFile(lengthFolder+str(lenOriginalText)+".ph2-1.selected.wk", '\n'.join(P1_selectedWikicats))
 
 	# create the folder to store two files per wikicat, with the URLs linked to such wikicat coming from DB and WK
-	# it must be done before calling the getUrlsLinked2Wikicats function, that it stores there files if fetched
+	# it must be done before calling the getUrlsLinked2Wikicats function, that it stores there the fetched files (if any)
 
 	if not os.path.exists(_URLs_FOLDER):
 		os.makedirs(_URLs_FOLDER)
@@ -197,7 +216,7 @@ def doPh2 (lenOriginalText, P1_selectedWikicats):
 	print("\n********** Starting DB and WK queries...", "\n")
 
 	# now get the URLs associated to any of those wikicats (this function is below, at the end of this file)
-	# it reads from local DB (URLs) if exist, otherwise it connects to Internet to fetch and store them in local DB
+	# it reads from local DB (URLs) if files exist, otherwise it connects to Internet to fetch and store them in local DB
 
 	urlsObjects = getUrlsLinked2Wikicats(P1_selectedWikicats, logFilename)
 
@@ -233,12 +252,27 @@ def doPh2 (lenOriginalText, P1_selectedWikicats):
 		result[wikicat] = {"db": len(dbUrls), "wk": len(wkUrls)}  # add results for this wikicat to result
 
 	listWithoutDuplicates = list(set(fullList))  # remove duplicated URLs (case sensitive)
-	print("")
+
 	#listWithoutDuplicates = removeDup(listWithoutDuplicates)  # remove elements that are duplicated if case-insensitive check
 
-	# store listWithoutDuplicates in local DB to be used in the next phases
+	# store listWithoutDuplicates in local DB to be used in the next phases (only if not exists or it is different)
 	listWithoutDuplicatesFile =  lengthFolder+str(lenOriginalText)+".ph2-2.listWithoutDuplicates"   # name of the file with listWithoutDuplicates
-	_saveFile(listWithoutDuplicatesFile, '\n'.join(listWithoutDuplicates))
+	try:
+		if not os.path.exists(listWithoutDuplicatesFile):
+			raise Exception(listWithoutDuplicatesFile+" does not exist")
+		else:
+			with _Open(listWithoutDuplicatesFile) as fp:
+				_Print("Reading existing listWithoutDuplicates file")
+				listWithoutDuplicatesStored = fp.read().splitlines()
+
+			if set(listWithoutDuplicatesStored) != set(listWithoutDuplicates):
+				_Print("listWithoutDuplicates file has different contents")
+				raise Exception(listWithoutDuplicatesFile+" has different contents")
+			else:
+				_Print("\nNo need to save listWithoutDuplicates file (same contents)")
+	except:
+		_Print("Saving listWithoutDuplicates file")
+		_saveFile(listWithoutDuplicatesFile, '\n'.join(listWithoutDuplicates))
 
 	lenListWithoutDuplicates  = len(listWithoutDuplicates)  # length of full list to process
 	print("\n\nSummary of URLs numbers: DB=", numUrlsDB, ", WK= ", numUrlsWK, ", total without duplicates=", lenListWithoutDuplicates)
@@ -370,110 +404,133 @@ def doPh3(lenOriginalText):
 	result = {}  # object to store the results to be returned to the request
 
 	listWithoutDuplicatesFile =  lengthFolder+str(lenOriginalText)+".ph2-2.listWithoutDuplicates"  # name of the file with listWithoutDuplicates saved in previous phase
-
-	try:  # try to read listWithoutDuplicates file
-		with _Open(listWithoutDuplicatesFile) as fp:
-			listWithoutDuplicates = fp.read().splitlines()
-	except:
-		result["error"]  = "No file "+listWithoutDuplicatesFile    # no file listWithoutDuplicatesFile
-		return result
-
-	lenListWithoutDuplicates  = len(listWithoutDuplicates)  # length of full list to process
-
-	#  We have the set of URLs available in listWithoutDuplicates
-	#  Let's start the analysis of their contents
-
-	print("\n", "********** Downloading and cleaning", lenListWithoutDuplicates, "candidate texts...", "\n")
-
-	if not os.path.exists(_SCRAPPED_PAGES_FOLDER):  # create the folder to store scrapped pages and wikicat files for them
-	 	os.makedirs(_SCRAPPED_PAGES_FOLDER)
-
-	scrap = _scrapFunctions()   # Create a scrapFunctions object to clean pages
-	unretrieved_pages_list = []  # a list for unsuccessful pages retrieval
-
-	P3_numUrlsDownloaded = 0  # number of urls downloaded from Internet IN THIS ITERATION
+	listEnoughContentFile =  lengthFolder+str(lenOriginalText)+".ph3-1.listEnoughContent"  # name of the file to store listEnoughContent
+	listNotEnoughContentFile =  lengthFolder+str(lenOriginalText)+".ph3-2.listNotEnoughContent"  # name of the file to store listNotEnoughContent
 
 	listEnoughContent = [] # list of pages with sufficient content to proceed  ( > _CORPUS_MIN_TXT_SIZE bytes -currently 300-, a constant from aux_build.py)
 	listNotEnoughContent = [] # list of pages with insufficient content to proceed
+	result["P3_elapsedTimeF3"] = 0
+	result["P3_numUrlsDownloaded"] = 0
 
-	# download not locally stored pages, scrap them, and save them
-	startTime = datetime.now()
+	if os.path.exists(listWithoutDuplicatesFile) and os.path.exists(listEnoughContentFile)  and _moreRecent(listEnoughContentFile, listWithoutDuplicatesFile):
+		print("\n", "********** No modifications: no need to download candidate texts...", "\n")
 
-	for idx, page in enumerate(listWithoutDuplicates, start=1):
-		if (idx % 5000) == 0:
-			print(".", end=' ', flush=True)
+		try:  # try to read listEnoughContent file
+			with _Open(listEnoughContentFile) as fp:
+				listEnoughContent = fp.read().splitlines()
+		except:
+			result["error"]  = "No file "+listEnoughContentFile    # no file listEnoughContentFile
+			return result
 
-		_Print("("+str(idx)+" of "+str(lenListWithoutDuplicates)+") -- ", page)
+		try:  # try to read listNotEnoughContent file
+			with _Open(listNotEnoughContentFile) as fp:
+				listNotEnoughContent = fp.read().splitlines()
+		except:
+			result["error"]  = "No file "+listNotEnoughContentFile    # no file listNotEnoughContentFile
+			return result
 
-		# scrapped pages will be stored classified by domain, in specific folders with such domain names
-		# currently, only "en.wikipedia.org" domain is used
+	else:
+		try:  # try to read listWithoutDuplicates file
+			with _Open(listWithoutDuplicatesFile) as fp:
+				listWithoutDuplicates = fp.read().splitlines()
+		except:
+			result["error"]  = "No file "+listWithoutDuplicatesFile    # no file listWithoutDuplicatesFile
+			return result
 
-		pageWithoutHTTP = page[2+page.find("//"):]		# get the domain of this page
-		domainFolder = pageWithoutHTTP[:pageWithoutHTTP.find("/")]
+		lenListWithoutDuplicates  = len(listWithoutDuplicates)  # length of full list to process
 
-		if (not os.path.exists(_SCRAPPED_PAGES_FOLDER+domainFolder)):	# create this domain folder if not exists
-			os.makedirs(_SCRAPPED_PAGES_FOLDER+domainFolder)
+		#  We have the set of URLs available in listWithoutDuplicates
+		#  Let's start the analysis of their contents
 
-		# the pagename will be the name of the file, with the following change
-		# dir1/dir2/page --> dir1..dir2..page.txt
+		print("\n", "********** Downloading and cleaning", lenListWithoutDuplicates, "candidate texts...", "\n")
 
-		onlyPage = pageWithoutHTTP[1+pageWithoutHTTP.find("/"):]
-		onlyPageChanged =  onlyPage.replace("/", "..")
+		if not os.path.exists(_SCRAPPED_PAGES_FOLDER):  # create the folder to store scrapped pages and wikicat files for them
+		 	os.makedirs(_SCRAPPED_PAGES_FOLDER)
 
-		# Add file extension '.txt' to page name for saving it   !!!!!!!!!!
-		# pageFinalName = page[1+page.rindex("/"):]
-		rFileNameCandidate = domainFolder+"/"+onlyPageChanged+".txt"
-		fileNameCandidate = _SCRAPPED_PAGES_FOLDER+rFileNameCandidate
+		scrap = _scrapFunctions()   # Create a scrapFunctions object to clean pages
+		unretrieved_pages_list = []  # a list for unsuccessful pages retrieval
 
-		if (os.path.exists(fileNameCandidate)):  # may be exists but corresponds to another urlname
-			_Print("File already available in local DB:", fileNameCandidate)
-			fsize = os.path.getsize(fileNameCandidate)
-			if fsize < _CORPUS_MIN_TXT_SIZE:
-				listNotEnoughContent.append(rFileNameCandidate)
-			else:
-				listEnoughContent.append(rFileNameCandidate)
-		else:  # fetch file if not exists
-			try:  # Retrieves the URL, and get the page title and the scraped page content
-				pageContent = scrap.scrapPage(page)  # scrap page
+		# download not locally stored pages, scrap them, and save them
+		startTime = datetime.now()
 
-				P3_numUrlsDownloaded += 1
-				_saveFile(fileNameCandidate, pageContent)  # Save to text file
-				_Print("File "+str(P3_numUrlsDownloaded)+" downloaded and saved it:", fileNameCandidate)
+		P3_numUrlsDownloaded = 0  # number of urls downloaded from Internet IN THIS ITERATION
 
-				if (len(pageContent) < _CORPUS_MIN_TXT_SIZE):
+		for idx, page in enumerate(listWithoutDuplicates, start=1):
+			if (idx % 5000) == 0:
+				print(".", end=' ', flush=True)
+
+			_Print("("+str(idx)+" of "+str(lenListWithoutDuplicates)+") -- ", page)
+
+			# scrapped pages will be stored classified by domain, in specific folders with such domain names
+			# currently, only "en.wikipedia.org" domain is used
+
+			pageWithoutHTTP = page[2+page.find("//"):]		# get the domain of this page
+			domainFolder = pageWithoutHTTP[:pageWithoutHTTP.find("/")]
+
+			if (not os.path.exists(_SCRAPPED_PAGES_FOLDER+domainFolder)):	# create this domain folder if not exists
+				os.makedirs(_SCRAPPED_PAGES_FOLDER+domainFolder)
+
+			# the pagename will be the name of the file, with the following change
+			# dir1/dir2/page --> dir1..dir2..page.txt
+
+			onlyPage = pageWithoutHTTP[1+pageWithoutHTTP.find("/"):]
+			onlyPageChanged =  onlyPage.replace("/", "..")
+
+			# Add file extension '.txt' to page name for saving it   !!!!!!!!!!
+			# pageFinalName = page[1+page.rindex("/"):]
+			rFileNameCandidate = domainFolder+"/"+onlyPageChanged+".txt"    # relative filename
+			fileNameCandidate = _SCRAPPED_PAGES_FOLDER+rFileNameCandidate   # absolute filename
+
+			if (os.path.exists(fileNameCandidate)):  # may be it exists but corresponds to another urlname, but it is not possible to differentiate in Mac OS
+				_Print("File already available in local DB:", fileNameCandidate)
+				fsize = os.path.getsize(fileNameCandidate)
+				if fsize < _CORPUS_MIN_TXT_SIZE:
 					listNotEnoughContent.append(rFileNameCandidate)
 				else:
 					listEnoughContent.append(rFileNameCandidate)
-			except Exception as e:
-				_appendFile(logFilename, "Page "+page+" could not be retrieved: "+repr(e))
-				unretrieved_pages_list.append(page)
+			else:  # fetch file if not exists
+				try:  # Retrieves the URL, and get the page title and the scraped page content
+					pageContent = scrap.scrapPage(page)  # scrap page
 
-	endTime = datetime.now()
-	elapsedTimeF3 = endTime - startTime
+					P3_numUrlsDownloaded += 1
+					_saveFile(fileNameCandidate, pageContent)  # Save to text file
+					_Print("File "+str(P3_numUrlsDownloaded)+" downloaded and saved it:", fileNameCandidate)
 
-	# Save the unretrieved_pages_list to a file
-	print("\n",str(len(unretrieved_pages_list)), "unretrieved pages")
-	unretrievedPagesFile = lengthFolder+str(lenOriginalText)+".ph3."+_UNRETRIEVED_PAGES_FILENAME
-	_saveFile(unretrievedPagesFile, '\n'.join(unretrieved_pages_list))
+					if (len(pageContent) < _CORPUS_MIN_TXT_SIZE):
+						listNotEnoughContent.append(rFileNameCandidate)
+					else:
+						listEnoughContent.append(rFileNameCandidate)
+				except Exception as e:
+					_appendFile(logFilename, "Page "+page+" could not be retrieved: "+repr(e))
+					unretrieved_pages_list.append(page)
+
+		endTime = datetime.now()
+		elapsedTimeF3 = endTime - startTime
+		result["P3_elapsedTimeF3"] = elapsedTimeF3.seconds
+		result["P3_numUrlsDownloaded"] = P3_numUrlsDownloaded
+
+		print("ALL PAGES AVAILABLE AND CLEANED.")
+		print("New pages downloaded in this iteration:", str(P3_numUrlsDownloaded))
+		print("Duration F3 (downloading and cleaning):", str(elapsedTimeF3.seconds))
+
+		# Save the unretrieved_pages_list to a file
+		print("\n", str(len(unretrieved_pages_list)), "unretrieved pages")
+		unretrievedPagesFile = lengthFolder+str(lenOriginalText)+".ph3."+_UNRETRIEVED_PAGES_FILENAME
+		_saveFile(unretrievedPagesFile, '\n'.join(unretrieved_pages_list))
+
+		# store listEnoughContent and listNotEnoughContent in local DB
+		_saveFile(listEnoughContentFile, '\n'.join(listEnoughContent))
+		_saveFile(listNotEnoughContentFile, '\n'.join(listNotEnoughContent))
 
 	lenListEnoughContent = len(listEnoughContent)
 
 	_appendFile(logFilename, "Number of available pages with enough content: "+str(lenListEnoughContent))
 
-	print("ALL PAGES AVAILABLE AND CLEANED.")
-	print("New pages downloaded in this iteration:", str(P3_numUrlsDownloaded))
 	print("Number of texts with enough content:", str(lenListEnoughContent))
 	print("Number of texts without enough content:", str(len(listNotEnoughContent)))
-	print("Duration F3 (downloading and cleaning):", str(elapsedTimeF3.seconds))
 
-	# store listEnoughContent in local DB
-	listEnoughContentFile =  lengthFolder+str(lenOriginalText)+".ph3.listEnoughContent"  # name of the file to store listEnoughContent
-	_saveFile(listEnoughContentFile, '\n'.join(listEnoughContent))
-
-	result["P3_numUrlsDownloaded"] = P3_numUrlsDownloaded
 	result["P3_lenListEnoughContent"] = lenListEnoughContent
 	result["P3_lenListNotEnoughContent"] = len(listNotEnoughContent)
-	result["P3_elapsedTimeF3"] = elapsedTimeF3.seconds
 
 	_appendFile(logFilename, "Available pages with content: "+str(lenListEnoughContent))
 	return result
@@ -541,98 +598,110 @@ def doPh4(lenOriginalText):
 
 	result = {}  # object to store the results to be returned to the request
 
-	listEnoughContentFile =  lengthFolder+str(lenOriginalText)+".ph3.listEnoughContent"  # name of the file with listEnoughContent stored in previous phase
-
-	try:  # try to read listEnoughContent file
-		with _Open(listEnoughContentFile) as fp:
-			listEnoughContent = fp.read().splitlines()
-	except:
-		result["error"]  = "No file "+listEnoughContentFile    # no file listEnoughContentFile
-		return result
-
-	lenListEnoughContent  = len(listEnoughContent)  # length of full list to process
-
-	print("\n", "********** Identifying wikicats and subjects for", lenListEnoughContent, "candidate texts with DBpedia SpotLight...","\n")
-	P4_numUrlsProcessed = 0
+	listEnoughContentFile =  lengthFolder+str(lenOriginalText)+".ph3-1.listEnoughContent"  # name of the file with listEnoughContent stored in previous phase
+	listWithWKSBFile =  lengthFolder+str(lenOriginalText)+".ph4.listWithWKSB"   # name of the file to store listWithWKSB
 
 	listWithWKSB = [] # list of docs with wikicats or subjects
 	listWithoutWKSB = [] # list of docs with no wikicats and no subjects
-	startTime = datetime.now()
+	result["P4_elapsedTimeF4"] = 0
+	P4_numUrlsProcessed = 0
 
-	for idx, rFileNameCandidate in enumerate(listEnoughContent, start=1):
-		if (idx % 5000) == 0:
-			print(".", end=' ', flush=True)
-		_Print("\n("+str(idx)+" of "+str(lenListEnoughContent)+") -- ", rFileNameCandidate)
+	if os.path.exists(listEnoughContentFile) and os.path.exists(listWithWKSBFile)  and _moreRecent(listWithWKSBFile, listEnoughContentFile):
+		try:  # try to read listWithWKSB file
+			with _Open(listWithWKSBFile) as fp:
+				listWithWKSB = fp.read().splitlines()
+		except:
+			result["error"]  = "No file "+listWithWKSBFile    # no file listWithWKSBFile
+			return result
+	else:
 
-		# Build filenames for this doc
-		fileNameCandidate = _SCRAPPED_PAGES_FOLDER+rFileNameCandidate
-		fileNameCandidateBase = fileNameCandidate[:fileNameCandidate.rfind(".")]
-		fileNameCandidateWikicats = fileNameCandidateBase+".wk"    # wikicats file for this doc
-		fileNameCandidateSubjects = fileNameCandidateBase+".sb"    # subjects file for this doc
+		try:  # try to read listEnoughContent file
+			with _Open(listEnoughContentFile) as fp:
+				listEnoughContent = fp.read().splitlines()
+		except:
+			result["error"]  = "No file "+listEnoughContentFile    # no file listEnoughContentFile
+			return result
 
-		# if both files (wikicats and subjects) exist, use them from local store
-		if os.path.exists(fileNameCandidateWikicats) and os.path.exists(fileNameCandidateSubjects):
-			_Print("Files WK and SB already available in local DB for", fileNameCandidate)
-			fwsize = os.path.getsize(fileNameCandidateWikicats)
-			fssize = os.path.getsize(fileNameCandidateSubjects)
-			# if these two files are empty (no wikicats and no subjects), this doc will not be used
-			if (fwsize == 0) and (fssize == 0):
-				listWithWKSB.append(rFileNameCandidate)  # we will compute both similarities even though there is no info (no wikicats and no subjects)
-			else:
-				listWithWKSB.append(rFileNameCandidate)
-		else: # if one file does not exists, fetch from Internet wikicats and subjects for the candidate text
-			try:  # open and read text of candidate file
-				candidateTextFile = _Open(fileNameCandidate, "r")
-				candidate_text = candidateTextFile.read()
-				_Print("Reading candidate text file:", fileNameCandidate)
-			except:  # file that inexplicably could not be read from local store, it will not be used
-				_appendFile(logFilename, "ERROR doPh4identifyWikicats(): Unavailable candidate file, not in the store, but it should be: "+fileNameCandidate)
-				listWithoutWKSB.append(rFileNameCandidate)
-				continue
+		lenListEnoughContent  = len(listEnoughContent)  # length of full list to process
 
-			_Print("Computing wikicats and subjects for:", rFileNameCandidate)
-			candidate_text_categories = _getCategoriesInText(candidate_text)  # function _getCategoriesInText from px_DB_Manager
+		print("\n", "********** Identifying wikicats and subjects for", lenListEnoughContent, "candidate texts with DBpedia SpotLight...","\n")
 
-			if ("error" in candidate_text_categories):  # error while fetching info, the page will not be used
-				_appendFile(logFilename, "ERROR doPh4identifyWikicats(): Problem in _getCategoriesInText(candidate_text): "+candidate_text_categories["error"])
-				listWithoutWKSB.append(rFileNameCandidate)
-				continue
+		startTime = datetime.now()
 
-			_Print("Wikicats and subjects downloaded for", fileNameCandidate)
-			candidate_text_wikicats = list(filter(_filterSimpleWikicats, candidate_text_categories["wikicats"])) # remove simple wikicats with function from aux_build.py
-			candidate_text_subjects = list(filter(_filterSimpleSubjects, candidate_text_categories["subjects"])) # remove simple subjects with function from aux_build.py
+		for idx, rFileNameCandidate in enumerate(listEnoughContent, start=1):
+			if (idx % 5000) == 0:
+				print(".", end=' ', flush=True)
+			_Print("\n("+str(idx)+" of "+str(lenListEnoughContent)+") -- ", rFileNameCandidate)
 
-			_saveFile(fileNameCandidateWikicats, '\n'.join(candidate_text_wikicats))  # save file with candidate text wikicats, one per line
-			_saveFile(fileNameCandidateSubjects, '\n'.join(candidate_text_subjects))  # save file with candidate text subjects, one per line
-			P4_numUrlsProcessed += 1
+			# Build filenames for this doc
+			fileNameCandidate = _SCRAPPED_PAGES_FOLDER+rFileNameCandidate
+			fileNameCandidateBase = fileNameCandidate[:fileNameCandidate.rfind(".")]
+			fileNameCandidateWikicats = fileNameCandidateBase+".wk"    # wikicats file for this doc
+			fileNameCandidateSubjects = fileNameCandidateBase+".sb"    # subjects file for this doc
 
-			# if no wikicats and no subjects, the page will not be used
-			if (len(candidate_text_wikicats) == 0) and (len(candidate_text_subjects) == 0):
-				listWithWKSB.append(rFileNameCandidate)  # we will compute both similarities even though there is no info (no wikicats and no subjects)
-			else:
-				listWithWKSB.append(rFileNameCandidate)
+			# if both files (wikicats and subjects) exist, use them from local store
+			if os.path.exists(fileNameCandidateWikicats) and os.path.exists(fileNameCandidateSubjects):
+				_Print("Files WK and SB already available in local DB for", fileNameCandidate)
+				fwsize = os.path.getsize(fileNameCandidateWikicats)
+				fssize = os.path.getsize(fileNameCandidateSubjects)
+				# if these two files are empty (no wikicats and no subjects), this doc will not be used
+				if (fwsize == 0) and (fssize == 0):
+					listWithWKSB.append(rFileNameCandidate)  # we will compute both similarities even though there is no info (no wikicats and no subjects)
+				else:
+					listWithWKSB.append(rFileNameCandidate)
+			else: # if one file does not exists, fetch from Internet wikicats and subjects for the candidate text
+				try:  # open and read text of candidate file
+					candidateTextFile = _Open(fileNameCandidate, "r")
+					candidate_text = candidateTextFile.read()
+					_Print("Reading candidate text file:", fileNameCandidate)
+				except:  # file that inexplicably could not be read from local store, it will not be used
+					_appendFile(logFilename, "ERROR doPh4identifyWikicats(): Unavailable candidate file, not in the store, but it should be: "+fileNameCandidate)
+					listWithoutWKSB.append(rFileNameCandidate)
+					continue
 
-	endTime = datetime.now()
-	elapsedTimeF4 = endTime - startTime
+				_Print("Computing wikicats and subjects for:", rFileNameCandidate)
+				candidate_text_categories = _getCategoriesInText(candidate_text)  # function _getCategoriesInText from px_DB_Manager
+
+				if ("error" in candidate_text_categories):  # error while fetching info, the page will not be used
+					_appendFile(logFilename, "ERROR doPh4identifyWikicats(): Problem in _getCategoriesInText(candidate_text): "+candidate_text_categories["error"])
+					listWithoutWKSB.append(rFileNameCandidate)
+					continue
+
+				_Print("Wikicats and subjects downloaded for", fileNameCandidate)
+				candidate_text_wikicats = list(filter(_filterSimpleWikicats, candidate_text_categories["wikicats"])) # remove simple wikicats with function from aux_build.py
+				candidate_text_subjects = list(filter(_filterSimpleSubjects, candidate_text_categories["subjects"])) # remove simple subjects with function from aux_build.py
+
+				_saveFile(fileNameCandidateWikicats, '\n'.join(candidate_text_wikicats))  # save file with candidate text wikicats, one per line
+				_saveFile(fileNameCandidateSubjects, '\n'.join(candidate_text_subjects))  # save file with candidate text subjects, one per line
+				P4_numUrlsProcessed += 1
+
+				# if no wikicats and no subjects, the page will not be used
+				if (len(candidate_text_wikicats) == 0) and (len(candidate_text_subjects) == 0):
+					listWithWKSB.append(rFileNameCandidate)  # we will compute both similarities even though there is no info (no wikicats and no subjects)
+				else:
+					listWithWKSB.append(rFileNameCandidate)
+
+		print("\n","ALL WIKICATs AND SUBJECTs COMPUTED")
+		print("New items processed in this iteration:", str(P4_numUrlsProcessed))
+
+		# store listWithWKSB
+		_saveFile(listWithWKSBFile, '\n'.join(listWithWKSB))
+
+		endTime = datetime.now()
+		elapsedTimeF4 = endTime - startTime
+		result["P4_elapsedTimeF4"] = elapsedTimeF4.seconds
 
 	lenListWithWKSB = len(listWithWKSB)
 
 	_appendFile(logFilename, "Number of available pages with wikicats or subjects: "+str(lenListWithWKSB))
 
-	print("\n","ALL WIKICATs AND SUBJECTs COMPUTED")
-	print("New items processed in this iteration:", str(P4_numUrlsProcessed))
 	print("Number of docs with wikicats or subjects:", str(lenListWithWKSB))
 	print("Number of docs without wikicats nor subjects:", str(len(listWithoutWKSB)))
-	print("Duration F4 (identifying wikicats):", str(elapsedTimeF4.seconds))
-
-	# store listWithWKSB
-	listWithWKSBFile =  lengthFolder+str(lenOriginalText)+".ph4.listWithWKSB"   # name of the file to store listWithWKSB
-	_saveFile(listWithWKSBFile, '\n'.join(listWithWKSB))
+	print("Duration F4 (identifying wikicats):", str(result["P4_elapsedTimeF4"]))
 
 	result["P4_numUrlsProcessed"] = P4_numUrlsProcessed
 	result["P4_lenListWithWKSB"] = lenListWithWKSB
 	result["P4_lenListWithoutWKSB"] = len(listWithoutWKSB)
-	result["P4_elapsedTimeF4"] = elapsedTimeF4.seconds
 
 	_appendFile(logFilename, "Available pages with wikicats: "+str(lenListWithWKSB))
 	return result
@@ -1107,7 +1176,7 @@ def doPh6trainD2V():
 
 	fromStart = json.loads(request.values.get("fromStart"))
 	P0_originalText = request.values.get("P0_originalText")
-	P5_pctgeInitialCorpus = int(request.values.get("P5_pctgeInitialCorpus"))
+	P5_pctgeInitialCorpus = request.values.get("P5_pctgeInitialCorpus")
 
 	lenOriginalText = len(P0_originalText)
 	lengthFolder = _CORPUS_FOLDER+str(lenOriginalText)+"/"
@@ -1159,6 +1228,8 @@ def doPh6trainD2V():
 
 def doPh6(lenOriginalText, P5_pctgeInitialCorpus):
 
+	pctgeInitialCorpus = int(P5_pctgeInitialCorpus)
+
 	lengthFolder = _CORPUS_FOLDER+str(lenOriginalText)+"/"
 
 	logFilename = lengthFolder+str(lenOriginalText)+".log"
@@ -1184,20 +1255,20 @@ def doPh6(lenOriginalText, P5_pctgeInitialCorpus):
 		print("No sims file for best similarity")
 
 	lenListDocs = len(listDocs)
-	sizeCorpus = int(lenListDocs / (100 / P5_pctgeInitialCorpus))
+	sizeCorpus = int(lenListDocs / (100 / pctgeInitialCorpus))
 
 	listDocsCorpus = listDocs[:sizeCorpus]
 	listDocsCorpus = list(map(lambda x: _SCRAPPED_PAGES_FOLDER+x, listDocsCorpus))   # get the absolute names
 
 	# store listDocsCorpus
-	listDocsCorpusFile =  lengthFolder+str(lenOriginalText)+".ph6."+str(P5_pctgeInitialCorpus)+".listDocsCorpus"
+	listDocsCorpusFile =  lengthFolder+str(lenOriginalText)+".ph6."+P5_pctgeInitialCorpus+".listDocsCorpus"
 	_saveFile(listDocsCorpusFile, '\n'.join(listDocsCorpus))
 
 
     # initial corpus ready, do preprocessing
 	startTime = datetime.now()
 
-	_Print("Training with ", str(sizeCorpus), "documents")
+	_Print("Preprocessing  ", str(sizeCorpus), "documents")
 
 	try:
 		_Print("Processing S1...")
@@ -1213,6 +1284,15 @@ def doPh6(lenOriginalText, P5_pctgeInitialCorpus):
 		_Print("Processing S4...")
 		listDocsW = list(map(lambda x: x+".w", listDocsS))
 		np4 = _processS4List(listDocsW, lengthFolder)  # WARNING!! requires Standord CoreNLP server launched
+
+		if (np1 > 0):
+			_Print("S1 produced new files: "+str(np1))
+		if (np2 > 0):
+			_Print("S2 produced new files: "+str(np2))
+		if (np3 > 0):
+			_Print("S3 produced new files: "+str(np3))
+		if (np4 > 0):
+			_Print("S4 produced new files: "+str(np4))
 
 		np = np1+np2+np3+np4
 
@@ -1233,12 +1313,13 @@ def doPh6(lenOriginalText, P5_pctgeInitialCorpus):
 		epochs = 100	# epochs (int, optional) – Number of iterations (epochs) over the corpus
 
 
-		modelFilename = str(lenOriginalText)+ "-t."+str(P5_pctgeInitialCorpus)+".model"
+		modelFilename = str(lenOriginalText)+ "-t."+P5_pctgeInitialCorpus+".model"
 		globalModelFilename =  _MODELS_FOLDER+modelFilename
 
 		if os.path.exists(globalModelFilename) and np == 0:
 			print("No changes, training not necessary for "+modelFilename+"!!")
 		else:
+			print("New files. Training with ", len(listDocsW), "files")
 			listDocsT = list(map(lambda x: lengthFolder+"files_t/"+x[(1+x.rfind("/")):]+".t", listDocsW))
 			# Build a doc2vec model trained with files in list
 			r = _buildDoc2VecModelFromList(listDocsT, globalModelFilename, vector_size, window, alpha, min_alpha, min_count, distributed_memory, epochs)
@@ -1290,8 +1371,9 @@ def doPh7reviewCorpus():
 		resultPh3 = doPh3(lenOriginalText)
 		resultPh4 = doPh4(lenOriginalText)
 		resultPh5 = doPh5(P0_originalText, P1_selectedWikicats)
-		resultPh6 = doPh6(lenOriginalText)
+		resultPh6 = doPh6(lenOriginalText, "10")
 		P6_modelName = resultPh6["P6_modelName"]
+
 	else:
 		P6_modelName = request.values.get("P6_modelName")
 
@@ -1732,8 +1814,7 @@ def getUrlsLinked2Wikicats (P1_selectedWikicats, logFilename):
 	print("\n** ALL PENDING QUERIES LAUNCHED\n")
 
 	# End of the first phase. All queries launched. Now, for every wikicat, we have:
-	# requestObjects[wikicat] = {"dburls": URLs} or  {"db": requestDB}
-	#                       and {"wkurls": URLS} or  {"wk": requestWK}
+	# requestObjects[wikicat] = {"dburls": URLs  or  "db": requestDB_FS_object, "wkurls": URLS  or  "wk": requestWK_FS_object}
 
 
 
