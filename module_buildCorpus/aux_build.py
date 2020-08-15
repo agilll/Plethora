@@ -15,7 +15,7 @@ INITIAL_TEXT = 'initialText.txt'
 CORPUS_FOLDER = os.getenv('HOME') + "/KORPUS/"
 
 MODELS_FOLDER = CORPUS_FOLDER+"MODELS/"
-LEE_D2V_MODEL = MODELS_FOLDER+"model_d2v_lee.model"
+LEE_D2V_MODEL = MODELS_FOLDER+"d2v_lee_with_stop.model"
 
 # these are the files and folders created in the building of corpus
 
@@ -51,24 +51,7 @@ def Stop():
 		input("\nType ENTER to continue...")
 	return
 
-# variable and function to control if program must print log messages (change to True if argument -m)
-FMES = False
-def Print (*args):
-	if FMES == True:
-		print(" ".join(args))
-	return
 
-
-# set of english stopwords from nltk
-nltk_stopwords = nltk.corpus.stopwords.words('english')
-
-# function to check if a word is in the English stopwords set (to be used in a filter)
-def isNotNLTKStopWord (word):
-	if word.lower() not in nltk_stopwords:
-		return True
-	return False
-
-#
 
 # to check if a dictionary has the field 'pt' (isPrimaryTopicOf), that is a dictionary that must contain the field 'value'
 def hasFieldPT(x):
@@ -137,6 +120,15 @@ def filterSimpleSubjects (subject):
 
 
 
+
+# set of english stopwords from nltk
+nltk_stopwords = nltk.corpus.stopwords.words('english')
+
+# function to check if a word is in the English stopwords set (to be used in a filter)
+def isNotNLTKStopWord (word):
+	if word.lower() not in nltk_stopwords:
+		return True
+	return False
 
 
 # Tokenize text, and returns a list of words (lowercase) after removing the stopwords

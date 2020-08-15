@@ -173,7 +173,7 @@
 			<div id='contentF5_similarities'></div> <!-- empty div to later show the result -->
 			<p style="margin-bottom:5mm;"></p>
 			<div class="form-group" style="margin-bottom: 0px">
-				Percentage: <input id="inputF5_pctge" type="text" value="10" size="5"></input><br>
+				Percentages to create models: <input id="inputF5_pctges" type="text" value="10" size="5"></input><br>
 				<input style="background-color: #0066cc; color: white" id="submitF5_trainD2V" type="button" value="Next Ph6: train D2V model with corpus"></input>
 				&nbsp;&nbsp;&nbsp;&nbsp;
 				<span id="spanFromStartF5">  <input id="fromStartF5" name="fromStartF5" type="checkbox"></input>
@@ -190,6 +190,7 @@
 			<div id='contentF6_D2V'></div> <!-- empty div to later show the result -->
 			<p style="margin-bottom:5mm;"></p>
 			<div class="form-group" style="margin-bottom: 0px">
+				Models to review corpus: <input id="inputF6_models" type="text" value="10" size="5"></input><br>
 				<input style="background-color: #0066cc; color: white" id="submitF6_reviewCorpus" type="button" value="Next Ph7: review corpus with D2V model"></input>
 				&nbsp;&nbsp;&nbsp;&nbsp;
 				<span id="spanFromStartF6">  <input id="fromStartF6" name="fromStartF6" type="checkbox"></input>
@@ -631,7 +632,7 @@
 				function buildF6contents (result) {
 					results = "<b>Duration of F61 (preprocessing): " + result['P6_elapsedTimeF61']  + " seconds</b><br>\n"
 					results += "<b>Duration of F62 (training): " + result['P6_elapsedTimeF62']  + " seconds</b><br>\n"
-					results += "<b>Created Doc2Vec model named: " + result['P6_modelName']  + "</b><br>\n"
+					results += "<b>Created Doc2Vec models named: " + result['P6_modelNames']  + "</b><br>\n"
 
 					return results
 				}
@@ -641,14 +642,14 @@
 				// receives result
 				$(submitF5_trainD2V).click(function(event) {
 					originalText =  $(contentF0_corpusText).val()
-					P5_pctgeInitialCorpus =  $(inputF5_pctge).val()
+					P6_pctgesInitialCorpus =  $(inputF5_pctges).val()
 					var fromStart = $("input[name='fromStartF5']:checked").val() == "on" ? true : false;
 					$("#spinner").modal("show");
 
 					$.ajax({
 						type: "POST",
 						url: "doPh6trainD2V",
-						data: {"P0_originalText": originalText, "fromStart": fromStart, "P5_pctgeInitialCorpus": P5_pctgeInitialCorpus},
+						data: {"P0_originalText": originalText, "fromStart": fromStart, "P6_pctgesInitialCorpus": P6_pctgesInitialCorpus},
 						success: function(result) {
 							$("#spinner").modal("hide");
 							console.log("Result of phase 6")
@@ -660,8 +661,6 @@
 								$(contentF6_D2V).html(results)
 								return
 							}
-
-							P6_modelName = result['P6_modelName']
 
 							results = buildF6contents(result)
 							$(contentF6_D2V).html(results)
@@ -692,7 +691,7 @@
 
 				function buildF7contents (result) {
 					results = "<b>Duration of F7: " + result['P7_elapsedTimeF7']  + " seconds</b><br>\n"
-					results += "<b>Ad hoc D2V average: " + result['P7_adhocD2Vaverage']  + "</b><br>\n"
+					results += "<b>Ad hoc D2V averages: " + result['P7_adhocD2Vaverages']  + "</b><br>\n"
 
 					return results
 				}
@@ -702,13 +701,14 @@
 				// receives result
 				$(submitF6_reviewCorpus).click(function(event) {
 					originalText =  $(contentF0_corpusText).val()
+					P7_models =  $(inputF6_models).val()
 					var fromStart = $("input[name='fromStartF6']:checked").val() == "on" ? true : false;
 					$("#spinner").modal("show");
 
 					$.ajax({
 						type: "POST",
 						url: "doPh7reviewCorpus",
-						data: {"P0_originalText": originalText, "fromStart": fromStart, "P6_modelName": P6_modelName},
+						data: {"P0_originalText": originalText, "fromStart": fromStart, "P7_models": P7_models},
 						success: function(result) {
 							$("#spinner").modal("hide");
 							console.log("Result of phase 7")

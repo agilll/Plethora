@@ -11,8 +11,9 @@ from requests_futures.sessions import FuturesSession
 
 from px_DB_Manager import getCategoriesInText as _getCategoriesInText
 from px_aux import saveFile as _saveFile, appendFile as _appendFile, URL_DB as _URL_DB, URL_WK as _URL_WK
+from px_aux import Print as _Print
 
-from aux_build import hasFieldPT as _hasFieldPT, Print as _Print, SortTuplaList_byPosTupla as _SortTuplaList_byPosTupla
+from aux_build import hasFieldPT as _hasFieldPT, SortTuplaList_byPosTupla as _SortTuplaList_byPosTupla
 from aux_build import CORPUS_FOLDER as _CORPUS_FOLDER, URLs_FOLDER as _URLs_FOLDER,  SCRAPPED_PAGES_FOLDER as _SCRAPPED_PAGES_FOLDER
 from aux_build import MODELS_FOLDER as _MODELS_FOLDER, LEE_D2V_MODEL as _LEE_D2V_MODEL
 from aux_build import getWikicatComponents as _getWikicatComponents, moreRecent as _moreRecent
@@ -47,7 +48,7 @@ from D2V_BuildOwnModel_t import buildDoc2VecModelFromList as _buildDoc2VecModelF
 # result[wk] = [component list] one for each wikicat, with the different components of each wikicat name
 # result["formerSelectedWikicats"]: list of wikicats selected in the past, for them to be identified in the interface
 def doPh1getWikicatsFromText():
-	_Print("Requested Phase 1")
+	print("Requested Phase 1")
 
 	P0_originalText = request.values.get("P0_originalText")
 
@@ -56,7 +57,7 @@ def doPh1getWikicatsFromText():
 
 
 def doPh1 (P0_originalText):
-	_Print("Executing Phase 1")
+	print("Executing Phase 1")
 
 	lenOriginalText = len(P0_originalText)  # length of the received text
 
@@ -81,16 +82,16 @@ def doPh1 (P0_originalText):
 
 	# check if file for original text already exists and has equal contents
 	if not os.path.exists(filename_txt):
-		_Print("Saving original text")
+		print("Saving original text")
 		_saveFile(filename_txt, P0_originalText)  # if not exists, save it
 	else:
 		with _Open(filename_txt) as fp:  # if already exists, save oinly if it has different contents
 			text = fp.read()
 			if text != P0_originalText:
-				_Print("Saving original text")
+				print("Saving original text")
 				_saveFile(filename_txt, P0_originalText)
 			else:
-				_Print("No need to save original text")
+				print("No need to save original text")
 
 	filename_wk = lengthFolder+str(lenOriginalText)+".ph1.wk"   # filename for wikicats (length.ph1.wk)
 	filename_sb = lengthFolder+str(lenOriginalText)+".ph1.sb"   # filename for subjects (length.ph1.sb)
@@ -102,12 +103,12 @@ def doPh1 (P0_originalText):
 	try:  # open wikicats file if exists and it is newer than original text file
 		if os.path.exists(filename_wk) and _moreRecent(filename_wk, filename_txt):
 			with _Open(filename_wk) as fp:  # wikicats file exists and is newer than text file
-				_Print("Reading wikicats from local DB")
+				print("Reading wikicats from local DB")
 				listWikicats = fp.read().splitlines()
 		else: # wikicats file does not exists o is nolder than text file
 			raise Exception("New text")
 	except:  # if wikicats file does not exist yet, or text is new, compute wikicats-subjects-entities files
-		_Print("Gathering wikicats from Internet")
+		print("Gathering wikicats from Internet")
 		data = _getCategoriesInText(P0_originalText)  # function getCategoriesInText from px_DB_Manager.py
 
 		if ("error" in data):   # return error if could not fetch wikicats
@@ -155,7 +156,7 @@ def doPh1 (P0_originalText):
 # * the list of selected wikicats
 # returns: the results, mainly the number of files identified for each wikicat
 def doPh2getUrlsCandidateFiles():
-	_Print("Requested Phase 2")
+	print("Requested Phase 2")
 
 	fromStart = json.loads(request.values.get("fromStart"))
 	P0_originalText = request.values.get("P0_originalText")
@@ -188,11 +189,12 @@ def doPh2getUrlsCandidateFiles():
 	return jsonify(result);
 
 
+
 def doPh2 (lenOriginalText, P1_selectedWikicats):
 	lengthFolder = _CORPUS_FOLDER+str(lenOriginalText)+"/"
 
 	logFilename = lengthFolder+str(lenOriginalText)+".log"
-	_Print("Executing Phase 2")
+	print("Executing Phase 2")
 	_appendFile(logFilename, "\n\nExecuting Phase 2")
 
 
@@ -262,16 +264,16 @@ def doPh2 (lenOriginalText, P1_selectedWikicats):
 			raise Exception(listWithoutDuplicatesFile+" does not exist")
 		else:
 			with _Open(listWithoutDuplicatesFile) as fp:
-				_Print("Reading existing listWithoutDuplicates file")
+				print("Reading existing listWithoutDuplicates file")
 				listWithoutDuplicatesStored = fp.read().splitlines()
 
 			if set(listWithoutDuplicatesStored) != set(listWithoutDuplicates):
-				_Print("listWithoutDuplicates file has different contents")
+				print("listWithoutDuplicates file has different contents")
 				raise Exception(listWithoutDuplicatesFile+" has different contents")
 			else:
-				_Print("\nNo need to save listWithoutDuplicates file (same contents)")
+				print("\nNo need to save listWithoutDuplicates file (same contents)")
 	except:
-		_Print("Saving listWithoutDuplicates file")
+		print("Saving listWithoutDuplicates file")
 		_saveFile(listWithoutDuplicatesFile, '\n'.join(listWithoutDuplicates))
 
 	lenListWithoutDuplicates  = len(listWithoutDuplicates)  # length of full list to process
@@ -357,7 +359,7 @@ def getWikicatUrls():
 # returns: the number of downloaded and cleaned files with and without enough content
 
 def doPh3downloadCandidateTexts():
-	_Print("Requested Phase 3")
+	print("Requested Phase 3")
 
 	fromStart = json.loads(request.values.get("fromStart"))
 	P0_originalText = request.values.get("P0_originalText")
@@ -398,7 +400,7 @@ def doPh3(lenOriginalText):
 	lengthFolder = _CORPUS_FOLDER+str(lenOriginalText)+"/"
 
 	logFilename = lengthFolder+str(lenOriginalText)+".log"
-	_Print("Executing Phase 3")
+	print("Executing Phase 3")
 	_appendFile(logFilename, "\n\nExecuting Phase 3")
 
 	result = {}  # object to store the results to be returned to the request
@@ -547,7 +549,7 @@ def doPh3(lenOriginalText):
 # returns: the number of downloaded and cleaned files with and without enough content
 
 def doPh4identifyWikicats():
-	_Print("Requested Phase 4")
+	print("Requested Phase 4")
 
 	fromStart = json.loads(request.values.get("fromStart"))
 	P0_originalText = request.values.get("P0_originalText")
@@ -593,7 +595,7 @@ def doPh4(lenOriginalText):
 	lengthFolder = _CORPUS_FOLDER+str(lenOriginalText)+"/"
 
 	logFilename = lengthFolder+str(lenOriginalText)+".log"
-	_Print("Executing Phase 4")
+	print("Executing Phase 4")
 	_appendFile(logFilename, "\n\nExecuting Phase 4")
 
 	result = {}  # object to store the results to be returned to the request
@@ -720,7 +722,7 @@ def doPh4(lenOriginalText):
 # returns: the resulting data
 
 def doPh5computeSimilarities():
-	_Print("Requested Phase 5")
+	print("Requested Phase 5")
 
 	fromStart = json.loads(request.values.get("fromStart"))
 	P0_originalText = request.values.get("P0_originalText")
@@ -774,7 +776,7 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 	lengthFolder = _CORPUS_FOLDER+str(lenOriginalText)+"/"
 
 	logFilename = lengthFolder+str(lenOriginalText)+".log"
-	_Print("Executing Phase 5")
+	print("Executing Phase 5")
 	_appendFile(logFilename, "\n\nExecuting Phase 5")
 
 	result = {}  # object to store the results to be returned to the request
@@ -802,13 +804,13 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 		listEntityFilesOriginalText  = list(map(lambda x: "en.wikipedia.org/wiki.."+x+".txt", listEntityTitlesOriginalText))
 	except:
 		listEntityFilesOriginalText = []    # no entities for original text
-		_Print("Entities file not available: "+filename_en)
+		print("Entities file not available: "+filename_en)
 		_appendFile(logFilename, "Entities file not available: "+filename_en)
 		result["error"] = "doPh5 ERROR: Entities file not available: "+filename_en
 		return result
 
 	numEntitiesOriginalText = len(listEntityFilesOriginalText)
-	_Print("numEntitiesOriginalText=", str(numEntitiesOriginalText))
+	print("numEntitiesOriginalText=", str(numEntitiesOriginalText))
 
 
 	# read the original text subjects from local store
@@ -818,7 +820,7 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 			listSubjectsOriginalText = fp.read().splitlines()
 	except:
 		listSubjectsOriginalText = []    # no subjects for original text
-		_Print("Subjects file not available: "+filename_sb)
+		print("Subjects file not available: "+filename_sb)
 		_appendFile(logFilename, "Subjects file not available: "+filename_sb)
 
 
@@ -830,8 +832,8 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 	filenameSims = lengthFolder+str(lenOriginalText)+".ph5-1.sims.csv"  # file to store all similarities
 
 	# to store jaccard wikicats/subjects similarity distribution
-	distribution_wk = {"0":0, "1":0, "2":0, "3":0, "4":0, "5":0, "6":0, "7":0, "8":0, "9":0}
-	distribution_sb = {"0":0, "1":0, "2":0, "3":0, "4":0, "5":0, "6":0, "7":0, "8":0, "9":0}
+	# distribution_wk = {"0":0, "1":0, "2":0, "3":0, "4":0, "5":0, "6":0, "7":0, "8":0, "9":0}
+	# distribution_sb = {"0":0, "1":0, "2":0, "3":0, "4":0, "5":0, "6":0, "7":0, "8":0, "9":0}
 
 
 	# dict_sims_db and dict_sims_new: dicts to store all the similarities of all candidates to To
@@ -862,11 +864,33 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 	# create object to measure Doc2Vec similarity with LEE_D2V_MODEL
 	d2vLeeSimilarity = _Doc2VecSimilarity(_LEE_D2V_MODEL, P0_originalText)
 
+
+	# First part to compute several times the Doc2Vec Lee sim and later average
+	# d2v_results = {}
+	# for i in range(1,3):
+	# 	print("D2V iteration ", i)
+	# 	d2v_results[i] = {}
+	# 	d2vLeeSimilarity = _Doc2VecSimilarity(_LEE_D2V_MODEL, P0_originalText)
+	#
+	# 	for idx, rFileNameCandidate in enumerate(listWithWKSB, start=1):  # format rFileNameCandidate = en.wikipedia.org/wiki..Title.txt
+	# 		if (idx % 1000) == 0:
+	# 			print(idx/1000, end=' ', flush=True)
+	#
+	# 		fileNameCandidate = _SCRAPPED_PAGES_FOLDER+rFileNameCandidate   # format $HOME/KORPUS/SCRAPPED_PAGES/en.wikipedia.org/wiki..Title.txt
+	# 		d2v_lee_sim = d2vLeeSimilarity.doc2VecTextSimilarity(candidate_file=fileNameCandidate)
+	# 		d2v_results[i][fileNameCandidate] = d2v_lee_sim
+
+
+
 	startTime = datetime.now()
 
+	# L_spacy_sim = similarities.spacyTextSimilarity_calc(candidate_file="/Users/agil/KORPUS/SCRAPPED_PAGES/en.wikipedia.org/wiki..Battle_of_Thermopylae.txt")
+	# print("Spacy para Leonidas =", L_spacy_sim)
+	# input("continuo?")
+
 	for idx, rFileNameCandidate in enumerate(listWithWKSB, start=1):  # format rFileNameCandidate = en.wikipedia.org/wiki..Title.txt
-		if (idx % 5000) == 0:
-			print(".", end=' ', flush=True)
+		if (idx % 1000) == 0:
+			print(idx/1000, end=' ', flush=True)
 		_Print("\n("+str(idx)+" of "+str(lenListWithWKSB)+") -- ", rFileNameCandidate)
 
 		# Build filenames for this page
@@ -885,11 +909,14 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 			shared_subjects_jaccard_sim = sims[3]
 			spacy_sim = sims[4]
 			d2v_lee_sim = sims[5]
+			#print("Computing Doc2Vec Lee similarity for", rFileNameCandidate)
+			#d2v_lee_sim = d2vLeeSimilarity.doc2VecTextSimilarity(candidate_file=fileNameCandidate)
+
 			euclidean_sim = sims[6]
 
 
 		except Exception as e:   # no sims found in local DB file, they must be computed
-			_Print(str(idx)+". Sims not in local DB:", str(e))
+			_Print(idx, ". Sims not in local DB:", str(e))
 			_appendFile(logFilename, "Sims not in local DB:"+str(e))
 
 			# Measure the full wikicats jaccard similarity
@@ -918,7 +945,7 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 
 			# Measure the spaCy distance
 			_Print("Computing spaCy similarity for", rFileNameCandidate)
-			spacy_sim = similarities.spacyTextSimilarity(candidate_file=fileNameCandidate)
+			spacy_sim = similarities.spacyTextSimilarity_calc(candidate_file=fileNameCandidate)
 
 			# Measure the Doc2Vec (Lee) distance
 			_Print("Computing Doc2Vec Lee similarity for", rFileNameCandidate)
@@ -935,65 +962,64 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 		# add them to the dict_sims_new dict
 		dict_sims_new[rFileNameCandidate] = (full_wikicats_jaccard_sim, full_subjects_jaccard_sim, shared_wikicats_jaccard_sim, shared_subjects_jaccard_sim, spacy_sim, d2v_lee_sim, euclidean_sim)
 
-		_Print("Wikicats full jaccard similarity =", str(full_wikicats_jaccard_sim))
-		_Print("Subjects full jaccard similarity =", str(full_subjects_jaccard_sim))
-		_Print("Wikicats shared jaccard similarity =", str(shared_wikicats_jaccard_sim))
-		_Print("Subjects shared jaccard similarity =", str(shared_subjects_jaccard_sim))
-		_Print("Spacy similarity =", str(spacy_sim))
-		_Print("Doc2Vec similarity =", str(d2v_lee_sim))
-		_Print("Euclidean similarity =", str(euclidean_sim))
+		# _Print("Wikicats full jaccard similarity =", str(full_wikicats_jaccard_sim))
+		# _Print("Subjects full jaccard similarity =", str(full_subjects_jaccard_sim))
+		# _Print("Wikicats shared jaccard similarity =", str(shared_wikicats_jaccard_sim))
+		# _Print("Subjects shared jaccard similarity =", str(shared_subjects_jaccard_sim))
+		# _Print("Spacy similarity =", str(spacy_sim))
+		# _Print("Doc2Vec similarity =", str(d2v_lee_sim))
+		# _Print("Euclidean similarity =", str(euclidean_sim))
 
 
 		# add this page value to compute distributions for shared wikicats and subjects jaccard
 
-		if shared_wikicats_jaccard_sim < 0.1:
-			distribution_wk["0"] = distribution_wk["0"] + 1
-		elif shared_wikicats_jaccard_sim < 0.2:
-			distribution_wk["1"] = distribution_wk["1"] + 1
-		elif shared_wikicats_jaccard_sim < 0.3:
-			distribution_wk["2"] = distribution_wk["2"] + 1
-		elif shared_wikicats_jaccard_sim < 0.4:
-			distribution_wk["3"] = distribution_wk["3"] + 1
-		elif shared_wikicats_jaccard_sim < 0.5:
-			distribution_wk["4"] = distribution_wk["4"] + 1
-		elif shared_wikicats_jaccard_sim < 0.6:
-			distribution_wk["5"] = distribution_wk["5"] + 1
-		elif shared_wikicats_jaccard_sim < 0.7:
-			distribution_wk["6"] = distribution_wk["6"] + 1
-		elif shared_wikicats_jaccard_sim < 0.8:
-			distribution_wk["7"] = distribution_wk["7"] + 1
-		elif shared_wikicats_jaccard_sim < 0.9:
-			distribution_wk["8"] = distribution_wk["8"] + 1
-		else:
-			distribution_wk["9"] = distribution_wk["9"] + 1
-
-
-		if shared_subjects_jaccard_sim < 0.1:
-			distribution_sb["0"] = distribution_sb["0"] + 1
-		elif shared_subjects_jaccard_sim < 0.2:
-			distribution_sb["1"] = distribution_sb["1"] + 1
-		elif shared_subjects_jaccard_sim < 0.3:
-			distribution_sb["2"] = distribution_sb["2"] + 1
-		elif shared_subjects_jaccard_sim < 0.4:
-			distribution_sb["3"] = distribution_sb["3"] + 1
-		elif shared_subjects_jaccard_sim < 0.5:
-			distribution_sb["4"] = distribution_sb["4"] + 1
-		elif shared_subjects_jaccard_sim < 0.6:
-			distribution_sb["5"] = distribution_sb["5"] + 1
-		elif shared_subjects_jaccard_sim < 0.7:
-			distribution_sb["6"] = distribution_sb["6"] + 1
-		elif shared_subjects_jaccard_sim < 0.8:
-			distribution_sb["7"] = distribution_sb["7"] + 1
-		elif shared_subjects_jaccard_sim < 0.9:
-			distribution_sb["8"] = distribution_sb["8"] + 1
-		else:
-			distribution_sb["9"] = distribution_sb["9"] + 1
+		# if shared_wikicats_jaccard_sim < 0.1:
+		# 	distribution_wk["0"] = distribution_wk["0"] + 1
+		# elif shared_wikicats_jaccard_sim < 0.2:
+		# 	distribution_wk["1"] = distribution_wk["1"] + 1
+		# elif shared_wikicats_jaccard_sim < 0.3:
+		# 	distribution_wk["2"] = distribution_wk["2"] + 1
+		# elif shared_wikicats_jaccard_sim < 0.4:
+		# 	distribution_wk["3"] = distribution_wk["3"] + 1
+		# elif shared_wikicats_jaccard_sim < 0.5:
+		# 	distribution_wk["4"] = distribution_wk["4"] + 1
+		# elif shared_wikicats_jaccard_sim < 0.6:
+		# 	distribution_wk["5"] = distribution_wk["5"] + 1
+		# elif shared_wikicats_jaccard_sim < 0.7:
+		# 	distribution_wk["6"] = distribution_wk["6"] + 1
+		# elif shared_wikicats_jaccard_sim < 0.8:
+		# 	distribution_wk["7"] = distribution_wk["7"] + 1
+		# elif shared_wikicats_jaccard_sim < 0.9:
+		# 	distribution_wk["8"] = distribution_wk["8"] + 1
+		# else:
+		# 	distribution_wk["9"] = distribution_wk["9"] + 1
+		#
+		#
+		# if shared_subjects_jaccard_sim < 0.1:
+		# 	distribution_sb["0"] = distribution_sb["0"] + 1
+		# elif shared_subjects_jaccard_sim < 0.2:
+		# 	distribution_sb["1"] = distribution_sb["1"] + 1
+		# elif shared_subjects_jaccard_sim < 0.3:
+		# 	distribution_sb["2"] = distribution_sb["2"] + 1
+		# elif shared_subjects_jaccard_sim < 0.4:
+		# 	distribution_sb["3"] = distribution_sb["3"] + 1
+		# elif shared_subjects_jaccard_sim < 0.5:
+		# 	distribution_sb["4"] = distribution_sb["4"] + 1
+		# elif shared_subjects_jaccard_sim < 0.6:
+		# 	distribution_sb["5"] = distribution_sb["5"] + 1
+		# elif shared_subjects_jaccard_sim < 0.7:
+		# 	distribution_sb["6"] = distribution_sb["6"] + 1
+		# elif shared_subjects_jaccard_sim < 0.8:
+		# 	distribution_sb["7"] = distribution_sb["7"] + 1
+		# elif shared_subjects_jaccard_sim < 0.9:
+		# 	distribution_sb["8"] = distribution_sb["8"] + 1
+		# else:
+		# 	distribution_sb["9"] = distribution_sb["9"] + 1
 
 	# end of loop for docs similarity computing
 
 	endTime = datetime.now()
 	elapsedTimeF5 = endTime - startTime
-
 
 	print("\n\n", "Duration F5 (computing similarities):", str(elapsedTimeF5.seconds))
 
@@ -1107,10 +1133,10 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 
 	# print the position of all the entities for each sim (shown ordered, because they are appended in order), and the average
 	for key in ratings:
-		print("\n**", key)
+		_Print("\n**", key)
 		for (page,idx)  in ratings[key]["originalEntities"]:
-			print(page, "=", idx)
-		print("## Average=", ratings[key]["average"])
+			_Print(page, "=", idx)
+		print("## Average "+key+" = ", ratings[key]["average"])
 
 
 	# select the best similarity (higher rating)
@@ -1153,7 +1179,7 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 
 		csvFile.close()
 
-	printSimsDistribution(lenListWithWKSB, distribution_wk, distribution_sb)
+	# printSimsDistribution(lenListWithWKSB, distribution_wk, distribution_sb)
 
 	result["P5_elapsedTimeF5"] = elapsedTimeF5.seconds
 
@@ -1166,20 +1192,44 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 
 
 
+
+
+
+
+
+def computePercentages (globalPattern):
+	listPercentages = []
+	listPatterns = globalPattern.split(",")
+
+	for pattern in listPatterns:
+		try:
+			p = int(pattern)
+			listPercentages.append(p)
+		except:
+			pairs = pattern.split("-")
+			start = int(pairs[0])
+			end = int(pairs[1]) + 1
+			for p in range(start, end):
+				listPercentages.append(p)
+
+	return listPercentages
+
+
 # QUERY (/doPh6trainD2V) to attend the query to train the Doc2Vec network
 # receives:
 # * the list of corpus docs
 # returns:
 
 def doPh6trainD2V():
-	_Print("Requested Phase 6")
+	print("Requested Phase 6")
 
 	fromStart = json.loads(request.values.get("fromStart"))
-	P0_originalText = request.values.get("P0_originalText")
-	P5_pctgeInitialCorpus = request.values.get("P5_pctgeInitialCorpus")
 
+	P0_originalText = request.values.get("P0_originalText")
 	lenOriginalText = len(P0_originalText)
-	lengthFolder = _CORPUS_FOLDER+str(lenOriginalText)+"/"
+
+	P6_pctgesInitialCorpus = request.values.get("P6_pctgesInitialCorpus")
+	pctgesList = computePercentages(P6_pctgesInitialCorpus)
 
 	# in case execution from start, Phases 1-2-3-4-5  must be executed first
 	if fromStart:
@@ -1190,7 +1240,7 @@ def doPh6trainD2V():
 		resultPh4 = doPh4(lenOriginalText)
 		resultPh5 = doPh5(P0_originalText, P1_selectedWikicats)
 
-	result = doPh6(lenOriginalText, P5_pctgeInitialCorpus)
+	result = doPh6(lenOriginalText, pctgesList)
 	if "error" in result:
 		return jsonify(result);
 
@@ -1226,24 +1276,34 @@ def doPh6trainD2V():
 
 
 
-def doPh6(lenOriginalText, P5_pctgeInitialCorpus):
+def doPh6(lenOriginalText, pctgesList):
 
-	pctgeInitialCorpus = int(P5_pctgeInitialCorpus)
+	# training hyperparameters
+	vector_size = 20	# vector_size (int, optional) – Dimensionality of the feature vectors
+	window = 8	# window (int, optional) – The maximum distance between the current and predicted word within a sentence
+	alpha = 0.025	# alpha (float, optional) – The initial learning rate
+	min_alpha = 0.00025	# min_alpha (float, optional) – Learning rate will linearly drop to min_alpha as training progresses
+	# seed = 1 # Seed for the random number generator. Initial vectors for each word are seeded with a hash of the concatenation of word + str(seed)
+	min_count = 5	# min_count (int, optional) – Ignores all words with total frequency lower than this
+	max_vocab_size = None	# max_vocab_size (int, optional) – Limits the RAM during vocabulary building
+	distributed_memory = 1	# Defines the training algorithm. If dm=1, ‘distributed memory’ (PV-DM). Otherwise, distributed bag of words (PV-DBOW)
+	epochs = 100	# epochs (int, optional) – Number of iterations (epochs) over the corpus
+
 
 	lengthFolder = _CORPUS_FOLDER+str(lenOriginalText)+"/"
 
 	logFilename = lengthFolder+str(lenOriginalText)+".log"
-	_Print("Executing Phase 6")
+	print("Executing Phase 6")
 	_appendFile(logFilename, "\n\nExecuting Phase 6")
 
 	result = {}  # object to store the results to be returned to the request
 
-	listDocs = []
-	listDocsSimsFile =  lengthFolder+str(lenOriginalText)+".ph5-3.simsBest.csv"
+	listDocs = []  # list of docs for training
+	listDocsBestSimFile =  lengthFolder+str(lenOriginalText)+".ph5-3.simsBest.csv"
 
 	# try to read existing sims file
 	try:
-		with _Open(listDocsSimsFile, 'r') as csvFile:
+		with _Open(listDocsBestSimFile, 'r') as csvFile:
 			reader = csv.reader(csvFile, delimiter=' ')
 			next(reader)  # to skip header
 			for row in reader:
@@ -1252,98 +1312,111 @@ def doPh6(lenOriginalText, P5_pctgeInitialCorpus):
 
 			csvFile.close()
 	except:
-		print("No sims file for best similarity")
+		print("No sims file with docs and their best similarity:", listDocsBestSimFile)
 
 	lenListDocs = len(listDocs)
-	sizeCorpus = int(lenListDocs / (100 / pctgeInitialCorpus))
-
-	listDocsCorpus = listDocs[:sizeCorpus]
-	listDocsCorpus = list(map(lambda x: _SCRAPPED_PAGES_FOLDER+x, listDocsCorpus))   # get the absolute names
-
-	# store listDocsCorpus
-	listDocsCorpusFile =  lengthFolder+str(lenOriginalText)+".ph6."+P5_pctgeInitialCorpus+".listDocsCorpus"
-	_saveFile(listDocsCorpusFile, '\n'.join(listDocsCorpus))
 
 
-    # initial corpus ready, do preprocessing
-	startTime = datetime.now()
+	globalPreprocessingTime = 0
+	globalTrainingTime = 0
+	fullListModels = []
 
-	_Print("Preprocessing  ", str(sizeCorpus), "documents")
+	# let's train all requested models
 
-	try:
-		_Print("Processing S1...")
-		np1 = _processS1List(lengthFolder, listDocsCorpus)  # creates corspusFolder/length/files_s_p_w and saves .s files
+	for pctgeInitialCorpus in pctgesList:
 
-		_Print("Processing S2...")
-		listDocsS = list(map(lambda x: lengthFolder+"files_s_p_w/"+x[(1+x.rfind("/")):]+".s", listDocsCorpus))
-		np2 = _processS2List(listDocsS)
+		# one training
+		print("Let's go to do training with the best", pctgeInitialCorpus,"%")
 
-		_Print("Processing S3...")
-		np3 = _processS3List(listDocsS)
+		sizeCorpus = int(lenListDocs / 100) *  pctgeInitialCorpus
+		modelFilename = str(lenOriginalText)+ "-t."+str(pctgeInitialCorpus)+".model"
 
-		_Print("Processing S4...")
-		listDocsW = list(map(lambda x: x+".w", listDocsS))
-		np4 = _processS4List(listDocsW, lengthFolder)  # WARNING!! requires Standord CoreNLP server launched
+		listDocsCorpus = listDocs[:sizeCorpus]
+		listDocsCorpus = list(map(lambda x: _SCRAPPED_PAGES_FOLDER+x, listDocsCorpus))   # get the absolute names
+
+	    # initial corpus ready, do preprocessing
+		print("Preprocessing ", str(sizeCorpus), " documents for "+modelFilename)
+
+		startTime = datetime.now()
+
+		try:
+			print("Processing S1...")
+			np1 = _processS1List(lengthFolder, listDocsCorpus)  # creates corspusFolder/length/files_s_p_w and saves .s files
+
+			print("Processing S2...")
+			listDocsS = list(map(lambda x: lengthFolder+"files_s_p_w/"+x[(1+x.rfind("/")):]+".s", listDocsCorpus))
+			np2 = _processS2List(listDocsS)
+
+			print("Processing S3...")
+			np3 = _processS3List(listDocsS)
+
+			print("Processing S4...")
+			listDocsW = list(map(lambda x: x+".w", listDocsS))
+			np4 = _processS4List(listDocsW, lengthFolder)  # WARNING!! requires Standord CoreNLP server launched
+
+		except Exception as e:
+			result["error"] = str(e)
+			print("Exception in preprocessing "+modelFilename+" in doPh6:", str(e))
+			_appendFile(logFilename, "Exception in preprocessing "+modelFilename+" in doPh6: "+str(e))
+			return result
 
 		if (np1 > 0):
-			_Print("S1 produced new files: "+str(np1))
+			print("S1 produced new files: "+str(np1))
 		if (np2 > 0):
-			_Print("S2 produced new files: "+str(np2))
+			print("S2 produced new files: "+str(np2))
 		if (np3 > 0):
-			_Print("S3 produced new files: "+str(np3))
+			print("S3 produced new files: "+str(np3))
 		if (np4 > 0):
-			_Print("S4 produced new files: "+str(np4))
+			print("S4 produced new files: "+str(np4))
 
 		np = np1+np2+np3+np4
 
 		endTime = datetime.now()
+		print("End of preprocessing "+modelFilename)
+
 		elapsedTimeF61 = endTime - startTime
+		globalPreprocessingTime	+= elapsedTimeF61.seconds
+
+		# let's train this model
 		startTime = datetime.now()
-
-		# let's train
-
-		vector_size = 20	# vector_size (int, optional) – Dimensionality of the feature vectors
-		window = 8	# window (int, optional) – The maximum distance between the current and predicted word within a sentence
-		alpha = 0.025	# alpha (float, optional) – The initial learning rate
-		min_alpha = 0.00025	# min_alpha (float, optional) – Learning rate will linearly drop to min_alpha as training progresses
-		# seed = 1 # Seed for the random number generator. Initial vectors for each word are seeded with a hash of the concatenation of word + str(seed)
-		min_count = 5	# min_count (int, optional) – Ignores all words with total frequency lower than this
-		max_vocab_size = None	# max_vocab_size (int, optional) – Limits the RAM during vocabulary building
-		distributed_memory = 1	# Defines the training algorithm. If dm=1, ‘distributed memory’ (PV-DM). Otherwise, distributed bag of words (PV-DBOW)
-		epochs = 100	# epochs (int, optional) – Number of iterations (epochs) over the corpus
-
-
-		modelFilename = str(lenOriginalText)+ "-t."+P5_pctgeInitialCorpus+".model"
 		globalModelFilename =  _MODELS_FOLDER+modelFilename
 
-		if os.path.exists(globalModelFilename) and np == 0:
-			print("No changes, training not necessary for "+modelFilename+"!!")
-		else:
-			print("New files. Training with ", len(listDocsW), "files")
-			listDocsT = list(map(lambda x: lengthFolder+"files_t/"+x[(1+x.rfind("/")):]+".t", listDocsW))
-			# Build a doc2vec model trained with files in list
-			r = _buildDoc2VecModelFromList(listDocsT, globalModelFilename, vector_size, window, alpha, min_alpha, min_count, distributed_memory, epochs)
-
-			if (r == 0):
-				print("Training success!!")
+		try:
+			if os.path.exists(globalModelFilename) and np == 0:
+				print("No changes, training not necessary for "+modelFilename+"!!")
 			else:
-				print("Training failed!")
+				if np == 0:
+					print("No model yet: "+modelFilename)
+				else:
+					print("New files for "+modelFilename)
+
+				listDocsT = list(map(lambda x: lengthFolder+"files_t/"+x[(1+x.rfind("/")):]+".t", listDocsW))
+				# Build a doc2vec model trained with files in list
+				r = _buildDoc2VecModelFromList(listDocsT, globalModelFilename, vector_size, window, alpha, min_alpha, min_count, distributed_memory, epochs)
+
+				if (r == 0):
+					print("Training success for "+modelFilename+"!!")
+					_appendFile(logFilename, "Computed model: "+modelFilename)
+				else:
+					print("Training failed for "+modelFilename+"!")
+					_appendFile(logFilename, "Training failed: "+modelFilename)
+
+		except Exception as e:
+			result["error"] = str(e)
+			print("Exception in training "+modelFilename+" in doPh6:", str(e))
+			_appendFile(logFilename, "Exception in training "+modelFilename+" in doPh6: "+str(e))
+			return result
+
+		endTime = datetime.now()
+		elapsedTimeF62 = endTime - startTime
+		globalTrainingTime += elapsedTimeF62.seconds
+		fullListModels.append(modelFilename)
 
 
-		result["P6_elapsedTimeF61"] = elapsedTimeF61.seconds
-	except Exception as e:
-		result["error"] = str(e)
-		print("Exception in doPh6:", str(e))
-		_appendFile(logFilename, "Exception in doPh6: "+str(e))
-		return result
+	result["P6_elapsedTimeF61"] = globalPreprocessingTime
+	result["P6_elapsedTimeF62"] = globalTrainingTime
+	result["P6_modelNames"] = ", ".join(fullListModels)
 
-	endTime = datetime.now()
-	elapsedTimeF62 = endTime - startTime
-
-	result["P6_elapsedTimeF62"] = elapsedTimeF62.seconds
-	result["P6_modelName"] = modelFilename
-
-	_appendFile(logFilename, "Computed model: "+modelFilename)
 	return result
 
 
@@ -1357,7 +1430,7 @@ def doPh6(lenOriginalText, P5_pctgeInitialCorpus):
 # returns:
 
 def doPh7reviewCorpus():
-	_Print("Requested Phase 7")
+	print("Requested Phase 7")
 
 	fromStart = json.loads(request.values.get("fromStart"))
 	P0_originalText = request.values.get("P0_originalText")
@@ -1371,13 +1444,18 @@ def doPh7reviewCorpus():
 		resultPh3 = doPh3(lenOriginalText)
 		resultPh4 = doPh4(lenOriginalText)
 		resultPh5 = doPh5(P0_originalText, P1_selectedWikicats)
-		resultPh6 = doPh6(lenOriginalText, "10")
-		P6_modelName = resultPh6["P6_modelName"]
+		pctgesList = [10] # it can only be provided by user through interface
+		resultPh6 = doPh6(lenOriginalText, pctgesList)
+		if "error" in resultPh6:
+			return jsonify(resultPh6);
+		else:
+			modelList = [10]
 
 	else:
-		P6_modelName = request.values.get("P6_modelName")
+		P7_models = request.values.get("P7_models")
+		modelList = computePercentages(P7_models)
 
-	result = doPh7(P0_originalText, P6_modelName)
+	result = doPh7(P0_originalText, modelList)
 	if "error" in result:
 		return jsonify(result);
 
@@ -1411,44 +1489,24 @@ def doPh7reviewCorpus():
 
 		result["P6_elapsedTimeF61"] = resultPh6["P6_elapsedTimeF61"]
 		result["P6_elapsedTimeF62"] = resultPh6["P6_elapsedTimeF62"]
-		result["P6_modelName"] = P6_modelName
+		result["P6_modelNames"] = resultPh6["P6_modelNames"]
 
 	return jsonify(result);
 
 
 
-def doPh7(P0_originalText, P6_modelName):
+def doPh7(P0_originalText, modelList):
 
 	lenOriginalText = len(P0_originalText)
 	lengthFolder = _CORPUS_FOLDER+str(lenOriginalText)+"/"
 
 	logFilename = lengthFolder+str(lenOriginalText)+".log"
-	_Print("Executing Phase 7")
+	print("Executing Phase 7")
 	_appendFile(logFilename, "\n\nExecuting Phase 7")
 
 	result = {}  # object to store the results to be returned to the request
 
-	modelFilename = _MODELS_FOLDER+P6_modelName
-
-	# try to read existing AdHocD2VSims file for such model
-	filenameAdHocD2VSims = lengthFolder+str(lenOriginalText)+".ph7.AdHocD2V."+P6_modelName+".sims.csv"
-	simsAdHocD2V = {} # dict to read AdHoc D2V sims stored in local DB (sims computed with the ad hoc trained model)
-
-	# ONLY if model exists and it is previous to this file?
-	try:
-		with _Open(filenameAdHocD2VSims, 'r') as csvFile:
-			reader = csv.reader(csvFile, delimiter=' ')
-			next(reader)  # to skip header
-			for row in reader:
-				simsAdHocD2V[row[0]] = float(row[1])
-
-			csvFile.close()
-	except:
-		print("No ad hoc D2V similarities file")
-
-
-	d2vSimilarity = _Doc2VecSimilarity(modelFilename, P0_originalText)
-
+	# read the full list of candidate files
 	listWithWKSBFile =  lengthFolder+str(lenOriginalText)+".ph4.listWithWKSB"
 
 	try:  # try to read listWithWKSB file
@@ -1459,51 +1517,6 @@ def doPh7(P0_originalText, P6_modelName):
 		return result
 
 	lenListWithWKSB = len(listWithWKSB)
-
-	_Print("Reviewing corpus ("+str(lenListWithWKSB)+" files) with Doc2Vec similarity derived from model:", P6_modelName)
-	startTime = datetime.now()
-
-	for idx, rCandidateFile in enumerate(listWithWKSB, start=1):
-		if (idx % 5000) == 0:
-			print(".", end=' ', flush=True)
-		_Print("("+str(idx)+" of "+str(lenListWithWKSB)+") -- ", rCandidateFile)
-
-		if rCandidateFile in simsAdHocD2V:
-			_Print("Ad hoc D2V similarity found for candidate in local DB:", rCandidateFile)
-			doc2vec_trained_cosineSimilarity = simsAdHocD2V[rCandidateFile]
-		else:
-			_Print("Computing ad hoc D2V similarity for candidate:", rCandidateFile)
-			candidateFile = _SCRAPPED_PAGES_FOLDER+rCandidateFile
-			candidateTextFD = _Open(candidateFile, "r")
-			candidateText = candidateTextFD.read()
-			doc2vec_trained_cosineSimilarity = d2vSimilarity.doc2VecTextSimilarity(candidate_text=candidateText)
-			simsAdHocD2V[rCandidateFile] = doc2vec_trained_cosineSimilarity
-
-		print("Ad hoc D2V similarity =", doc2vec_trained_cosineSimilarity)
-
-	endTime = datetime.now()
-	elapsedTimeF7 = endTime - startTime
-
-	# Update the csv file with all ad hoc D2V similarities
-
-	with _Open(filenameAdHocD2VSims, 'w') as csvFile:
-		fieldnames = ['Text', 'AdHocD2V']	# Name columns
-		writer = csv.DictWriter(csvFile, fieldnames=fieldnames, delimiter=" ") # Create csv headers
-		writer.writeheader()	# Write the column headers
-
-		writer = csv.writer(csvFile, delimiter=' ')
-		for key in simsAdHocD2V:
-			try:
-				writer.writerow([key, simsAdHocD2V[key]])
-			except:
-				print("Error writing csv with ad hoc D2V similarities", row)
-				_appendFile(logFilename, "Error writing csv with ad hoc D2V similarities"+str(row))
-
-		csvFile.close()
-
-	_appendFile(logFilename, "List of sims with ad hoc D2V computed: "+filenameAdHocD2VSims)
-
-	result["P7_elapsedTimeF7"] = elapsedTimeF7.seconds
 
 	# read the original text entities (E0) from local store, to measure the quality of ad hoc D2V results
 	filename_en = lengthFolder+str(lenOriginalText)+".ph1.en"   # filename for entities E0 (length.ph1.en)
@@ -1516,46 +1529,130 @@ def doPh7(P0_originalText, P6_modelName):
 		listEntityFilesOriginalText  = list(map(lambda x: "en.wikipedia.org/wiki.."+x+".txt", listEntityTitlesOriginalText))
 	except:
 		listEntityFilesOriginalText = []    # no entities for original text
-		_Print("Entities file not available: "+filename_en)
+		print("Entities file not available: "+filename_en)
 		_appendFile(logFilename, "Entities file not available: "+filename_en)
-		result["error"] = "doPh5 ERROR: E0 Entities file not available: "+filename_en
+		result["error"] = "doPh7 ERROR: E0 Entities file not available: "+filename_en
 		return result
 
 	numEntitiesOriginalText = len(listEntityFilesOriginalText)
-	_Print("numEntitiesOriginalText=", str(numEntitiesOriginalText))
+	print("numEntitiesOriginalText=", str(numEntitiesOriginalText))
 
 
+	# to aggregate elapsed time and average positions for each model
+	globalReviewingTime = 0
+	averagePositions = {}
 
+	# let's review all requested models
+	for model in modelList:
 
-	# convert dict simsAdHocD2V in list of tuplas (filenameCandidate, simAdHocD2V) to be able to order it
-	list_sim_tupla = [ (k, simsAdHocD2V[k]) for k in simsAdHocD2V]
+		# let's review one model
+		modelName = str(lenOriginalText)+"-t."+str(model)+".model"
+		modelFilename = _MODELS_FOLDER+modelName
 
-	#listEntities = listEntityFilesOriginalText.copy() # make a copy of the list E0 (list of entities in the original text, with format en.wikipedia.org/wiki..Title.txt)
-	# _SortTuplaList_byPosTupla: function to order a list of tuplas (0,1,2,3,4,5,6,7...) by the element in the position 'pos'=1,2...
-	listOrdered = _SortTuplaList_byPosTupla(list_sim_tupla, 1)  # order sims list by ad hoc d2v similarity
-	listOrdered_OnlyNames = list(map(lambda x: x[0], listOrdered))  # keep only the names of the docs
+		# try to read existing AdHocD2VSims file for such model
+		filenameAdHocD2VSims = lengthFolder+str(lenOriginalText)+".ph7.AdHocD2V."+modelName+".sims.csv"
+		simsAdHocD2V = {} # dict to read AdHoc D2V sims stored in local DB (sims computed with the ad hoc trained model)
 
-	positions = [] # list of pairs (entity, position)
+		# read ad hoc sims file if exists and it is more recent than model
+		if os.path.exists(filenameAdHocD2VSims) and _moreRecent(filenameAdHocD2VSims, modelFilename):
+			try:
+				with _Open(filenameAdHocD2VSims, 'r') as csvFile:
+					reader = csv.reader(csvFile, delimiter=' ')
+					next(reader)  # to skip header
+					for row in reader:
+						simsAdHocD2V[row[0]] = float(row[1])
 
-	for idx, name in enumerate(listOrdered_OnlyNames, start=1):
-		if name in listEntityFilesOriginalText:  # one entity of the original text found in list
-			positions.append((name, idx))
-		if len(positions) == len(listEntityFilesOriginalText):  # all entities of the original text have been found in the list
-			break
+					csvFile.close()
+			except:
+				print("\nNo ad hoc D2V similarities file")
+		else:
+			print("Model is newer. Ad hoc sims will be recalculated")
 
-	for name, pos in positions:
-		print(name,"=",pos)
+		# create the object to evaluate D2V similarity with the current model
+		d2vSimilarity = _Doc2VecSimilarity(modelFilename, P0_originalText)
 
-	listPositions = [pos for name,pos in positions]   # get a list with all the positions of the entities
+		print("\nReviewing corpus ("+str(lenListWithWKSB)+" files) with Doc2Vec similarity derived from model:", modelName)
+		startTime = datetime.now()
 
-	if len(listPositions) == 0:
-		averagePosition = -1
-	else:
-		averagePosition = sum(listPositions) / len(listPositions)  # average position
+		for idx, rCandidateFile in enumerate(listWithWKSB, start=1):
+			if (idx % 5000) == 0:
+				print(".", end=' ', flush=True)
+			_Print("("+str(idx)+" of "+str(lenListWithWKSB)+") -- ", rCandidateFile)
 
-	result["P7_adhocD2Vaverage"] = averagePosition
+			if rCandidateFile in simsAdHocD2V:
+				_Print("Ad hoc D2V similarity found for candidate in local DB:", rCandidateFile)
+				doc2vec_trained_cosineSimilarity = simsAdHocD2V[rCandidateFile]
+			else:
+				_Print("Computing ad hoc D2V similarity for candidate:", rCandidateFile)
+				candidateFile = _SCRAPPED_PAGES_FOLDER+rCandidateFile
+				candidateTextFD = _Open(candidateFile, "r")
+				candidateText = candidateTextFD.read()
+				doc2vec_trained_cosineSimilarity = d2vSimilarity.doc2VecTextSimilarity(candidate_text=candidateText)
+				simsAdHocD2V[rCandidateFile] = doc2vec_trained_cosineSimilarity
 
-	_Print("Ad hoc D2V average for "+P6_modelName+" =", str(averagePosition))
+			_Print("Ad hoc D2V similarity =", doc2vec_trained_cosineSimilarity)
+
+		endTime = datetime.now()
+		elapsedTimeF7 = endTime - startTime
+		globalReviewingTime += elapsedTimeF7.seconds
+
+		# Update the csv file with all ad hoc D2V similarities for current model
+
+		with _Open(filenameAdHocD2VSims, 'w') as csvFile:
+			fieldnames = ['Text', 'AdHocD2V']	# Name columns
+			writer = csv.DictWriter(csvFile, fieldnames=fieldnames, delimiter=" ") # Create csv headers
+			writer.writeheader()	# Write the column headers
+
+			writer = csv.writer(csvFile, delimiter=' ')
+			for key in simsAdHocD2V:
+				try:
+					writer.writerow([key, simsAdHocD2V[key]])
+				except:
+					print("Error writing csv with ad hoc D2V similarities for", modelName, ":", row)
+					_appendFile(logFilename, "Error writing csv with ad hoc D2V similarities for "+modelName+": "+str(row))
+
+			csvFile.close()
+
+		_appendFile(logFilename, "List of sims with ad hoc D2V for "+modelName+" computed: "+filenameAdHocD2VSims)
+
+		# Now we hace ad hoc sims. It is time to calculate average positions of E0 entities
+
+		# convert dict simsAdHocD2V in list of tuplas (filenameCandidate, simAdHocD2V) to be able to order it
+		list_sim_tupla = [ (k, simsAdHocD2V[k]) for k in simsAdHocD2V]
+
+		# _SortTuplaList_byPosTupla: function to order a list of tuplas (0,1,2,3,4,5,6,7...) by the element in the position 'pos'=1,2...
+		listOrdered = _SortTuplaList_byPosTupla(list_sim_tupla, 1)  # order sims list by ad hoc d2v similarity
+		listOrdered_OnlyNames = list(map(lambda x: x[0], listOrdered))  # keep only the names of the docs
+
+		positions = [] # list of pairs (entity, position)
+
+		for idx, name in enumerate(listOrdered_OnlyNames, start=1):
+			if name in listEntityFilesOriginalText:  # one entity of the original text found in list
+				positions.append((name, idx))
+			if len(positions) == len(listEntityFilesOriginalText):  # all entities of the original text have been found in the list
+				break
+
+		for name, pos in positions:
+			_Print(name,"=", pos)
+
+			listPositions = [pos for name,pos in positions]   # get a list with all the positions of the entities
+
+		if len(listPositions) == 0:
+			averagePosition = -1
+		else:
+			averagePosition = sum(listPositions) / len(listPositions)  # average position
+
+		averagePositions[modelName] = averagePosition
+
+	P7_adhocD2Vaverages = ""
+	for m in averagePositions:
+		print("Ad hoc D2V average for "+m+" = ", str(averagePositions[m]))
+		P7_adhocD2Vaverages = P7_adhocD2Vaverages+str(averagePositions[m])+","
+
+	P7_adhocD2Vaverages = P7_adhocD2Vaverages[0:-1]  # remove last ','
+
+	result["P7_adhocD2Vaverages"] = P7_adhocD2Vaverages
+	result["P7_elapsedTimeF7"] = globalReviewingTime
 
 	return result
 

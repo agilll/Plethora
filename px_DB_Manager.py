@@ -1,5 +1,5 @@
 from requests_futures.sessions import FuturesSession
-from px_aux import URL_DB as _URL_DB
+from px_aux import URL_DB as _URL_DB, Print as _Print
 
 
 # to get wikicats and subjects from a text
@@ -47,7 +47,7 @@ def getCategoriesInText(texto):
 
 	print("\nInitially, there are entities:", len(entities))
 	for entity in entities:
-		print(entity["@URI"])
+		_Print(entity["@URI"])
 
 	# filter duplicated entities (same entity identified in different parts of the text)
 	uniqueEntities = []
@@ -60,11 +60,11 @@ def getCategoriesInText(texto):
 
 	print("\nBut unique entities: ", len(entities))
 	for entity in entities:
-		print(entity["@URI"])
+		_Print(entity["@URI"])
 
 	# filter entities probably erroneously identified
 	# a right entity is required to share wikicats with some other entity in the set
-	print("\nFiltering by wikicats sharing")
+	_Print("\nFiltering by wikicats sharing")
 	rightEntities = []
 	for entity in entities:
 		wki = entity["wikicats"]	# wikicats of this entity
@@ -78,17 +78,17 @@ def getCategoriesInText(texto):
 		if len(intersec) > 0:
 			rightEntities.append(entity)
 		else:
-			print("Discarded entity: ", entity["@URI"])
+			_Print("Discarded entity: ", entity["@URI"])
 
 	entities = rightEntities
 
 	print("\nAfter the filtering by wikicat sharing there are:", len(entities))
 	for entity in entities:
-		print(entity["@URI"])
+		_Print(entity["@URI"])
 
 
 	# a right entity is required to share subjects with some other entity in the set
-	print("\nFiltering by subject sharing")
+	_Print("\nFiltering by subject sharing")
 	rightEntities = []
 	for entity in entities:
 		sbi = entity["subjects"]	# subjects of this entity
@@ -101,13 +101,13 @@ def getCategoriesInText(texto):
 		if len(intersec) > 0:
 			rightEntities.append(entity)
 		else:
-			print("Discarded entity: ", entity["@URI"])
+			_Print("Discarded entity: ", entity["@URI"])
 
 	entities = rightEntities
 
 	print("\nAfter the filtering by subject sharing there are", len(entities))
 	for entity in entities:
-		print(entity["@URI"])
+		_Print(entity["@URI"])
 
 
 

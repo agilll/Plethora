@@ -22,6 +22,7 @@ from routesCorpus import doPh3downloadCandidateTexts as _doPh3downloadCandidateT
 from routesCorpus import doPh5computeSimilarities as _doPh5computeSimilarities, doPh6trainD2V as _doPh6trainD2V, doPh7reviewCorpus as _doPh7reviewCorpus
 from aux_build import INITIAL_TEXT as _INITIAL_TEXT
 import aux_build
+import px_aux
 
 
 # load the initial text shown at the beginning of the interface
@@ -60,7 +61,7 @@ if __name__ == '__main__':
 			aux_build.FSTOP = True
 			print("Flag stop activated!!!")
 		if sys.argv[argument] == "-m":   # argument '-s' forces stop after every phase
-			aux_build.FMES = True
+			px_aux.FMES = True
 			print("Flag messages activated!!!")
 
 # Flask routes binding for interface requests (not done in the main tool, so always necessary)

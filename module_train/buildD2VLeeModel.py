@@ -1,21 +1,36 @@
 import os
 import collections
 import random
-
-# To install: pip install smart_open
 from smart_open import open as smart_open
-
-# to install: pip3 install gensim
 import gensim
 from gensim.models.doc2vec import Doc2Vec
+from gensim.models.doc2vec import TaggedDocument
+from gensim.parsing.preprocessing import remove_stopwords
+from gensim.utils import simple_preprocess
 
-	
 from aux_train import LEE_D2V_MODEL as _LEE_D2V_MODEL
-model_full_filename = _LEE_D2V_MODEL + ".model"
 
-	
+model_filename = _LEE_D2V_MODEL + ".model"
 LEE_TRAINING_CORPUS = 'lee_background.cor'
 LEE_TESTING_CORPUS = 'lee.cor'
+
+# Read and Pre-process Text
+def readCorpus(fileName, tokens_only=False, rm_stop=False):
+	with smart_open(fileName, encoding="iso-8859-1") as fd:  	# Use the latin encoding
+		for index, line in enumerate(fd):
+			if (rm_stop):  # use rm_stop to indicate if stopwords must be removed or not
+				line = remove_stopwords(line)
+
+			# Use gensim.utils.simple_preprocess for processing:
+			# tokenize text to individual words, remove punctuations, set to lowercase, and remove words less than 2 chars or more than 50 chars
+			tokenList = simple_preprocess(line, max_len=50)
+
+			# Use the tokens_only to process the training and testing data differently
+			if tokens_only:  # tokens_only=true for testing data
+				yield tokenList  # Return a generator with processed text
+			else:   # tokens_only=false for training data
+				yield TaggedDocument(tokenList, [index])   # Returns a generator with tagged training corpus
+
 
 def buildDoc2VecModel():
 	# Set file names for training and testing data
@@ -27,95 +42,64 @@ def buildDoc2VecModel():
 	# Use the Lee Corpus included gensim to test the model
 	testing_data = test_data_dir + os.sep + LEE_TESTING_CORPUS
 
-
-	# Read and Pre-process Text
-	def readCorpus(fileName, tokens_only=False):
-		# smart_open is used for streaming very large files
-		# Use the latin encoding
-		with smart_open(fileName, encoding="iso-8859-1") as file:
-			for index, line in enumerate(file):
-				# Use the tokens_only to process the training and testing data differently
-				if tokens_only:
-					# Use gensim.utils.simple_preprocess for processing:
-					# tokenize text to individual words
-					# remove punctuations
-					# set to lowercase
-					# remove words less than 2 characters or more than 15 characters
-
-					# Return a generator with processed text
-					yield gensim.utils.simple_preprocess(line)
-				else:
-					# tokens_only = true for training data
-
-					# Returns a generator with tagged training corpus
-					yield gensim.models.doc2vec.TaggedDocument(gensim.utils.simple_preprocess(line), [index])
-
-
 	# Convert generators to lists
-	training_corpus = list(readCorpus(training_data))
+	training_corpus = list(readCorpus(training_data, tokens_only=False, rm_stop=True))   # by default, stop words are removed
 	testing_corpus = list(readCorpus(testing_data, tokens_only=True))
 
-
-	# Training the model #
-
-	# Instantiate a Doc2Vec Object
+	# Training the model: Instantiate a Doc2Vec Object
 	# vector_size: vector dimensions
 	# min_count: the minimum number of a word frequency to be included
 	# epochs: Number of iterations over the training corpus
-	model = gensim.models.doc2vec.Doc2Vec(vector_size=40, min_count=2, epochs=40)
+	model = Doc2Vec(vector_size=40, min_count=2, epochs=40)
 
-	# Build a Vocabulary
-	model.build_vocab(training_corpus)
+	model.build_vocab(training_corpus)  # Build a Vocabulary
+
+	model.train(training_corpus, total_examples=model.corpus_count, epochs=model.epochs)
+
+	# Save model to disk, so we won't need to do the training everytime
+	model.save(model_filename)
+	print("Doc2Vec Lee model saved:", model_filename)
 
 
-	# Model assessment with the training dataset #
+	# Model assessment with the training dataset
 
 	ranks = []
 	second_ranks = []
 
-	# Go through each document of the training corpus
-	for doc_index in range(len(training_corpus)):
-		# Infer a new vector to training corpus documents
-		inferred_vector = model.infer_vector(training_corpus[doc_index].words)
-
+	for doc_index in range(len(training_corpus)):  	# Go through each document of the training corpus
+		inferred_vector = model.infer_vector(training_corpus[doc_index].words)  # Infer a new vector for training corpus documents
 		self_similarity = model.docvecs.most_similar([inferred_vector], topn=len(model.docvecs))
 		rank = [docindex for docindex, sim in self_similarity].index(doc_index)
 		ranks.append(rank)
 		second_ranks.append(self_similarity[1])
 
+		# print('Document ({}): {}\n'.format(doc_index, ' '.join(training_corpus[doc_index].words)))
+		# print('Documents similarity')
+		# self_similarity_length = len(self_similarity)
+		# for label, index in [('Most', 0), ('Second Most', 1), ('Median', self_similarity_length//2), ('Least', self_similarity_length-1)]:
+		# 	print(u'%s %s: %s\n' % (label, self_similarity[index], ' '.join(training_corpus[self_similarity[index][0]].words)))
 
-	# Save model to disk, so we won't need to do the training everytime
-	model.save(model_full_filename)
-	print("Doc2Vec model saved!")
-
-	# Count how each document ranks with respect to the training corpus
+	# Count how many times each document ranks with respect to the training corpus
 	documents_ranks = collections.Counter(ranks)
-
-	print('Document ({}): {}\n'.format(doc_index, ' '.join(training_corpus[doc_index].words)))
-
-	print('Documents similarity')
-
-	self_similarity_length = len(self_similarity)
+	print(documents_ranks)
 
 
-	for label, index in [('Most', 0), ('Second Most', 1), ('Median', self_similarity_length//2), ('Least', self_similarity_length-1)]:
-		print(u'%s %s: %s\n' % (label, self_similarity[index], ' '.join(training_corpus[self_similarity[index][0]].words)))
 
 	# Testing #
 
-	testing_corpus_length = len(testing_corpus)
-	# Generate a random id from the testing corpus
-	doc_index = random.randint(0, testing_corpus_length-1)
-
-	# Infer a vector from the model
-	inferred_vector = model.infer_vector(testing_corpus[doc_index])
-
-	self_similarity = model.docvecs.most_similar([inferred_vector], topn=len(model.docvecs))
-	print('Document ({}): {}\n'.format(doc_index, ' '.join(training_corpus[doc_index].words)))
-
-
-	for label, index in [('Most', 0), ('Second Most', 1), ('Median', self_similarity_length//2), ('Least', self_similarity_length-1)]:
-		print(u'%s %s: %s\n' % (label, self_similarity[index], ' '.join(training_corpus[self_similarity[index][0]].words)))
+	# testing_corpus_length = len(testing_corpus)
+	# # Generate a random id from the testing corpus
+	# doc_index = random.randint(0, testing_corpus_length-1)
+	#
+	# # Infer a vector from the model
+	# inferred_vector = model.infer_vector(testing_corpus[doc_index])
+	#
+	# self_similarity = model.docvecs.most_similar([inferred_vector], topn=len(model.docvecs))
+	# print('Document ({}): {}\n'.format(doc_index, ' '.join(training_corpus[doc_index].words)))
+	# self_similarity_length = len(self_similarity)
+	#
+	# for label, index in [('Most', 0), ('Second Most', 1), ('Median', self_similarity_length//2), ('Least', self_similarity_length-1)]:
+	# 	print(u'%s %s: %s\n' % (label, self_similarity[index], ' '.join(training_corpus[self_similarity[index][0]].words)))
 
 
 # Build a doc2vec model

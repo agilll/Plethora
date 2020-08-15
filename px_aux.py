@@ -68,6 +68,14 @@ DEFAULT_TRAINING_TEXTS = "originales.s.w"
 SCRIPT_STEP2 = "./module_processCorpus/S2.py"
 SCRIPT_STEP3 = "./module_processCorpus/S3.py"
 
+# variable and function to control if program must print log messages (change to True if argument -m)
+FMES = False
+def Print (*args):
+	if FMES == True:
+		lista = list(map(lambda x: str(x), args))
+		print(" ".join(lista))
+	return
+
 # to save some ASCII content in a file
 def saveFile (f, content):
 	out = _Open(f, 'w')

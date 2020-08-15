@@ -8,13 +8,16 @@ import spacy
 
 from smart_open import open as _Open
 
+from gensim.parsing.preprocessing import remove_stopwords
+from gensim.utils import simple_preprocess
+
 from aux_build import CORPUS_FOLDER as _CORPUS_FOLDER
 from ourSimilarityListsFunctions import ourSimilarityListsFunctions as _ourSimilarityListsFunctions
-from aux_build import tokenizeAndRemoveNLTKStopwords as _tokenizeAndRemoveNLTKStopwords, getWikicatComponents as _getWikicatComponents, NmaxElements as _NmaxElements, NmaxElements3T as _NmaxElements3T
-from aux_build import getSubjectComponents as _getSubjectComponents, filterSimpleWikicats as _filterSimpleWikicats, Print as _Print
+from aux_build import tokenizeAndRemoveNLTKStopwords as _tokenizeAndRemoveNLTKStopwords, getWikicatComponents as _getWikicatComponents
+from aux_build import getSubjectComponents as _getSubjectComponents, filterSimpleWikicats as _filterSimpleWikicats
 
 from px_DB_Manager import getCategoriesInText as _getCategoriesInText
-from px_aux import saveFile as _saveFile,  appendFile as _appendFile
+from px_aux import Print as _Print, saveFile as _saveFile,  appendFile as _appendFile
 
 from gensim.models.doc2vec import Doc2Vec
 
@@ -23,9 +26,17 @@ class Doc2VecSimilarity():
 
 	def __init__(self, modelName, original_text):
 		self.model = Doc2Vec.load(modelName)
-		self.original_text_tokens = _tokenizeAndRemoveNLTKStopwords(original_text)
+
+		self.rm_stop = True
+		if self.rm_stop:
+			original_text = remove_stopwords(original_text)
+
+		# Use gensim.utils.simple_preprocess for processing:
+		# tokenize text to individual words, remove punctuations, set to lowercase, and remove words less than 2 chars or more than 50 chars
+		self.original_text_tokens  = simple_preprocess(original_text, max_len=50)
+
 		# Generate a vector from the tokenized original text
-		self.original_text_inferred_vector = self.model.infer_vector(self.original_text_tokens)
+		self.original_text_inferred_vector = self.model.infer_vector(self.original_text_tokens, epochs=50)
 
 		# Use our basic math functions instead of sklearn's cosine similarity and euclidean distance
 		self.ourMeasures = _ourSimilarityListsFunctions()
@@ -40,11 +51,12 @@ class Doc2VecSimilarity():
 			candidate_fileFD = _Open(candidate_file, "r")
 			candidate_text = candidate_fileFD.read()
 
-		# startTime1 = datetime.now()
-		candidate_text_tokens = _tokenizeAndRemoveNLTKStopwords(candidate_text)
-		# endTime1 = datetime.now()
-		# elapsedTime1 = endTime1 - startTime1
-		# print("D2V: elapsed1 =", elapsedTime1.microseconds)
+		if self.rm_stop:
+			candidate_text = remove_stopwords(candidate_text)
+
+		# Use gensim.utils.simple_preprocess for processing:
+		# tokenize text to individual words, remove punctuations, set to lowercase, and remove words less than 2 chars or more than 50 chars
+		candidate_text_tokens  = simple_preprocess(candidate_text, max_len=50)
 
 		# infer_vector(): Generates a vector from a document
 		# The document should be tokenized in the same way the model's training documents were tokenized
@@ -58,12 +70,7 @@ class Doc2VecSimilarity():
 		# steps (int, optional, deprecated) – Previous name for epochs, still available for now for backward compatibility: if epochs is unspecified but steps is, the steps value will be used.
 
 		# Generate a vector from the tokenized candidate text
-
-		# startTime2 = datetime.now()
-		candidate_text_inferred_vector = self.model.infer_vector(candidate_text_tokens)
-		# endTime2 = datetime.now()
-		# elapsedTime2 = endTime2 - startTime2
-		# print("D2V: elapsed2 =", elapsedTime2.microseconds)
+		candidate_text_inferred_vector = self.model.infer_vector(candidate_text_tokens, epochs=50)
 
 		# The sklearn math functions returns an array with the results
 		# We shall keep only one of them, either sklearn or ourSimilarityListsFunctions
@@ -75,13 +82,7 @@ class Doc2VecSimilarity():
 		# euc_distance = euclidean_distances([original_text_inferred_vector], [text_inferred_vector])
 
 		# Measure vectors similarity using cosine similarity
-
-		# startTime3 = datetime.now()
 		cos_similarity = self.ourMeasures.oCosineSimilarity(self.original_text_inferred_vector, candidate_text_inferred_vector)
-		# endTime3 = datetime.now()
-		# elapsedTime3 = endTime3 - startTime3
-		# print("D2V: elapsed3 =", elapsedTime3.microseconds)
-
 
 		# Measure vectors similarity using euclidean distance
 		# euc_distance = self.ourMeasures.oEuclideanDistance(self.original_text_inferred_vector, candidate_text_inferred_vector)
@@ -111,39 +112,64 @@ class textSimilarityFunctions():
 		self.original_text_subjects = original_text_subjects
 		self.pairs_original_text_subjects = list(map(lambda x: (x, _getSubjectComponents(x)), original_text_subjects))
 
+		# Tokenize original text based on the spacy package
+		self.original_text_doc_tokens_without_stopwords = self.nlp(self.remove_spacy_stopwords(original_text))  # this could be done only once, at the object creation stage
+		self.original_text_doc_tokens = self.nlp(original_text)
+
 		self.oMeasures = _ourSimilarityListsFunctions()   # Create an object from the ourSimilarityListsFunctions class
 		return
 
 
-
+	# token.text , token.lemma_ , token.pos_ , token.is_punct, token.dep_
+	def remove_spacy_stopwords(self, text):
+		doc = self.nlp(text.lower()) # return a list of tokens. Each token contains data about a word
+		# words = [token.text for token in doc if (token.lemma_ != '-PRON-') and (token.text not in self.nlp.Defaults.stop_words) and (not token.is_punct)]
+		words = [token.text for token in doc if (token.text not in self.nlp.Defaults.stop_words) and (not token.is_punct)]
+		return " ".join(words)
 
 	#############################################################################################################################################
 
 	# spaCy similarity: Takes two pieces of text and returns the text similarity based on spaCy
 
 	def spacyTextSimilarity (self, candidate_text=None, candidate_file=None):
-
-		def remove_stopwords(text):
-			doc = self.nlp(text.lower())
-			words = [token.text for token in doc if (token.lemma_ != '-PRON-') and (token.text not in self.nlp.Defaults.stop_words) and (not token.is_punct)]
-			return " ".join(words)
-
 		if not candidate_text:
 			candidate_fileFD = _Open(candidate_file, "r")
 			candidate_text = candidate_fileFD.read()
 
-		# Tokenize original text based on the nlp package
-		original_text_tokens = self.nlp(remove_stopwords(self.original_text))  # this could be done only once, at the object creation stage
+		# Tokenize candidate text based on the spacy package
+		candidate_text_doc_tokens_without_stopwords = self.nlp(self.remove_spacy_stopwords(candidate_text))
 
-		# Tokenize candidate text based on the nlp package
-		candidate_text_tokens = self.nlp(remove_stopwords(candidate_text))
-
-		# Measure both texts similarity based on spaCy
-		spacy_similarity = original_text_tokens.similarity(candidate_text_tokens)
-
-		return spacy_similarity
+		# Measure both texts similarity with spaCy method and return it
+		return self.original_text_doc_tokens_without_stopwords.similarity(candidate_text_doc_tokens_without_stopwords)
 
 
+
+	def compute_similarity_without_stopwords_punct(self, doc1, doc2):
+		import numpy as np
+
+		vector1 = np.zeros(300)
+		for token in doc1:
+			if (token.text not in self.nlp.Defaults.stop_words) and (not token.is_punct):
+				vector1 = vector1 + token.vector
+		vector1 = np.divide(vector1, len(doc1))
+
+		vector2 = np.zeros(300)
+		for token in doc2:
+			if (token.text not in self.nlp.Defaults.stop_words) and (not token.is_punct):
+				vector2 = vector2 + token.vector
+		vector2 = np.divide(vector2, len(doc2))
+
+		return np.dot(vector1, vector2) / (np.linalg.norm(vector1) * np.linalg.norm(vector2))
+
+
+	def spacyTextSimilarity_calc (self, candidate_text=None, candidate_file=None):
+		if not candidate_text:
+			candidate_fileFD = _Open(candidate_file, "r")
+			candidate_text = candidate_fileFD.read()
+
+		candidate_text_doc_tokens = self.nlp(candidate_text)
+
+		return self.compute_similarity_without_stopwords_punct(self.original_text_doc_tokens, candidate_text_doc_tokens)
 
 
 
@@ -193,7 +219,7 @@ class textSimilarityFunctions():
 					union_cardinality = len(set.union(set(wkocl), set(wkccl)))
 					component_jaccard_similarity = intersection_cardinality/float(union_cardinality)
 					sum_sims += component_jaccard_similarity
-					print(numContributions, "->", wko, ",", wkc, component_jaccard_similarity)
+					_Print(numContributions, "->", wko, ",", wkc, component_jaccard_similarity)
 
 			if numContributions == 0: # no intersection at all
 				return 0
@@ -259,7 +285,7 @@ class textSimilarityFunctions():
 					union_cardinality = len(set.union(set(sbocl), set(sbccl)))
 					component_jaccard_similarity = intersection_cardinality/float(union_cardinality)
 					sum_sims += component_jaccard_similarity
-					print(numContributions, "->", sbo, ",", sbc, component_jaccard_similarity)
+					_Print(numContributions, "->", sbo, ",", sbc, component_jaccard_similarity)
 
 					if numContributions == 0: # no intersection at all
 						return 0
@@ -355,20 +381,3 @@ class textSimilarityFunctions():
 			raise e
 
 		return euclidean_similarity
-
-
-
-
-	#############################################################################################################################################
-
-	# Jaccard text similarity, using ourSimilarityListsFunctions
-	# not used, seems not interesting as it simply compares the words used
-
-	def jaccardTextSimilarity (self, candidate_text):
-
-		original_text_words = _tokenizeAndRemoveNLTKStopwords(original_text)
-		candidate_text_words = _tokenizeAndRemoveNLTKStopwords(candidate_text)
-
-		jaccard_similarity = self.oMeasures.oJaccardSimilarity(original_text_words, candidate_text_words)
-
-		return jaccard_similarity
