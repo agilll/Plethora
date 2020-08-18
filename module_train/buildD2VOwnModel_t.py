@@ -3,7 +3,7 @@
 
 from aux_train import TRAINING_T_FOLDER as _TRAINING_T_FOLDER, OWN_D2V_MODEL as _OWN_D2V_MODEL
 
-from D2V_BuildOwnModel_t import buildDoc2VecModel as _buildDoc2VecModel
+from D2V_BuildOwnModel_t import buildD2VModelFrom_T_Folder as _buildD2VModelFrom_T_Folder
 
 # variables init
 
@@ -22,8 +22,8 @@ distributed_memory = 1	# Defines the training algorithm. If dm=1, ‘distributed
 epochs = 100	# epochs (int, optional) – Number of iterations (epochs) over the corpus
 
 
-# Build a doc2vec model trained with files in textos originales folder
-r =_buildDoc2VecModel(_TRAINING_T_FOLDER, model_filename, vector_size, window, alpha, min_alpha, min_count, distributed_memory, epochs)
+# Build a doc2vec model trained with files in _TRAINING_T_FOLDER folder
+r =_buildD2VModelFrom_T_Folder(_TRAINING_T_FOLDER, model_filename, vector_size, window, alpha, min_alpha, min_count, distributed_memory, epochs)
 
 if (r != 0):
 	print("Training failed!")

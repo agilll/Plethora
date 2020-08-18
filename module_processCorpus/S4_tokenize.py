@@ -1,7 +1,6 @@
-
 # This script contains functions tokenize .w files to get .t files
 # a .w file is a text file that has been preprocessed with previous scripts
-# a .t file is a binary file, saved with pickle, containing a list of lists of words
+# a .t file is a binary file, saved with pickle, containing a list of lists of words (that is, a list of sentences, as each list of words is supposed to be a sentence)
 
 # tokenize is to convert the text in a list of sentences, each sentence being a list of words
 

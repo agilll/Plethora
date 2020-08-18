@@ -3,22 +3,28 @@ import collections
 import random
 from smart_open import open as smart_open
 import gensim
-from gensim.models.doc2vec import Doc2Vec
-from gensim.models.doc2vec import TaggedDocument
+from gensim.models.doc2vec import Doc2Vec, TaggedDocument
 from gensim.parsing.preprocessing import remove_stopwords
 from gensim.utils import simple_preprocess
 
 from aux_train import LEE_D2V_MODEL as _LEE_D2V_MODEL
 
-model_filename = _LEE_D2V_MODEL + ".model"
 LEE_TRAINING_CORPUS = 'lee_background.cor'
 LEE_TESTING_CORPUS = 'lee.cor'
 
+remove_stopWords = True	# use remove_stopWords to indicate if stopwords must be removed or not
+suffix = "with_stopwords"
+if (remove_stopWords == True):
+	print("Removing stopwords")
+	suffix = "without_stopwords"
+
+model_filename = _LEE_D2V_MODEL+"."+suffix+".model"
+
 # Read and Pre-process Text
-def readCorpus(fileName, tokens_only=False, rm_stop=False):
+def readCorpus(fileName, tokens_only=False):
 	with smart_open(fileName, encoding="iso-8859-1") as fd:  	# Use the latin encoding
 		for index, line in enumerate(fd):
-			if (rm_stop):  # use rm_stop to indicate if stopwords must be removed or not
+			if (remove_stopWords):  # use rm_stop to indicate if stopwords must be removed or not
 				line = remove_stopwords(line)
 
 			# Use gensim.utils.simple_preprocess for processing:
@@ -43,35 +49,35 @@ def buildDoc2VecModel():
 	testing_data = test_data_dir + os.sep + LEE_TESTING_CORPUS
 
 	# Convert generators to lists
-	training_corpus = list(readCorpus(training_data, tokens_only=False, rm_stop=True))   # by default, stop words are removed
+	training_corpus = list(readCorpus(training_data, tokens_only=False))
 	testing_corpus = list(readCorpus(testing_data, tokens_only=True))
 
 	# Training the model: Instantiate a Doc2Vec Object
 	# vector_size: vector dimensions
 	# min_count: the minimum number of a word frequency to be included
 	# epochs: Number of iterations over the training corpus
-	model = Doc2Vec(vector_size=40, min_count=2, epochs=40)
+	model = Doc2Vec(vector_size=40, min_count=2, epochs=40)  # create empty model
+	model.build_vocab(training_corpus)  # Build and set a vocabulary
+	model.train(training_corpus, total_examples=model.corpus_count, epochs=model.epochs)  # train
 
-	model.build_vocab(training_corpus)  # Build a Vocabulary
-
-	model.train(training_corpus, total_examples=model.corpus_count, epochs=model.epochs)
-
-	# Save model to disk, so we won't need to do the training everytime
+	# Save model to disk
 	model.save(model_filename)
-	print("Doc2Vec Lee model saved:", model_filename)
+	print("Doc2Vec Lee model "+suffix+" saved:", model_filename)
 
 
 	# Model assessment with the training dataset
 
 	ranks = []
-	second_ranks = []
+	# second_ranks = []
 
 	for doc_index in range(len(training_corpus)):  	# Go through each document of the training corpus
 		inferred_vector = model.infer_vector(training_corpus[doc_index].words)  # Infer a new vector for training corpus documents
-		self_similarity = model.docvecs.most_similar([inferred_vector], topn=len(model.docvecs))
-		rank = [docindex for docindex, sim in self_similarity].index(doc_index)
+		self_similarity = model.docvecs.most_similar([inferred_vector], topn=len(model.docvecs)) # get the most similars to it
+		rankList = [docindex for docindex, sim in self_similarity]
+		rank = rankList.index(doc_index)   # get its rank, ideally should be 1
 		ranks.append(rank)
-		second_ranks.append(self_similarity[1])
+
+		# second_ranks.append(self_similarity[1])
 
 		# print('Document ({}): {}\n'.format(doc_index, ' '.join(training_corpus[doc_index].words)))
 		# print('Documents similarity')

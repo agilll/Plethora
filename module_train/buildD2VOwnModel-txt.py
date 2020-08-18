@@ -1,19 +1,25 @@
 # train with 100 epochs and .txt files
-
 import glob
 import os
 from gensim.models.doc2vec import Doc2Vec, TaggedDocument
-from nltk.tokenize import word_tokenize
+from gensim.parsing.preprocessing import remove_stopwords
+from gensim.utils import simple_preprocess
 
 from aux_train import TRAINING_TXT_FOLDER as _TRAINING_TXT_FOLDER, OWN_D2V_MODEL as _OWN_D2V_MODEL
-	
+
 if not os.path.exists(_TRAINING_TXT_FOLDER):
 	print(_TRAINING_TXT_FOLDER, "not found!")
 	exit()
 
-# variables init
+remove_stopWords = False	# use remove_stopWords to indicate if stopwords must be removed or not
+suffix = "with_stopwords"
+if (remove_stopWords == True):
+	print("Removing stopwords")
+	suffix = "without_stopwords"
 
-model_filename = _OWN_D2V_MODEL + "-txt.model"
+
+# variables init
+model_filename = _OWN_D2V_MODEL + "-txt."+suffix+".model"
 
 vector_size = 20	# vector_size (int, optional) – Dimensionality of the feature vectors
 window = 8	# window (int, optional) – The maximum distance between the current and predicted word within a sentence
@@ -31,7 +37,6 @@ alpha_delta = 0.0002	# delta - To decrease the learning rate manually
 
 
 
-
 # A function to build a model based on Doc2Vec, trained by our own training text documents
 def buildDoc2VecModel(model_name, vector_size, window, alpha, min_alpha, min_count, distributed_memory, epochs, alpha_delta):
 
@@ -45,37 +50,30 @@ def buildDoc2VecModel(model_name, vector_size, window, alpha, min_alpha, min_cou
 		text = training_fd.read()
 		training_texts.append(text)
 
+	# remove stopwords if specified
+	if (remove_stopWords == True):
+		training_texts = [remove_stopwords(oneText, max_len=50) for oneText in training_texts]
+
 	# Tokenize and tag (add an increasing number as tag) the training texts
-	# word_tokenize(_text.lower()) changes text to lower and tokenizes it: creates a list with the different words of the text
-	tagged_training_lists = [TaggedDocument(words=word_tokenize(_text.lower()), tags=[str(i)]) for i, _text in enumerate(training_texts)]
+	# simple_preprocess: tokenizes, lower, remove punctuation
+	tagged_training_lists = [TaggedDocument(words=simple_preprocess(oneText, max_len=50), tags=[str(i)]) for i, oneText in enumerate(training_texts)]
 
 	# this is the input for training
 	# tagged_training_lists is a list [TaggedDocument(['token1','token2',...], ['0']), TaggedDocument(['token1','token2',...], ['1']), ...]
-	
-	
+
+
 	# Create an empty Doc2Vec model with the selected parameters
-	model = Doc2Vec(vector_size=vector_size,
-					window=window,
-					alpha=alpha,
-					min_alpha=min_alpha,
-					min_count=min_count,
-					dm=distributed_memory)
+	model = Doc2Vec(vector_size=vector_size, window=window, alpha=alpha, min_alpha=min_alpha, min_count=min_count, dm=distributed_memory)
 
 	# Build model vocabulary from the tagged training lists
 	model.build_vocab(tagged_training_lists)
 
 	# Train the model with the tagged list of lists
-	model.train(tagged_training_lists,
-				total_examples=model.corpus_count,
-				epochs=epochs,
-				start_alpha=alpha,
-				end_alpha=min_alpha)
+	model.train(tagged_training_lists, total_examples=model.corpus_count, epochs=epochs, start_alpha=alpha, end_alpha=min_alpha)
 
 	# Save the trained model to file
 	model.save(model_name)
 	print(model_name, "model saved!")
 
-# start execution
-
-# Build a doc2vec model trained with files in textos originales folder
+# start execution: build a doc2vec model trained with files in _TRAINING_TXT_FOLDER folder
 buildDoc2VecModel(model_filename, vector_size, window, alpha, min_alpha, min_count, distributed_memory, epochs, alpha_delta)

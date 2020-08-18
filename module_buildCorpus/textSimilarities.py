@@ -8,27 +8,25 @@ import spacy
 
 from smart_open import open as _Open
 
-from gensim.parsing.preprocessing import remove_stopwords
-from gensim.utils import simple_preprocess
-
 from aux_build import CORPUS_FOLDER as _CORPUS_FOLDER
 from ourSimilarityListsFunctions import ourSimilarityListsFunctions as _ourSimilarityListsFunctions
-from aux_build import tokenizeAndRemoveNLTKStopwords as _tokenizeAndRemoveNLTKStopwords, getWikicatComponents as _getWikicatComponents
+from aux_build import getWikicatComponents as _getWikicatComponents
 from aux_build import getSubjectComponents as _getSubjectComponents, filterSimpleWikicats as _filterSimpleWikicats
 
 from px_DB_Manager import getCategoriesInText as _getCategoriesInText
 from px_aux import Print as _Print, saveFile as _saveFile,  appendFile as _appendFile
 
 from gensim.models.doc2vec import Doc2Vec
-
+from gensim.parsing.preprocessing import remove_stopwords
+from gensim.utils import simple_preprocess
 
 class Doc2VecSimilarity():
 
 	def __init__(self, modelName, original_text):
 		self.model = Doc2Vec.load(modelName)
 
-		self.rm_stop = True
-		if self.rm_stop:
+		self.remove_stopwords = True
+		if (self.remove_stopwords == True):
 			original_text = remove_stopwords(original_text)
 
 		# Use gensim.utils.simple_preprocess for processing:
@@ -51,7 +49,7 @@ class Doc2VecSimilarity():
 			candidate_fileFD = _Open(candidate_file, "r")
 			candidate_text = candidate_fileFD.read()
 
-		if self.rm_stop:
+		if (self.remove_stopwords == True):
 			candidate_text = remove_stopwords(candidate_text)
 
 		# Use gensim.utils.simple_preprocess for processing:

@@ -13,7 +13,7 @@ from px_DB_Manager import getCategoriesInText as _getCategoriesInText
 from px_aux import saveFile as _saveFile, appendFile as _appendFile, URL_DB as _URL_DB, URL_WK as _URL_WK
 from px_aux import Print as _Print
 
-from aux_build import hasFieldPT as _hasFieldPT, SortTuplaList_byPosTupla as _SortTuplaList_byPosTupla
+from aux_build import hasFieldPT as _hasFieldPT, SortTuplaList_byPosInTupla as _SortTuplaList_byPosInTupla
 from aux_build import CORPUS_FOLDER as _CORPUS_FOLDER, URLs_FOLDER as _URLs_FOLDER,  SCRAPPED_PAGES_FOLDER as _SCRAPPED_PAGES_FOLDER
 from aux_build import MODELS_FOLDER as _MODELS_FOLDER, LEE_D2V_MODEL as _LEE_D2V_MODEL
 from aux_build import getWikicatComponents as _getWikicatComponents, moreRecent as _moreRecent
@@ -33,7 +33,8 @@ from S4_tokenize import processS4List as _processS4List   # requires Standord Co
 
 # to train the D2V model
 sys.path.append('../module_train')
-from D2V_BuildOwnModel_t import buildDoc2VecModelFromList as _buildDoc2VecModelFromList
+from D2V_BuildOwnModel_t import buildD2VModelFrom_T_FileList as _buildD2VModelFrom_T_FileList
+from D2V_BuildOwnModel_w import buildD2VModelFrom_W_FileList as _buildD2VModelFrom_W_FileList
 
 
 
@@ -856,7 +857,7 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 		print("No similarities file")
 
 
-
+	startTime = datetime.now()
 
 	# Create a textSimilarityFunctions object to measure text similarities. It requires the original text, its wikicats and subjects.
 	similarities = _textSimilarityFunctions(P0_originalText, P1_selectedWikicats, listSubjectsOriginalText, logFilename)
@@ -864,29 +865,6 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 	# create object to measure Doc2Vec similarity with LEE_D2V_MODEL
 	d2vLeeSimilarity = _Doc2VecSimilarity(_LEE_D2V_MODEL, P0_originalText)
 
-
-	# First part to compute several times the Doc2Vec Lee sim and later average
-	# d2v_results = {}
-	# for i in range(1,3):
-	# 	print("D2V iteration ", i)
-	# 	d2v_results[i] = {}
-	# 	d2vLeeSimilarity = _Doc2VecSimilarity(_LEE_D2V_MODEL, P0_originalText)
-	#
-	# 	for idx, rFileNameCandidate in enumerate(listWithWKSB, start=1):  # format rFileNameCandidate = en.wikipedia.org/wiki..Title.txt
-	# 		if (idx % 1000) == 0:
-	# 			print(idx/1000, end=' ', flush=True)
-	#
-	# 		fileNameCandidate = _SCRAPPED_PAGES_FOLDER+rFileNameCandidate   # format $HOME/KORPUS/SCRAPPED_PAGES/en.wikipedia.org/wiki..Title.txt
-	# 		d2v_lee_sim = d2vLeeSimilarity.doc2VecTextSimilarity(candidate_file=fileNameCandidate)
-	# 		d2v_results[i][fileNameCandidate] = d2v_lee_sim
-
-
-
-	startTime = datetime.now()
-
-	# L_spacy_sim = similarities.spacyTextSimilarity_calc(candidate_file="/Users/agil/KORPUS/SCRAPPED_PAGES/en.wikipedia.org/wiki..Battle_of_Thermopylae.txt")
-	# print("Spacy para Leonidas =", L_spacy_sim)
-	# input("continuo?")
 
 	for idx, rFileNameCandidate in enumerate(listWithWKSB, start=1):  # format rFileNameCandidate = en.wikipedia.org/wiki..Title.txt
 		if (idx % 1000) == 0:
@@ -909,9 +887,6 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 			shared_subjects_jaccard_sim = sims[3]
 			spacy_sim = sims[4]
 			d2v_lee_sim = sims[5]
-			#print("Computing Doc2Vec Lee similarity for", rFileNameCandidate)
-			#d2v_lee_sim = d2vLeeSimilarity.doc2VecTextSimilarity(candidate_file=fileNameCandidate)
-
 			euclidean_sim = sims[6]
 
 
@@ -955,20 +930,11 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 			_Print("Computing Euclidean similarity for", rFileNameCandidate)
 			euclidean_sim = similarities.euclideanTextSimilarity(candidate_file=fileNameCandidate)
 
-
-
 		# all sims for this doc have been read or newly computed
 
 		# add them to the dict_sims_new dict
 		dict_sims_new[rFileNameCandidate] = (full_wikicats_jaccard_sim, full_subjects_jaccard_sim, shared_wikicats_jaccard_sim, shared_subjects_jaccard_sim, spacy_sim, d2v_lee_sim, euclidean_sim)
 
-		# _Print("Wikicats full jaccard similarity =", str(full_wikicats_jaccard_sim))
-		# _Print("Subjects full jaccard similarity =", str(full_subjects_jaccard_sim))
-		# _Print("Wikicats shared jaccard similarity =", str(shared_wikicats_jaccard_sim))
-		# _Print("Subjects shared jaccard similarity =", str(shared_subjects_jaccard_sim))
-		# _Print("Spacy similarity =", str(spacy_sim))
-		# _Print("Doc2Vec similarity =", str(d2v_lee_sim))
-		# _Print("Euclidean similarity =", str(euclidean_sim))
 
 
 		# add this page value to compute distributions for shared wikicats and subjects jaccard
@@ -1045,26 +1011,21 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 
 
 
-	# compute ratings for similarities to eval their quality and select the one that we will use
-
-	listRatings = []  # list of tuplas (sim name, sim rating) to be able to order sims by rating
-	ratings = {}	# dict to store rating info for all sims
-	# ratings[sim] is also a dict
-	# ratings[sim]["orderedList"] --> list of 2-tuplas (name,sim) with all candidates ordered by sim
-	# ratings[sim]["originalEntities"] --> list of 2-tuplas (entityName, pos) with all the E0 entities ordered by pos
-	# ratings[sim]["average"]
+	# compute ratings for similarities to eval their quality and select the one to use
 
 	# convert dict_sims_new in list of tuplas (filenameCandidate, simFullWikicats, simFullSubjects, simSharedWikicats, simSharedSubjects, simSpacy, simD2V-Lee, simEuclidean) to be able to order them
 	list_sims_tuplas = [ (k, dict_sims_new[k][0], dict_sims_new[k][1], dict_sims_new[k][2], dict_sims_new[k][3], dict_sims_new[k][4], dict_sims_new[k][5], dict_sims_new[k][6]) for k in dict_sims_new]
 
-
-	# compute ratings for a general sim
-	# fills the ratings dict for the received key
+	ratings = {}	# dict to store rating info for all sims
+	# ratings[sim] is also a dict
+	# ratings[sim]["orderedList"] --> list of 2-tuplas (name,sim) with all candidates ordered by such sim
+	# ratings[sim]["originalEntities"] --> list of 2-tuplas (entityName, pos) with all the E0 entities ordered by pos in such sim
+	# ratings[sim]["average"]
 
 	def computeRating(indexSim, nameSim):
-		listEntities = listEntityFilesOriginalText.copy() # make a copy of the list E0 (list of entities in the original text, with format en.wikipedia.org/wiki..Title.txt)
-		# _SortTuplaList_byPosTupla: function to order a list of tuplas (0,1,2,3,4,5,6,7...) by the element in the position 'pos'=1,2...
-		listOrdered = _SortTuplaList_byPosTupla(list_sims_tuplas, indexSim)  # order sims list by indexSim similarity
+		listOrdered = list_sims_tuplas.copy()
+		# _SortTuplaList_byPosInTupla: function to order a list of tuplas (0,1,2,3,4,5,6,7...) by the element in the position 'pos'=1,2...
+		_SortTuplaList_byPosInTupla(listOrdered, indexSim)  # order sims list by indexSim similarity
 		listOrdered_Names_Sims  = list(map(lambda x: (x[0], x[indexSim]), listOrdered)) # keep only the names of the docs and its indexedSim similarity
 		ratings[nameSim] = {}
 		ratings[nameSim]["orderedList"] = listOrdered_Names_Sims
@@ -1072,20 +1033,18 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 		listOrdered_OnlyNames = list(map(lambda x: x[0], listOrdered_Names_Sims))  # keep only the names of the docs
 
 		for idx, name in enumerate(listOrdered_OnlyNames, start=1):
-			if name in listEntities:  # one entity of the original text found in list
+			if name in listEntityFilesOriginalText:  # one entity of the original text found in list
 				ratings[nameSim]["originalEntities"].append((name, idx))
-			if len(ratings[nameSim]["originalEntities"]) == len(listEntities):  # all entities of the original text have been found in the list
+			if len(ratings[nameSim]["originalEntities"]) == len(listEntityFilesOriginalText):  # all entities of the original text have been found in the list
 				break
 
 		listPositions = [pos for name,pos in ratings[nameSim]["originalEntities"]]   # get a list with all the positions of the entities
 		averagePosition = sum(listPositions) / len(listPositions)  # average position
 
+		print("average for", nameSim, "=", averagePosition)
 		ratings[nameSim]["average"]  = averagePosition
-
-		ratingSim = numEntitiesOriginalText / averagePosition
-		listRatings.append((nameSim, ratingSim))  # add rating for sim1 to the list
-
 		return
+
 
 	computeRating(1, "Fwikicats")
 	computeRating(2, "Fsubjects")
@@ -1094,7 +1053,6 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 	computeRating(5, "Spacy")
 	computeRating(6, "Doc2vec-Lee")
 	computeRating(7, "Euclidean")
-
 
 
 	# name of the file to save the positions of E0 entities for all sims, used for measure rating quality
@@ -1132,17 +1090,20 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 
 
 	# print the position of all the entities for each sim (shown ordered, because they are appended in order), and the average
-	for key in ratings:
-		_Print("\n**", key)
-		for (page,idx)  in ratings[key]["originalEntities"]:
-			_Print(page, "=", idx)
-		print("## Average "+key+" = ", ratings[key]["average"])
+	# for key in ratings:
+	# 	_Print("\n**", key)
+	# 	for (page,idx)  in ratings[key]["originalEntities"]:
+	# 		_Print(page, "=", idx)
+	# 	print("## Average "+key+" = ", ratings[key]["average"])
 
+
+	# list of 2-tuplas (name_sim, rating) being rating = numEntitiesOriginalText/average_sim
+	listRatings = [(k, (numEntitiesOriginalText / ratings[k]["average"])) for k in ratings]
 
 	# select the best similarity (higher rating)
-	listRatingsOrdered = _SortTuplaList_byPosTupla(listRatings, 1)
+	_SortTuplaList_byPosInTupla(listRatings, 1)
 
-	bestRating = listRatingsOrdered[0]
+	bestRating = listRatings[0]
 	nameBestRating = bestRating[0]
 
 	result["P5_bestSim"] = nameBestRating+" ("+str(ratings[nameBestRating]["average"])+")"
@@ -1329,7 +1290,7 @@ def doPh6(lenOriginalText, pctgesList):
 		print("Let's go to do training with the best", pctgeInitialCorpus,"%")
 
 		sizeCorpus = int(lenListDocs / 100) *  pctgeInitialCorpus
-		modelFilename = str(lenOriginalText)+ "-t."+str(pctgeInitialCorpus)+".model"
+		modelFilename = str(lenOriginalText)+ "-w."+str(pctgeInitialCorpus)+".model"
 
 		listDocsCorpus = listDocs[:sizeCorpus]
 		listDocsCorpus = list(map(lambda x: _SCRAPPED_PAGES_FOLDER+x, listDocsCorpus))   # get the absolute names
@@ -1341,18 +1302,21 @@ def doPh6(lenOriginalText, pctgesList):
 
 		try:
 			print("Processing S1...")
-			np1 = _processS1List(lengthFolder, listDocsCorpus)  # creates corspusFolder/length/files_s_p_w and saves .s files
+			np1 = _processS1List(lengthFolder, listDocsCorpus)  # creates corspusFolder/lengthFolder/files_s_p_w and saves .s files
+
+			listDocsS = list(map(lambda x: lengthFolder+"files_s_p_w/"+x[(1+x.rfind("/")):]+".s", listDocsCorpus))
 
 			print("Processing S2...")
-			listDocsS = list(map(lambda x: lengthFolder+"files_s_p_w/"+x[(1+x.rfind("/")):]+".s", listDocsCorpus))
 			np2 = _processS2List(listDocsS)
 
 			print("Processing S3...")
 			np3 = _processS3List(listDocsS)
 
-			print("Processing S4...")
 			listDocsW = list(map(lambda x: x+".w", listDocsS))
-			np4 = _processS4List(listDocsW, lengthFolder)  # WARNING!! requires Standord CoreNLP server launched
+
+			# # WARNING!! requires Standord CoreNLP server launched
+			# print("Processing S4...")
+			# np4 = _processS4List(listDocsW, lengthFolder)  # creates corspusFolder/lengthFolder/files_t and saves .t files
 
 		except Exception as e:
 			result["error"] = str(e)
@@ -1366,10 +1330,10 @@ def doPh6(lenOriginalText, pctgesList):
 			print("S2 produced new files: "+str(np2))
 		if (np3 > 0):
 			print("S3 produced new files: "+str(np3))
-		if (np4 > 0):
-			print("S4 produced new files: "+str(np4))
+		# if (np4 > 0):
+		# 	print("S4 produced new files: "+str(np4))
 
-		np = np1+np2+np3+np4
+		np = np1+np2+np3
 
 		endTime = datetime.now()
 		print("End of preprocessing "+modelFilename)
@@ -1390,9 +1354,10 @@ def doPh6(lenOriginalText, pctgesList):
 				else:
 					print("New files for "+modelFilename)
 
-				listDocsT = list(map(lambda x: lengthFolder+"files_t/"+x[(1+x.rfind("/")):]+".t", listDocsW))
+				#listDocsT = list(map(lambda x: lengthFolder+"files_t/"+x[(1+x.rfind("/")):]+".t", listDocsW))
 				# Build a doc2vec model trained with files in list
-				r = _buildDoc2VecModelFromList(listDocsT, globalModelFilename, vector_size, window, alpha, min_alpha, min_count, distributed_memory, epochs)
+				#r = _buildD2VModelFrom_T_FileList(listDocsT, globalModelFilename, vector_size, window, alpha, min_alpha, min_count, distributed_memory, epochs)
+				r = _buildD2VModelFrom_W_FileList(listDocsW, globalModelFilename, vector_size, window, alpha, min_alpha, min_count, distributed_memory, epochs)
 
 				if (r == 0):
 					print("Training success for "+modelFilename+"!!")
@@ -1501,7 +1466,7 @@ def doPh7(P0_originalText, modelList):
 	lengthFolder = _CORPUS_FOLDER+str(lenOriginalText)+"/"
 
 	logFilename = lengthFolder+str(lenOriginalText)+".log"
-	print("Executing Phase 7")
+	print("Executing Phase 7", flush=True)
 	_appendFile(logFilename, "\n\nExecuting Phase 7")
 
 	result = {}  # object to store the results to be returned to the request
@@ -1535,7 +1500,7 @@ def doPh7(P0_originalText, modelList):
 		return result
 
 	numEntitiesOriginalText = len(listEntityFilesOriginalText)
-	print("numEntitiesOriginalText=", str(numEntitiesOriginalText))
+	print("numEntitiesOriginalText=", numEntitiesOriginalText, flush=True)
 
 
 	# to aggregate elapsed time and average positions for each model
@@ -1546,7 +1511,7 @@ def doPh7(P0_originalText, modelList):
 	for model in modelList:
 
 		# let's review one model
-		modelName = str(lenOriginalText)+"-t."+str(model)+".model"
+		modelName = str(lenOriginalText)+"-w."+str(model)+".model"
 		modelFilename = _MODELS_FOLDER+modelName
 
 		# try to read existing AdHocD2VSims file for such model
@@ -1566,17 +1531,17 @@ def doPh7(P0_originalText, modelList):
 			except:
 				print("\nNo ad hoc D2V similarities file")
 		else:
-			print("Model is newer. Ad hoc sims will be recalculated")
+			print("\nModel is newer. Ad hoc sims will be recalculated", flush=True)
 
 		# create the object to evaluate D2V similarity with the current model
 		d2vSimilarity = _Doc2VecSimilarity(modelFilename, P0_originalText)
 
-		print("\nReviewing corpus ("+str(lenListWithWKSB)+" files) with Doc2Vec similarity derived from model:", modelName)
+		print("Reviewing corpus ("+str(lenListWithWKSB)+" files) with Doc2Vec similarity derived from model:", modelName, flush=True)
 		startTime = datetime.now()
 
 		for idx, rCandidateFile in enumerate(listWithWKSB, start=1):
 			if (idx % 5000) == 0:
-				print(".", end=' ', flush=True)
+				print(int(idx/5000), end=' ', flush=True)
 			_Print("("+str(idx)+" of "+str(lenListWithWKSB)+") -- ", rCandidateFile)
 
 			if rCandidateFile in simsAdHocD2V:
@@ -1618,10 +1583,10 @@ def doPh7(P0_originalText, modelList):
 		# Now we hace ad hoc sims. It is time to calculate average positions of E0 entities
 
 		# convert dict simsAdHocD2V in list of tuplas (filenameCandidate, simAdHocD2V) to be able to order it
-		list_sim_tupla = [ (k, simsAdHocD2V[k]) for k in simsAdHocD2V]
+		listOrdered = [ (k, simsAdHocD2V[k]) for k in simsAdHocD2V]
 
-		# _SortTuplaList_byPosTupla: function to order a list of tuplas (0,1,2,3,4,5,6,7...) by the element in the position 'pos'=1,2...
-		listOrdered = _SortTuplaList_byPosTupla(list_sim_tupla, 1)  # order sims list by ad hoc d2v similarity
+		# _SortTuplaList_byPosInTupla: function to order a list of tuplas (0,1,2,3,4,5,6,7...) by the element in the position 'pos'=1,2...
+		_SortTuplaList_byPosInTupla(listOrdered, 1)  # order sims list by ad hoc d2v similarity
 		listOrdered_OnlyNames = list(map(lambda x: x[0], listOrdered))  # keep only the names of the docs
 
 		positions = [] # list of pairs (entity, position)
@@ -1642,11 +1607,12 @@ def doPh7(P0_originalText, modelList):
 		else:
 			averagePosition = sum(listPositions) / len(listPositions)  # average position
 
+		print("Average position for model", modelName, "=", averagePosition, flush=True)
 		averagePositions[modelName] = averagePosition
 
 	P7_adhocD2Vaverages = ""
 	for m in averagePositions:
-		print("Ad hoc D2V average for "+m+" = ", str(averagePositions[m]))
+		print("Ad hoc D2V average for "+m+" = ", averagePositions[m], flush=True)
 		P7_adhocD2Vaverages = P7_adhocD2Vaverages+str(averagePositions[m])+","
 
 	P7_adhocD2Vaverages = P7_adhocD2Vaverages[0:-1]  # remove last ','

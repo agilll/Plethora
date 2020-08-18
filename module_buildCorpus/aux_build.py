@@ -4,6 +4,7 @@ import nltk
 import re
 import os
 import os.path
+from gensim.parsing.preprocessing import STOPWORDS as GENSIM_STOPWORDS
 
 # folders and filenames involved in corpus construction
 
@@ -15,7 +16,7 @@ INITIAL_TEXT = 'initialText.txt'
 CORPUS_FOLDER = os.getenv('HOME') + "/KORPUS/"
 
 MODELS_FOLDER = CORPUS_FOLDER+"MODELS/"
-LEE_D2V_MODEL = MODELS_FOLDER+"d2v_lee_with_stop.model"
+LEE_D2V_MODEL = MODELS_FOLDER+"d2v_lee.without_stopwords.model"
 
 # these are the files and folders created in the building of corpus
 
@@ -39,9 +40,9 @@ def moreRecent (f1, f2):
 
 
 # function to order a list of tuplas (0,1,2,3,4,5,6,7...) by the element in the position 'pos'=1,2...
-def SortTuplaList_byPosTupla(tuplaList, pos):
+def SortTuplaList_byPosInTupla(tuplaList, pos):
 	tuplaList.sort(reverse=True, key = lambda x: x[pos])
-	return tuplaList
+	return
 
 
 # variable and function to control if program must pause after each phase (change to True if argument -s)
@@ -127,6 +128,11 @@ nltk_stopwords = nltk.corpus.stopwords.words('english')
 # function to check if a word is in the English stopwords set (to be used in a filter)
 def isNotNLTKStopWord (word):
 	if word.lower() not in nltk_stopwords:
+		return True
+	return False
+
+def isNotGensimStopWord (word):
+	if word.lower() not in GENSIM_STOPWORDS:
 		return True
 	return False
 
