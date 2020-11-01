@@ -72,18 +72,18 @@ def buildD2VModelFrom_W_FileList(training_files, model_name, vector_size, window
 	print(model_name, "model saved!")
 
 
-	# Model assessment with the training dataset
-	ranks = []
-	print("Computing ranks")
-	for doc_index in range(len(tagged_training_lists)):  	# Go through each document of the training corpus
-		inferred_vector = model.infer_vector(tagged_training_lists[doc_index].words)  # Infer a new vector for training corpus documents
-		self_similarity = model.docvecs.most_similar([inferred_vector], topn=len(model.docvecs)) # get the most similars to it
-		rankList = [docindex for docindex, sim in self_similarity]
-		rank = rankList.index(doc_index)   # get its rank, ideally should be 1
-		ranks.append(rank)
-
-	# Count how many times each document ranks with respect to the training corpus
-	documents_ranks = collections.Counter(ranks)
-	print(model_name, "ranks =", documents_ranks)
+	# # Model assessment with the training dataset
+	# ranks = []
+	# print("Computing ranks")
+	# for doc_index in range(len(tagged_training_lists)):  	# Go through each document of the training corpus
+	# 	inferred_vector = model.infer_vector(tagged_training_lists[doc_index].words)  # Infer a new vector for training corpus documents
+	# 	self_similarity = model.docvecs.most_similar([inferred_vector], topn=len(model.docvecs)) # get the most similars to it
+	# 	rankList = [docindex for docindex, sim in self_similarity]
+	# 	rank = rankList.index(doc_index)   # get its rank, ideally should be 1
+	# 	ranks.append(rank)
+	#
+	# # Count how many times each document ranks with respect to the training corpus
+	# documents_ranks = collections.Counter(ranks)
+	# print(model_name, "ranks =", documents_ranks)
 
 	return 0

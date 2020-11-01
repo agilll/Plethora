@@ -1,10 +1,11 @@
 
-from nltk.tokenize import RegexpTokenizer
 import nltk
 import re
 import os
 import os.path
+from collections import Counter
 from gensim.parsing.preprocessing import STOPWORDS as GENSIM_STOPWORDS
+
 
 # folders and filenames involved in corpus construction
 
@@ -137,19 +138,6 @@ def isNotGensimStopWord (word):
 	return False
 
 
-# Tokenize text, and returns a list of words (lowercase) after removing the stopwords
-def tokenizeAndRemoveNLTKStopwords(text):
-
-	tokenizer = RegexpTokenizer('\w+')  # Create a tokenizer
-	tokens = tokenizer.tokenize(text)  # Tokenize text
-
-	text_words = list(map(lambda x: x.lower(), tokens))   # Change words to lower case
-
-	words_filtered = list(filter(isNotNLTKStopWord, text_words))  # remove the stopwords from the NLTK (Natural Language Toolkit)
-
-	return words_filtered
-
-
 
 ########   compute wikicat and subject components
 
@@ -167,6 +155,14 @@ def getWikicatComponents (wikicat):
 	components = separateWikicatComponents(wikicat)   # get all the components
 
 	components_filtered = list(filter(isNotNLTKStopWord, components))  # remove NLTK stopwords
+	# components_filtered2 = list(filter(isNotGensimStopWord, components))  # remove Gensim stopwords
+	#
+	# if Counter(components_filtered) != Counter(components_filtered2):
+	# 	print("Diferencias en las listas")
+	# 	print(components_filtered)
+	# 	print(components_filtered2)
+	# 	input("continuar")
+
 	return components_filtered
 
 

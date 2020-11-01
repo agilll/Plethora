@@ -4,6 +4,7 @@ from datetime import datetime
 import time
 import json
 import csv
+import statistics
 
 from flask import request, jsonify
 from smart_open import open as _Open
@@ -35,6 +36,19 @@ from S4_tokenize import processS4List as _processS4List   # requires Standord Co
 sys.path.append('../module_train')
 from D2V_BuildOwnModel_t import buildD2VModelFrom_T_FileList as _buildD2VModelFrom_T_FileList
 from D2V_BuildOwnModel_w import buildD2VModelFrom_W_FileList as _buildD2VModelFrom_W_FileList
+
+
+# training hyperparameters
+vector_size = 20	# vector_size (int, optional) – Dimensionality of the feature vectors
+window = 8	# window (int, optional) – The maximum distance between the current and predicted word within a sentence
+alpha = 0.025	# alpha (float, optional) – The initial learning rate
+min_alpha = 0.00025	# min_alpha (float, optional) – Learning rate will linearly drop to min_alpha as training progresses
+# seed = 1 # Seed for the random number generator. Initial vectors for each word are seeded with a hash of the concatenation of word + str(seed)
+min_count = 5	# min_count (int, optional) – Ignores all words with total frequency lower than this
+max_vocab_size = None	# max_vocab_size (int, optional) – Limits the RAM during vocabulary building
+distributed_memory = 1	# Defines the training algorithm. If dm=1, ‘distributed memory’ (PV-DM). Otherwise, distributed bag of words (PV-DBOW)
+epochs = 100	# epochs (int, optional) – Number of iterations (epochs) over the corpus
+
 
 
 
@@ -1162,17 +1176,19 @@ def computePercentages (globalPattern):
 	listPercentages = []
 	listPatterns = globalPattern.split(",")
 
-	for pattern in listPatterns:
-		try:
-			p = int(pattern)
-			listPercentages.append(p)
-		except:
-			pairs = pattern.split("-")
-			start = int(pairs[0])
-			end = int(pairs[1]) + 1
-			for p in range(start, end):
+	try:
+		for pattern in listPatterns:
+			try:
+				p = int(pattern)
 				listPercentages.append(p)
-
+			except:
+				pairs = pattern.split("-")
+				start = int(pairs[0])
+				end = int(pairs[1]) + 1
+				for p in range(start, end):
+					listPercentages.append(p)
+	except:
+		listPercentages = []
 	return listPercentages
 
 
@@ -1239,18 +1255,6 @@ def doPh6trainD2V():
 
 def doPh6(lenOriginalText, pctgesList):
 
-	# training hyperparameters
-	vector_size = 20	# vector_size (int, optional) – Dimensionality of the feature vectors
-	window = 8	# window (int, optional) – The maximum distance between the current and predicted word within a sentence
-	alpha = 0.025	# alpha (float, optional) – The initial learning rate
-	min_alpha = 0.00025	# min_alpha (float, optional) – Learning rate will linearly drop to min_alpha as training progresses
-	# seed = 1 # Seed for the random number generator. Initial vectors for each word are seeded with a hash of the concatenation of word + str(seed)
-	min_count = 5	# min_count (int, optional) – Ignores all words with total frequency lower than this
-	max_vocab_size = None	# max_vocab_size (int, optional) – Limits the RAM during vocabulary building
-	distributed_memory = 1	# Defines the training algorithm. If dm=1, ‘distributed memory’ (PV-DM). Otherwise, distributed bag of words (PV-DBOW)
-	epochs = 100	# epochs (int, optional) – Number of iterations (epochs) over the corpus
-
-
 	lengthFolder = _CORPUS_FOLDER+str(lenOriginalText)+"/"
 
 	logFilename = lengthFolder+str(lenOriginalText)+".log"
@@ -1259,7 +1263,7 @@ def doPh6(lenOriginalText, pctgesList):
 
 	result = {}  # object to store the results to be returned to the request
 
-	listDocs = []  # list of docs for training
+	listDocs = [] # list of docs for training
 	listDocsBestSimFile =  lengthFolder+str(lenOriginalText)+".ph5-3.simsBest.csv"
 
 	# try to read existing sims file
@@ -1270,12 +1274,41 @@ def doPh6(lenOriginalText, pctgesList):
 			for row in reader:
 				# row[0]=rDocName, row[1]=sim
 				listDocs.append(row[0])
-
 			csvFile.close()
 	except:
 		print("No sims file with docs and their best similarity:", listDocsBestSimFile)
 
 	lenListDocs = len(listDocs)
+
+	listMostSimilar = []
+	for d in listDocs:
+		filename = _SCRAPPED_PAGES_FOLDER+d
+		fsize = os.path.getsize(filename)
+		if (fsize > 3000):
+			with _Open(filename) as fp:
+				content = fp.read()
+			middle = int(len(content)/2)
+			firstPartContent = content[:middle]
+			secondPartContent = content[middle:]
+			listMostSimilar.append((d, firstPartContent, secondPartContent))
+			if len(listMostSimilar) == 100:
+				break
+	print("Created list with most similar:", len(listMostSimilar))
+
+	listLessSimilar = []
+	for d in reversed(listDocs):
+		filename = _SCRAPPED_PAGES_FOLDER+d
+		fsize = os.path.getsize(filename)
+		if (fsize > 3000):
+			with _Open(filename) as fp:
+				content = fp.read()
+			middle = int(len(content)/2)
+			firstPartContent = content[:middle]
+			secondPartContent = content[middle:]
+			listLessSimilar.append((d, firstPartContent, secondPartContent))
+			if len(listLessSimilar) == 100:
+				break
+	print("Created list with less similar:", len(listLessSimilar))
 
 
 	globalPreprocessingTime = 0
@@ -1377,6 +1410,36 @@ def doPh6(lenOriginalText, pctgesList):
 		globalTrainingTime += elapsedTimeF62.seconds
 		fullListModels.append(modelFilename)
 
+
+		# # model has been created, let's check its quality
+		# print("Checking quality of:", modelFilename)
+		# listPairsMost = []
+		# listPairsLess = []
+		# listCross = []
+		# for idx, triple in enumerate(listMostSimilar):
+		# 	d2vSimilarity = _Doc2VecSimilarity(_MODELS_FOLDER+modelFilename, triple[1])
+		# 	pairSim = d2vSimilarity.doc2VecTextSimilarity(candidate_text=triple[2])  # sim between both parts of a similar doc
+		# 	crossSim = d2vSimilarity.doc2VecTextSimilarity(candidate_text=listLessSimilar[idx][1])   # sim between first part of a similar doc and first par of a dissimilar doc
+		# 	listPairsMost.append(pairSim)
+		# 	listCross.append(crossSim)
+		#
+		# for (doc, first, second) in listLessSimilar:
+		# 	d2vSimilarity = _Doc2VecSimilarity(_MODELS_FOLDER+modelFilename, first)
+		# 	pairSim = d2vSimilarity.doc2VecTextSimilarity(candidate_text=second)  # sim between both parts of a disssimilar doc
+		# 	listPairsLess.append(pairSim)
+		#
+		# # compute average and variance of each list
+		# meanPairsMost = statistics.mean(listPairsMost)
+		# varPairsMost = statistics.pvariance(listPairsMost)
+		# print("PairsMost:  average=", meanPairsMost, "  variance=", varPairsMost)
+		#
+		# meanPairsLess = statistics.mean(listPairsLess)
+		# varPairsLess = statistics.pvariance(listPairsLess)
+		# print("PairsLess:  average=", meanPairsLess, "  variance=", varPairsLess)
+		#
+		# meanCross = statistics.mean(listCross)
+		# varCross = statistics.pvariance(listCross)
+		# print("Cross  average=", meanCross, "  variance=", varCross)
 
 	result["P6_elapsedTimeF61"] = globalPreprocessingTime
 	result["P6_elapsedTimeF62"] = globalTrainingTime
@@ -1507,11 +1570,18 @@ def doPh7(P0_originalText, modelList):
 	globalReviewingTime = 0
 	averagePositions = {}
 
+	if modelList == []:
+		modelList = ["1926-w.5.model.STOP", "1926-w.5.model.END"]
+	else:
+		modelList = list(map(lambda x: str(lenOriginalText)+"-w."+str(x)+".model", modelList))
+
+	for m in modelList:
+		print(m)
+
 	# let's review all requested models
-	for model in modelList:
+	for modelName in modelList:
 
 		# let's review one model
-		modelName = str(lenOriginalText)+"-w."+str(model)+".model"
 		modelFilename = _MODELS_FOLDER+modelName
 
 		# try to read existing AdHocD2VSims file for such model
@@ -1530,6 +1600,8 @@ def doPh7(P0_originalText, modelList):
 					csvFile.close()
 			except:
 				print("\nNo ad hoc D2V similarities file")
+				result["error"] = "doPh7 ERROR: could not open similarities file: "+filenameAdHocD2VSims
+				return result
 		else:
 			print("\nModel is newer. Ad hoc sims will be recalculated", flush=True)
 
@@ -1545,8 +1617,8 @@ def doPh7(P0_originalText, modelList):
 			_Print("("+str(idx)+" of "+str(lenListWithWKSB)+") -- ", rCandidateFile)
 
 			if rCandidateFile in simsAdHocD2V:
-				_Print("Ad hoc D2V similarity found for candidate in local DB:", rCandidateFile)
 				doc2vec_trained_cosineSimilarity = simsAdHocD2V[rCandidateFile]
+				_Print("Ad hoc D2V similarity found for candidate in local DB:", doc2vec_trained_cosineSimilarity)
 			else:
 				_Print("Computing ad hoc D2V similarity for candidate:", rCandidateFile)
 				candidateFile = _SCRAPPED_PAGES_FOLDER+rCandidateFile
@@ -1554,12 +1626,21 @@ def doPh7(P0_originalText, modelList):
 				candidateText = candidateTextFD.read()
 				doc2vec_trained_cosineSimilarity = d2vSimilarity.doc2VecTextSimilarity(candidate_text=candidateText)
 				simsAdHocD2V[rCandidateFile] = doc2vec_trained_cosineSimilarity
-
-			_Print("Ad hoc D2V similarity =", doc2vec_trained_cosineSimilarity)
+				_Print("Ad hoc D2V similarity computed for candidate:", doc2vec_trained_cosineSimilarity)
 
 		endTime = datetime.now()
 		elapsedTimeF7 = endTime - startTime
 		globalReviewingTime += elapsedTimeF7.seconds
+
+		_appendFile(logFilename, "List of sims with ad hoc D2V for "+modelName+" computed: "+filenameAdHocD2VSims)
+
+		# convert dict simsAdHocD2V in list of tuplas (filenameCandidate, simAdHocD2V) to be able to order them
+		listOrdered = [ (k, simsAdHocD2V[k]) for k in simsAdHocD2V]
+
+		# _SortTuplaList_byPosInTupla: function to order a list of tuplas (0,1,2,3,4,5,6,7...) by the element in the position 'pos'=1,2...
+		_SortTuplaList_byPosInTupla(listOrdered, 1)  # order sims list by ad hoc d2v similarity
+
+		listOrdered_OnlyNames = list(map(lambda x: x[0], listOrdered))  # keep only the names of the docs
 
 		# Update the csv file with all ad hoc D2V similarities for current model
 
@@ -1569,26 +1650,19 @@ def doPh7(P0_originalText, modelList):
 			writer.writeheader()	# Write the column headers
 
 			writer = csv.writer(csvFile, delimiter=' ')
-			for key in simsAdHocD2V:
+			for doc,sim in listOrdered:
 				try:
-					writer.writerow([key, simsAdHocD2V[key]])
+					writer.writerow([doc, sim])
 				except:
 					print("Error writing csv with ad hoc D2V similarities for", modelName, ":", row)
 					_appendFile(logFilename, "Error writing csv with ad hoc D2V similarities for "+modelName+": "+str(row))
+					result["error"] = "doPh7 ERROR: problem writing sv with ad hoc D2V similarities for: "+modelName
+					return result
 
 			csvFile.close()
 
-		_appendFile(logFilename, "List of sims with ad hoc D2V for "+modelName+" computed: "+filenameAdHocD2VSims)
 
-		# Now we hace ad hoc sims. It is time to calculate average positions of E0 entities
-
-		# convert dict simsAdHocD2V in list of tuplas (filenameCandidate, simAdHocD2V) to be able to order it
-		listOrdered = [ (k, simsAdHocD2V[k]) for k in simsAdHocD2V]
-
-		# _SortTuplaList_byPosInTupla: function to order a list of tuplas (0,1,2,3,4,5,6,7...) by the element in the position 'pos'=1,2...
-		_SortTuplaList_byPosInTupla(listOrdered, 1)  # order sims list by ad hoc d2v similarity
-		listOrdered_OnlyNames = list(map(lambda x: x[0], listOrdered))  # keep only the names of the docs
-
+		# Now we have ad hoc sims. It is time to calculate average positions of E0 entities
 		positions = [] # list of pairs (entity, position)
 
 		for idx, name in enumerate(listOrdered_OnlyNames, start=1):
@@ -1607,7 +1681,7 @@ def doPh7(P0_originalText, modelList):
 		else:
 			averagePosition = sum(listPositions) / len(listPositions)  # average position
 
-		print("Average position for model", modelName, "=", averagePosition, flush=True)
+		print("\nAverage position for model", modelName, "=", averagePosition, flush=True)
 		averagePositions[modelName] = averagePosition
 
 	P7_adhocD2Vaverages = ""
@@ -1619,6 +1693,125 @@ def doPh7(P0_originalText, modelList):
 
 	result["P7_adhocD2Vaverages"] = P7_adhocD2Vaverages
 	result["P7_elapsedTimeF7"] = globalReviewingTime
+
+	return result
+
+
+	# enhance initial corpus with new files
+
+	# search the name of last file used for traing M5 model (the last one in the 5% higher)
+
+	listDocs = [] # list of docs for training
+	listDocsBestSimFile =  lengthFolder+str(lenOriginalText)+".ph5-3.simsBest.csv"
+
+	# try to read existing sims file
+	try:
+		with _Open(listDocsBestSimFile, 'r') as csvFile:
+			reader = csv.reader(csvFile, delimiter=' ')
+			next(reader)  # to skip header
+			for row in reader:
+				# row[0]=rDocName, row[1]=sim
+				listDocs.append(row[0])
+			csvFile.close()
+	except:
+		print("No sims file with docs and their best similarity:", listDocsBestSimFile)
+		result["error"] = "doPh7 ERROR: No sims file with docs and their best similarity: "+listDocsBestSimFile
+		return result
+
+
+	lenListDocs = len(listDocs)
+
+	pctgeInitialCorpus = 5
+	sizeBlock = int(lenListDocs / 100) *  pctgeInitialCorpus
+
+	listCorpusFiles = listDocs[:sizeBlock]
+	globalModelFilename = _MODELS_FOLDER+"1926-w.5.model"
+
+	# compute the 5% of order CTd5
+
+	CTd5File = lengthFolder+str(lenOriginalText)+".ph7.AdHocD2V.1926-w.5.model.sims.csv"
+	listDocs = []
+	# try to read existing sims file
+	try:
+		with _Open(CTd5File, 'r') as csvFile:
+			reader = csv.reader(csvFile, delimiter=' ')
+			next(reader)  # to skip header
+			for row in reader:
+				# row[0]=rDocName, row[1]=sim
+				listDocs.append((row[0],row[1]))
+			csvFile.close()
+	except:
+		print("No CTd5 file:", CTd5File)
+		result["error"] = "doPh7 ERROR: No CT5d file: "+CTd5File
+		return result
+
+
+	_SortTuplaList_byPosInTupla(listDocs, 1)  # order sims list by ad hoc d2v similarity
+
+	listOrdered_OnlyNames = list(map(lambda x: x[0], listDocs))  # keep only the names of the docs
+	listOrdered_OnlyNames = listOrdered_OnlyNames[:sizeBlock]
+
+	NIC = list(set(listOrdered_OnlyNames) - set(listCorpusFiles))
+	print("New files:", len(NIC))
+	# we have
+	# modelName: current model
+	# listCorpusFiles: list of files used to train that model
+	# NIC: new files to be added to the training
+	iterations = 0
+	while len(NIC) > 0:
+		iterations += 1
+		globalModelFilename = globalModelFilename+"1"
+		listCorpusFiles = listCorpusFiles + NIC
+
+		# train a new model
+		print("Training", globalModelFilename, "with", len(listCorpusFiles), "files")
+		listCorpusFilesGlobalNames = list(map(lambda x: _SCRAPPED_PAGES_FOLDER+x, listCorpusFiles))
+
+		r = _buildD2VModelFrom_W_FileList(listCorpusFilesGlobalNames, globalModelFilename, vector_size, window, alpha, min_alpha, min_count, distributed_memory, epochs)
+
+		if (r == 0):
+			print("Training success for "+globalModelFilename+"!!")
+			_appendFile(logFilename, "Computed model: "+globalModelFilename)
+		else:
+			print("Training failed for "+globalModelFilename+"!")
+			_appendFile(logFilename, "Training failed: "+globalModelFilename)
+			result["error"] = "doPh7 ERROR: error training: "+globalModelFilename
+			return result
+
+		# compute CT ordered with the new model
+
+		print("Computing ordered CT")
+
+		# create the object to evaluate D2V similarity with the current model
+		d2vSimilarity = _Doc2VecSimilarity(globalModelFilename, P0_originalText)
+
+		print("Reviewing corpus ("+str(lenListWithWKSB)+" files) with Doc2Vec similarity derived from model:", globalModelFilename, flush=True)
+
+		newListCT = []
+
+		for idx, rCandidateFile in enumerate(listWithWKSB, start=1):
+			if (idx % 5000) == 0:
+				print(int(idx/5000), end=' ', flush=True)
+			_Print("("+str(idx)+" of "+str(lenListWithWKSB)+") -- ", rCandidateFile)
+
+			candidateFile = _SCRAPPED_PAGES_FOLDER+rCandidateFile
+			candidateTextFD = _Open(candidateFile, "r")
+			candidateText = candidateTextFD.read()
+			doc2vec_trained_cosineSimilarity = d2vSimilarity.doc2VecTextSimilarity(candidate_text=candidateText)
+			newListCT.append((rCandidateFile, doc2vec_trained_cosineSimilarity))
+			_Print("Ad hoc D2V similarity computed for candidate:", doc2vec_trained_cosineSimilarity)
+
+		_SortTuplaList_byPosInTupla(newListCT, 1)  # order sims list by ad hoc d2v similarity
+
+		listOrdered_OnlyNames = list(map(lambda x: x[0], newListCT))  # keep only the names of the docs
+		listOrdered_OnlyNames = listOrdered_OnlyNames[:sizeBlock]
+
+		NIC = list(set(listOrdered_OnlyNames) - set(listCorpusFiles))
+		print("\nNew files:", len(NIC))
+
+	else:
+		# modelo final 1926-w.5.model111111111
+		print("Iterative process finished ("+str(iterations)+" iterations). Final corpus =", len(listCorpusFiles))
 
 	return result
 
