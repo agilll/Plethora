@@ -1205,7 +1205,7 @@ def computePercentages (globalPattern):
 
 # QUERY (/doPh6trainD2V) to attend the query to train the Doc2Vec network
 # receives:
-# * the list of corpus docs
+# * the list of percentages to evaluate
 # returns:
 
 def doPh6trainD2V():
@@ -1274,10 +1274,10 @@ def doPh6(lenOriginalText, pctgesList):
 
 	result = {}  # object to store the results to be returned to the request
 
-	listDocs = [] # list of docs for training
+	listDocs = [] # list of candidate texts ordered by best similarity in previous phase
 	listDocsBestSimFile =  lengthFolder+str(lenOriginalText)+".ph5-3.simsBest.csv"
 
-	# try to read existing sims file
+	# try to read existing sims file, to
 	try:
 		with _Open(listDocsBestSimFile, 'r') as csvFile:
 			reader = csv.reader(csvFile, delimiter=' ')
@@ -1286,12 +1286,16 @@ def doPh6(lenOriginalText, pctgesList):
 				# row[0]=rDocName, row[1]=sim
 				listDocs.append(row[0])
 			csvFile.close()
-	except:
-		print("No sims file with docs and their best similarity:", listDocsBestSimFile)
+	except Exception as ex:
+		print("Exception: "+str(ex))
+		print("No sims file with the whole set of candidate texts and their best similarity ratings: "+listDocsBestSimFile)
+		result["error"] = "No sims file with the whole set of candidate texts and their best similarity ratings:"+listDocsBestSimFile)
+		_appendFile(logFilename, "No sims file with the whole set of candidate texts and their best similarity ratings: "+listDocsBestSimFile)
+		return result
 
 	lenListDocs = len(listDocs)
 
-	listMostSimilar = []
+	listMostSimilar = [] # list with the 100 more similar candidates (filename, doc first half, doc second half)
 	for d in listDocs:
 		filename = _SCRAPPED_PAGES_FOLDER+d
 		fsize = os.path.getsize(filename)
@@ -1306,7 +1310,8 @@ def doPh6(lenOriginalText, pctgesList):
 				break
 	print("Created list with most similar:", len(listMostSimilar))
 
-	listLessSimilar = []
+
+	listLessSimilar = []    # list with the 100 less similar candidates (filename, doc first half, doc second half)
 	for d in reversed(listDocs):
 		filename = _SCRAPPED_PAGES_FOLDER+d
 		fsize = os.path.getsize(filename)
