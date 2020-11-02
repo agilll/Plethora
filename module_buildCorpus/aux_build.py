@@ -18,6 +18,7 @@ CORPUS_FOLDER = os.getenv('HOME') + "/KORPUS/"
 
 MODELS_FOLDER = CORPUS_FOLDER+"MODELS/"
 LEE_D2V_MODEL = MODELS_FOLDER+"d2v_lee.without_stopwords.model"
+AP_D2V_MODEL = MODELS_FOLDER+"doc2vec.bin"
 
 # these are the files and folders created in the building of corpus
 

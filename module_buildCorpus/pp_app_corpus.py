@@ -60,7 +60,7 @@ if __name__ == '__main__':
 		if sys.argv[argument] == "-s":   # argument '-s' forces stop after every phase
 			aux_build.FSTOP = True
 			print("Flag stop activated!!!")
-		if sys.argv[argument] == "-m":   # argument '-s' forces stop after every phase
+		if sys.argv[argument] == "-m":   # argument '-m' print enhanced log messages
 			px_aux.FMES = True
 			print("Flag messages activated!!!")
 

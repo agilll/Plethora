@@ -23,7 +23,9 @@ from gensim.utils import simple_preprocess
 class Doc2VecSimilarity():
 
 	def __init__(self, modelName, original_text):
+
 		self.model = Doc2Vec.load(modelName)
+
 
 		self.remove_stopwords = True
 		if (self.remove_stopwords == True):

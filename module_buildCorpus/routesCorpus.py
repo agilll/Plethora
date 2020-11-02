@@ -16,7 +16,7 @@ from px_aux import Print as _Print
 
 from aux_build import hasFieldPT as _hasFieldPT, SortTuplaList_byPosInTupla as _SortTuplaList_byPosInTupla
 from aux_build import CORPUS_FOLDER as _CORPUS_FOLDER, URLs_FOLDER as _URLs_FOLDER,  SCRAPPED_PAGES_FOLDER as _SCRAPPED_PAGES_FOLDER
-from aux_build import MODELS_FOLDER as _MODELS_FOLDER, LEE_D2V_MODEL as _LEE_D2V_MODEL
+from aux_build import MODELS_FOLDER as _MODELS_FOLDER, LEE_D2V_MODEL as _LEE_D2V_MODEL, AP_D2V_MODEL as _AP_D2V_MODEL
 from aux_build import getWikicatComponents as _getWikicatComponents, moreRecent as _moreRecent
 from aux_build import filterSimpleWikicats as _filterSimpleWikicats, filterSimpleSubjects as _filterSimpleSubjects
 from aux_build import CORPUS_MIN_TXT_SIZE as _CORPUS_MIN_TXT_SIZE
@@ -38,7 +38,7 @@ from D2V_BuildOwnModel_t import buildD2VModelFrom_T_FileList as _buildD2VModelFr
 from D2V_BuildOwnModel_w import buildD2VModelFrom_W_FileList as _buildD2VModelFrom_W_FileList
 
 
-# training hyperparameters
+# D2V training hyperparameters
 vector_size = 20	# vector_size (int, optional) – Dimensionality of the feature vectors
 window = 8	# window (int, optional) – The maximum distance between the current and predicted word within a sentence
 alpha = 0.025	# alpha (float, optional) – The initial learning rate
@@ -55,7 +55,7 @@ epochs = 100	# epochs (int, optional) – Number of iterations (epochs) over the
 # QUERY (/doPh1getWikicatsFromText) to attend the query to get wikicats from a text
 # receives:
 # P0_originalText: the original text
-# computes and saves files with wikicats (length.ph1.wk) and subjects (length.ph1.sb)
+# computes and saves files with wikicats (length/length.ph1.wk) and subjects (length/length.ph1.sb)
 # returns:
 # result["lenOriginalText"]: the length of the original text
 # result["wikicats"]: list of wikicats (and saves them in the file $CORPUS_FOLDER/length/length.ph1.wk)
@@ -100,7 +100,7 @@ def doPh1 (P0_originalText):
 		print("Saving original text")
 		_saveFile(filename_txt, P0_originalText)  # if not exists, save it
 	else:
-		with _Open(filename_txt) as fp:  # if already exists, save oinly if it has different contents
+		with _Open(filename_txt) as fp:  # if already exists, save only if it has different contents
 			text = fp.read()
 			if text != P0_originalText:
 				print("Saving original text")
@@ -120,8 +120,8 @@ def doPh1 (P0_originalText):
 			with _Open(filename_wk) as fp:  # wikicats file exists and is newer than text file
 				print("Reading wikicats from local DB")
 				listWikicats = fp.read().splitlines()
-		else: # wikicats file does not exists o is nolder than text file
-			raise Exception("New text")
+		else: # wikicats file does not exists or is older than the original text file
+			raise Exception("New text") # causes the exception to be captured in the next line and exception code to be executed
 	except:  # if wikicats file does not exist yet, or text is new, compute wikicats-subjects-entities files
 		print("Gathering wikicats from Internet")
 		data = _getCategoriesInText(P0_originalText)  # function getCategoriesInText from px_DB_Manager.py
@@ -136,6 +136,10 @@ def doPh1 (P0_originalText):
 		listSubjects = list(filter(_filterSimpleWikicats, data["subjects"]))  # remove simple subjects with function from aux_build.py
 		_saveFile(filename_sb, '\n'.join(listSubjects)) # save file (length.ph1.sb) with subjects, one per line
 
+		# _getCategoriesInText returns not all URIs, it filters some of them because they look not correctly identified
+			# filter entities probably erroneously identified,
+			# a right entity is required to share wikicats with some other entity in the set
+			# a right entity is required to share subjects with some other entity in the set
 		listURIs = data["URIs_persons_places_events"]
 		_saveFile(filename_en, '\n'.join(listURIs)) # save file (length.ph1.en) with URIs of identified entities, one per line
 
@@ -143,7 +147,7 @@ def doPh1 (P0_originalText):
 
 	for w in listWikicats:    # compute components for every wikicat and add all of them to result
 		wlc = _getWikicatComponents(w)   # function getWikicatComponets from aux_build.py
-		result[w] = {"components":wlc}  # one entry per wikicat, with a dict with only one key "components"
+		result[w] = {"components":wlc}  # one entry per wikicat, with a dict with only one key ("components")
 
 	# try to read file with previously selected wikicats for this text
 	filename_selected_wk = lengthFolder+str(lenOriginalText)+".ph2-1.selected.wk"
@@ -180,7 +184,7 @@ def doPh2getUrlsCandidateFiles():
 	# in case execution from start, Phase 1 must be executed first
 	if fromStart:
 		resultPh1 = doPh1(P0_originalText)
-		P1_selectedWikicats = resultPh1["P1_wikicats"]	# user could not select wikicats, we asume all of them are selected
+		P1_selectedWikicats = resultPh1["P1_wikicats"]	# user did not have the opportunity to select wikicats, we asume all of them are selected
 	else:
 		P1_selectedWikicats = json.loads(request.values.get("P1_selectedWikicats"))   # get parameter with selected wikicats by user
 
@@ -190,7 +194,7 @@ def doPh2getUrlsCandidateFiles():
 
 	result["P1_selectedWikicats"] = P1_selectedWikicats
 
-	# in phases 1 and 2 different dicts are returned for result[wikicat]
+	# in phases 1 and 2 different dicts are returned for result[wikicat], we are going to combine them
 	# in phase 1,  result[wikicat] = {"components": compList}
 	# in phase 2,  result[wikicat] = {"db": numURLsDB, "wk": numURLsWK}
 
@@ -446,7 +450,7 @@ def doPh3(lenOriginalText):
 			result["error"]  = "No file "+listNotEnoughContentFile    # no file listNotEnoughContentFile
 			return result
 
-	else:
+	else:    # there are modifications, we must download candidate texts
 		try:  # try to read listWithoutDuplicates file
 			with _Open(listWithoutDuplicatesFile) as fp:
 				listWithoutDuplicates = fp.read().splitlines()
@@ -473,7 +477,7 @@ def doPh3(lenOriginalText):
 		P3_numUrlsDownloaded = 0  # number of urls downloaded from Internet IN THIS ITERATION
 
 		for idx, page in enumerate(listWithoutDuplicates, start=1):
-			if (idx % 5000) == 0:
+			if (idx % 5000) == 0:  # to print something on console, to be sure it is ongoing
 				print(".", end=' ', flush=True)
 
 			_Print("("+str(idx)+" of "+str(lenListWithoutDuplicates)+") -- ", page)
@@ -561,7 +565,7 @@ def doPh3(lenOriginalText):
 
 # QUERY (/doPh4identifyWikicats)  to attend the query to identify wikicats in candidate texts
 # receives: the original text
-# returns: the number of downloaded and cleaned files with and without enough content
+# returns: the size of listWithWKSB, the list of candidate files with wikicats and subjects
 
 def doPh4identifyWikicats():
 	print("Requested Phase 4")
@@ -646,7 +650,7 @@ def doPh4(lenOriginalText):
 		startTime = datetime.now()
 
 		for idx, rFileNameCandidate in enumerate(listEnoughContent, start=1):
-			if (idx % 5000) == 0:
+			if (idx % 5000) == 0:  # to print something on console, to be sure it is ongoing
 				print(".", end=' ', flush=True)
 			_Print("\n("+str(idx)+" of "+str(lenListEnoughContent)+") -- ", rFileNameCandidate)
 
@@ -814,9 +818,9 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 		with _Open(filename_en) as fp:	# format    http://dbpedia.org/resource/Title
 			listEntitiesOriginalText = fp.read().splitlines()
 
-		listEntityTitlesOriginalText  = list(map(lambda x: x[1+x.rfind("/"):], listEntitiesOriginalText))	# keep only Title
+		listEntityTitlesOriginalText = list(map(lambda x: x[1+x.rfind("/"):], listEntitiesOriginalText))	# keep only Title
 		# add prefix and sufix to get format    en.wikipedia.org/wiki..Title.txt   DANGER!!!! may be not this way in future
-		listEntityFilesOriginalText  = list(map(lambda x: "en.wikipedia.org/wiki.."+x+".txt", listEntityTitlesOriginalText))
+		listEntityFilesOriginalText = list(map(lambda x: "en.wikipedia.org/wiki.."+x+".txt", listEntityTitlesOriginalText))
 	except:
 		listEntityFilesOriginalText = []    # no entities for original text
 		print("Entities file not available: "+filename_en)
@@ -864,7 +868,7 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 			next(reader)  # to skip header
 			for row in reader:
 				# row[0]=rDocName, row[1]=shared wk sim, row[2]=shared sb sim, row[3]=spaCy sim, row[4]=d2v sim, row[5] = euclidean sim, row[6] = full wk sim, row[7] = full sb sim
-				dict_sims_db[row[0]] = (float(row[1]), float(row[2]), float(row[3]), float(row[4]), float(row[5]), float(row[6]), float(row[7]))
+				dict_sims_db[row[0]] = (float(row[1]), float(row[2]), float(row[3]), float(row[4]), float(row[5]), float(row[6]), float(row[7]), float(row[8]))
 
 			csvFile.close()
 	except:
@@ -878,6 +882,7 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 
 	# create object to measure Doc2Vec similarity with LEE_D2V_MODEL
 	d2vLeeSimilarity = _Doc2VecSimilarity(_LEE_D2V_MODEL, P0_originalText)
+	d2vAPSimilarity = _Doc2VecSimilarity(_AP_D2V_MODEL, P0_originalText)
 
 
 	for idx, rFileNameCandidate in enumerate(listWithWKSB, start=1):  # format rFileNameCandidate = en.wikipedia.org/wiki..Title.txt
@@ -893,7 +898,7 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 
 		# Now compute similarities. First, check if already stored in length.ph5-1.sims.csv (already read in dict_sims_db)
 		try:
-			sims = dict_sims_db[rFileNameCandidate] # if exists, return tuple with (wk_sim, sb_sim, spacy_sim, doc2vec_sim, euclidean_sim, full_wk_sim)
+			sims = dict_sims_db[rFileNameCandidate] # if exists, return tuple with (wk_sim, sb_sim, spacy_sim, doc2vec_sim, euclidean_sim, full_wk_sim, full_sb_sim)
 			_Print("Found already computed similarities for", rFileNameCandidate)
 			full_wikicats_jaccard_sim = sims[0]
 			full_subjects_jaccard_sim = sims[1]
@@ -902,9 +907,9 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 			spacy_sim = sims[4]
 			d2v_lee_sim = sims[5]
 			euclidean_sim = sims[6]
+			d2v_ap_sim = sims[7]
 
-
-		except Exception as e:   # no sims found in local DB file, they must be computed
+		except Exception as e:   # no sims found for this candidate in local DB file, they must be computed
 			_Print(idx, ". Sims not in local DB:", str(e))
 			_appendFile(logFilename, "Sims not in local DB:"+str(e))
 
@@ -944,10 +949,14 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 			_Print("Computing Euclidean similarity for", rFileNameCandidate)
 			euclidean_sim = similarities.euclideanTextSimilarity(candidate_file=fileNameCandidate)
 
+			# Measure the Doc2Vec (AP) distance
+			_Print("Computing Doc2Vec AP similarity for", rFileNameCandidate)
+			d2v_ap_sim = d2vAPSimilarity.doc2VecTextSimilarity(candidate_file=fileNameCandidate)
+
 		# all sims for this doc have been read or newly computed
 
 		# add them to the dict_sims_new dict
-		dict_sims_new[rFileNameCandidate] = (full_wikicats_jaccard_sim, full_subjects_jaccard_sim, shared_wikicats_jaccard_sim, shared_subjects_jaccard_sim, spacy_sim, d2v_lee_sim, euclidean_sim)
+		dict_sims_new[rFileNameCandidate] = (full_wikicats_jaccard_sim, full_subjects_jaccard_sim, shared_wikicats_jaccard_sim, shared_subjects_jaccard_sim, spacy_sim, d2v_lee_sim, euclidean_sim, d2v_ap_sim)
 
 
 
@@ -1006,7 +1015,7 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 
 	# Update the csv file with all similarities
 	with _Open(filenameSims, 'w') as csvFile:
-		fieldnames = ['Page', 'Fwikicats', 'Fsubjects', 'Swikicats', 'Ssubjects', 'Spacy', 'Doc2vec-Lee', 'Euclidean']	# Name columns
+		fieldnames = ['Page', 'Fwikicats', 'Fsubjects', 'Swikicats', 'Ssubjects', 'Spacy', 'Doc2vec-Lee', 'Euclidean', 'Doc2vec-AP']	# Name columns
 		writer = csv.DictWriter(csvFile, fieldnames=fieldnames, delimiter=" ") # Create csv headers
 		writer.writeheader()	# Write the column headers
 
@@ -1014,7 +1023,7 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 		for key in dict_sims_new:
 			try:
 				sims = dict_sims_new[key]
-				writer.writerow([key, sims[0], sims[1], sims[2], sims[3], sims[4], sims[5], sims[6]])
+				writer.writerow([key, sims[0], sims[1], sims[2], sims[3], sims[4], sims[5], sims[6], sims[7]])
 			except Exception as e:
 				print("Error writing csv with similarities ("+str(e)+"):", row)
 				_appendFile(logFilename, "Error writing csv with similarities  ("+str(e)+"):"+str(row))
@@ -1028,7 +1037,7 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 	# compute ratings for similarities to eval their quality and select the one to use
 
 	# convert dict_sims_new in list of tuplas (filenameCandidate, simFullWikicats, simFullSubjects, simSharedWikicats, simSharedSubjects, simSpacy, simD2V-Lee, simEuclidean) to be able to order them
-	list_sims_tuplas = [ (k, dict_sims_new[k][0], dict_sims_new[k][1], dict_sims_new[k][2], dict_sims_new[k][3], dict_sims_new[k][4], dict_sims_new[k][5], dict_sims_new[k][6]) for k in dict_sims_new]
+	list_sims_tuplas = [ (k, dict_sims_new[k][0], dict_sims_new[k][1], dict_sims_new[k][2], dict_sims_new[k][3], dict_sims_new[k][4], dict_sims_new[k][5], dict_sims_new[k][6], dict_sims_new[k][7]) for k in dict_sims_new]
 
 	ratings = {}	# dict to store rating info for all sims
 	# ratings[sim] is also a dict
@@ -1067,6 +1076,7 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 	computeRating(5, "Spacy")
 	computeRating(6, "Doc2vec-Lee")
 	computeRating(7, "Euclidean")
+	computeRating(8, "Doc2vec-AP")
 
 
 	# name of the file to save the positions of E0 entities for all sims, used for measure rating quality
@@ -1083,19 +1093,19 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 		E0entitiesPositions[name] = (next(i for (n,i) in ratings["Fwikicats"]["originalEntities"] if n == name), next(i for (n,i) in ratings["Fsubjects"]["originalEntities"] if n == name),\
 									next(i for (n,i) in ratings["Swikicats"]["originalEntities"] if n == name), next(i for (n,i) in ratings["Ssubjects"]["originalEntities"] if n == name),\
 									next(i for (n,i) in ratings["Spacy"]["originalEntities"] if n == name), next(i for (n,i) in ratings["Doc2vec-Lee"]["originalEntities"] if n == name), \
-									next(i for (n,i) in ratings["Euclidean"]["originalEntities"] if n == name))
+									next(i for (n,i) in ratings["Euclidean"]["originalEntities"] if n == name), next(i for (n,i) in ratings["Doc2vec-AP"]["originalEntities"] if n == name))
 
 
 	# store all positions of E0 entities in a file
 	with _Open(fileE0entitiesPositions, 'w') as csvFile:
-		fieldnames = ['Entity', 'Fwikicats', 'Fsubjects', 'Swikicats', 'Ssubjects', 'Spacy', 'Doc2vec-Lee', 'Euclidean']	# Name columns
+		fieldnames = ['Entity', 'Fwikicats', 'Fsubjects', 'Swikicats', 'Ssubjects', 'Spacy', 'Doc2vec-Lee', 'Euclidean', 'Doc2vec-AP']	# Name columns
 		writer = csv.DictWriter(csvFile, fieldnames=fieldnames, delimiter=" ") # Create csv headers
 		writer.writeheader()	# Write the column headers
 
 		writer = csv.writer(csvFile, delimiter=' ')
 		for key in E0entitiesPositions:
 			try:
-				writer.writerow([key, E0entitiesPositions[key][0], E0entitiesPositions[key][1], E0entitiesPositions[key][2], E0entitiesPositions[key][3], E0entitiesPositions[key][4], E0entitiesPositions[key][5], E0entitiesPositions[key][6]])
+				writer.writerow([key, E0entitiesPositions[key][0], E0entitiesPositions[key][1], E0entitiesPositions[key][2], E0entitiesPositions[key][3], E0entitiesPositions[key][4], E0entitiesPositions[key][5], E0entitiesPositions[key][6], E0entitiesPositions[key][7]])
 			except:
 				print("Error writing csv with entities E0 positions", row)
 				_appendFile(logFilename, "Error writing csv with entities E0 positions"+str(row))
@@ -1114,7 +1124,7 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 	# list of 2-tuplas (name_sim, rating) being rating = numEntitiesOriginalText/average_sim
 	listRatings = [(k, (numEntitiesOriginalText / ratings[k]["average"])) for k in ratings]
 
-	# select the best similarity (higher rating)
+	# order by best similarity (higher rating)
 	_SortTuplaList_byPosInTupla(listRatings, 1)
 
 	bestRating = listRatings[0]
@@ -1171,7 +1181,8 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 
 
 
-
+# to obtain from a global patter the list of percentages to study
+# e.g.  if received "8, 12-14, 19" the result will be [8,12,13,14,19]
 def computePercentages (globalPattern):
 	listPercentages = []
 	listPatterns = globalPattern.split(",")
