@@ -49,11 +49,11 @@ def buildD2VModelFrom_W_FileList(training_files, model_name, vector_size, window
 	if (flag_remove_stopWords):
 		training_texts = [Gensim_remove_stopwords(text) for text in training_texts]
 
-	# preprocess each text (tokenize, lower, remove punctuation, remove <2 and >50 log words)
+	# preprocess each text (tokenize, lower, remove punctuation, remove <2 and >50 length words)
 	training_lists = [simple_preprocess(text, max_len=50) for text in training_texts]
 
 	# Tag the training lists (add an increasing number as tag)
-	tagged_training_lists = [TaggedDocument(words=l, tags=[i]) for i, l in enumerate(training_lists)]
+	tagged_training_lists = [TaggedDocument(words=l, tags=[i]) for i,l in enumerate(training_lists)]
 
 	# this is the input for training
 	# tagged_training_lists is a list [TaggedDocument(['token1','token2',...], ['0']), TaggedDocument(['token1','token2',...], ['1']), ...]
@@ -72,18 +72,21 @@ def buildD2VModelFrom_W_FileList(training_files, model_name, vector_size, window
 	print(model_name, "model saved!")
 
 
-	# # Model assessment with the training dataset
-	# ranks = []
-	# print("Computing ranks")
-	# for doc_index in range(len(tagged_training_lists)):  	# Go through each document of the training corpus
-	# 	inferred_vector = model.infer_vector(tagged_training_lists[doc_index].words)  # Infer a new vector for training corpus documents
-	# 	self_similarity = model.docvecs.most_similar([inferred_vector], topn=len(model.docvecs)) # get the most similars to it
-	# 	rankList = [docindex for docindex, sim in self_similarity]
-	# 	rank = rankList.index(doc_index)   # get its rank, ideally should be 1
-	# 	ranks.append(rank)
-	#
-	# # Count how many times each document ranks with respect to the training corpus
-	# documents_ranks = collections.Counter(ranks)
-	# print(model_name, "ranks =", documents_ranks)
+	# Model assessment with the training dataset
+
+	# quality check 1: compute 1-ranks to show the percentage of cases where each document is the most similar to itself (ideally should be 100%)
+	ranks = []
+	print("Computing ranks")
+	for doc_index in range(len(tagged_training_lists)):  	# Go through each document of the training corpus
+		inferred_vector = model.infer_vector(tagged_training_lists[doc_index].words)  # Infer a new vector for each document of the training corpus
+		self_similarity = model.docvecs.most_similar([inferred_vector], topn=len(model.docvecs)) # get the most similars to it
+		rankList = [docindex for docindex,sim in self_similarity]
+		rank = rankList.index(doc_index)   # get its rank, ideally should be 1
+		ranks.append(rank)
+
+	# Count how many times each document ranks with respect to the training corpus
+	documents_ranks = collections.Counter(ranks)
+	print(model_name, "ranks =", documents_ranks)
+
 
 	return 0

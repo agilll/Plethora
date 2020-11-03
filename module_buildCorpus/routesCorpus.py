@@ -1112,6 +1112,11 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 
 		csvFile.close()
 
+	# WARNING!!!!!
+	# The precise results of D2V models cannot computed this way, because they are slightly different in each run
+	# The precise results are computed by the "computeAverageD2V" script, that should be run 5 times for each model, and averaged for every entity
+	# In any case, the results may change, but only slightly, so the conclusion of this phase (which one is the best similarity) is still correct
+
 
 	# print the position of all the entities for each sim (shown ordered, because they are appended in order), and the average
 	# for key in ratings:
@@ -1295,6 +1300,8 @@ def doPh6(lenOriginalText, pctgesList):
 
 	lenListDocs = len(listDocs)
 
+	# the following lists will be used to compute the queality of each one of the created models
+
 	listMostSimilar = [] # list with the 100 more similar candidates (greater than 3K) according to the best similarity (filename, doc first half, doc second half)
 	for d in listDocs:
 		filename = _SCRAPPED_PAGES_FOLDER+d
@@ -1363,7 +1370,7 @@ def doPh6(lenOriginalText, pctgesList):
 
 			listDocsW = list(map(lambda x: x+".w", listDocsS))
 
-			# this step was for tokenize and remove stopwords with Standford Core NLP, generating .t files
+			# the next step was for tokenize and remove stopwords with Standford Core NLP, generating .t files
 			# it is no loger necessary as such task is done by Gensim, so we now train D2V with .w files
 			# # WARNING!! requires Standord CoreNLP server launched
 			# print("Processing S4...")
@@ -1432,8 +1439,12 @@ def doPh6(lenOriginalText, pctgesList):
 		fullListModels.append(modelFilename)
 
 
-		# model has been created, let's check its quality
+		# the current model has been created, let's check its quality
+
 		print("Checking quality of:", modelFilename)
+
+		# quality check 2: check the average similarities among first and second part of each document
+
 		listPairsMost = []
 		listPairsLess = []
 		listCross = []
@@ -1452,15 +1463,17 @@ def doPh6(lenOriginalText, pctgesList):
 		# compute average and variance of each list
 		meanPairsMost = statistics.mean(listPairsMost)
 		varPairsMost = statistics.pvariance(listPairsMost)
-		print("PairsMost:  average=", meanPairsMost, "  variance=", varPairsMost)
+		print("Fragment Pairs of Most Similar (first part of more similar to second part of more similar):  average=", meanPairsMost, "  variance=", varPairsMost)
 
 		meanPairsLess = statistics.mean(listPairsLess)
 		varPairsLess = statistics.pvariance(listPairsLess)
-		print("PairsLess:  average=", meanPairsLess, "  variance=", varPairsLess)
+		print("Fragment Pairs of Less Similar (first part of less similar to second part of less similar):  average=", meanPairsLess, "  variance=", varPairsLess)
 
 		meanCross = statistics.mean(listCross)
 		varCross = statistics.pvariance(listCross)
-		print("Cross  average=", meanCross, "  variance=", varCross)
+		print("Cross Fragment Pairs (first part of more similar to first part of less similar):  average=", meanCross, "  variance=", varCross)
+
+		# end of the creation and quality testing for one of the models
 
 	result["P6_elapsedTimeF61"] = globalPreprocessingTime
 	result["P6_elapsedTimeF62"] = globalTrainingTime
