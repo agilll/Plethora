@@ -1181,22 +1181,22 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 
 
 
-# to obtain from a global patter the list of percentages to study
+# to obtain from a global pattern the list of percentages from which to compute a model
 # e.g.  if received "8, 12-14, 19" the result will be [8,12,13,14,19]
 def computePercentages (globalPattern):
 	listPercentages = []
-	listPatterns = globalPattern.split(",")
+	listPatterns = globalPattern.split(",")  # split components
 
 	try:
 		for pattern in listPatterns:
 			try:
-				p = int(pattern)
+				p = int(pattern)    # a single component
 				listPercentages.append(p)
 			except:
-				pairs = pattern.split("-")
+				pairs = pattern.split("-")  # a range component
 				start = int(pairs[0])
 				end = int(pairs[1]) + 1
-				for p in range(start, end):
+				for p in range(start, end):  # expand the range
 					listPercentages.append(p)
 	except:
 		listPercentages = []
@@ -1217,7 +1217,7 @@ def doPh6trainD2V():
 	lenOriginalText = len(P0_originalText)
 
 	P6_pctgesInitialCorpus = request.values.get("P6_pctgesInitialCorpus")
-	pctgesList = computePercentages(P6_pctgesInitialCorpus)
+	pctgesList = computePercentages(P6_pctgesInitialCorpus) # from pattern to percentages
 
 	# in case execution from start, Phases 1-2-3-4-5  must be executed first
 	if fromStart:
@@ -1274,10 +1274,10 @@ def doPh6(lenOriginalText, pctgesList):
 
 	result = {}  # object to store the results to be returned to the request
 
-	listDocs = [] # list of candidate texts ordered by best similarity in previous phase
-	listDocsBestSimFile =  lengthFolder+str(lenOriginalText)+".ph5-3.simsBest.csv"
+	listDocs = [] # to store the list of candidate texts ordered by best similarity in previous phase
+	listDocsBestSimFile =  lengthFolder+str(lenOriginalText)+".ph5-3.simsBest.csv"  # list of (candidate, sim) ordered by best similarity in previous phase
 
-	# try to read existing sims file, to
+	# try to read existing best similarity sims file
 	try:
 		with _Open(listDocsBestSimFile, 'r') as csvFile:
 			reader = csv.reader(csvFile, delimiter=' ')
@@ -1288,14 +1288,14 @@ def doPh6(lenOriginalText, pctgesList):
 			csvFile.close()
 	except Exception as ex:
 		print("Exception: "+str(ex))
-		print("No sims file with the whole set of candidate texts and their best similarity ratings: "+listDocsBestSimFile)
-		result["error"] = "No sims file with the whole set of candidate texts and their best similarity ratings:"+listDocsBestSimFile)
-		_appendFile(logFilename, "No sims file with the whole set of candidate texts and their best similarity ratings: "+listDocsBestSimFile)
+		print("No sims file with the whole set of candidate texts and the ratings of the best similarity: "+listDocsBestSimFile)
+		result["error"] = "No sims file with the whole set of candidate texts and the ratings of the bestsimilarity:"+listDocsBestSimFile
+		_appendFile(logFilename, "No sims file with the whole set of candidate texts and the ratings of the best similarity: "+listDocsBestSimFile)
 		return result
 
 	lenListDocs = len(listDocs)
 
-	listMostSimilar = [] # list with the 100 more similar candidates (filename, doc first half, doc second half)
+	listMostSimilar = [] # list with the 100 more similar candidates (greater than 3K) according to the best similarity (filename, doc first half, doc second half)
 	for d in listDocs:
 		filename = _SCRAPPED_PAGES_FOLDER+d
 		fsize = os.path.getsize(filename)
@@ -1311,7 +1311,7 @@ def doPh6(lenOriginalText, pctgesList):
 	print("Created list with most similar:", len(listMostSimilar))
 
 
-	listLessSimilar = []    # list with the 100 less similar candidates (filename, doc first half, doc second half)
+	listLessSimilar = []    # list with the 100 less similar candidates (greater than 3K) according to the best similarity (filename, doc first half, doc second half)
 	for d in reversed(listDocs):
 		filename = _SCRAPPED_PAGES_FOLDER+d
 		fsize = os.path.getsize(filename)
@@ -1341,7 +1341,7 @@ def doPh6(lenOriginalText, pctgesList):
 		sizeCorpus = int(lenListDocs / 100) *  pctgeInitialCorpus
 		modelFilename = str(lenOriginalText)+ "-w."+str(pctgeInitialCorpus)+".model"
 
-		listDocsCorpus = listDocs[:sizeCorpus]
+		listDocsCorpus = listDocs[:sizeCorpus] # the x% candidates with higher sims according to the best similarity
 		listDocsCorpus = list(map(lambda x: _SCRAPPED_PAGES_FOLDER+x, listDocsCorpus))   # get the absolute names
 
 	    # initial corpus ready, do preprocessing
@@ -1363,6 +1363,8 @@ def doPh6(lenOriginalText, pctgesList):
 
 			listDocsW = list(map(lambda x: x+".w", listDocsS))
 
+			# this step was for tokenize and remove stopwords with Standford Core NLP, generating .t files
+			# it is no loger necessary as such task is done by Gensim, so we now train D2V with .w files
 			# # WARNING!! requires Standord CoreNLP server launched
 			# print("Processing S4...")
 			# np4 = _processS4List(listDocsW, lengthFolder)  # creates corspusFolder/lengthFolder/files_t and saves .t files
@@ -1403,9 +1405,12 @@ def doPh6(lenOriginalText, pctgesList):
 				else:
 					print("New files for "+modelFilename)
 
-				#listDocsT = list(map(lambda x: lengthFolder+"files_t/"+x[(1+x.rfind("/")):]+".t", listDocsW))
+				# this code was for training with .t files,  we now train D2V with .w files
+				# listDocsT = list(map(lambda x: lengthFolder+"files_t/"+x[(1+x.rfind("/")):]+".t", listDocsW))
 				# Build a doc2vec model trained with files in list
-				#r = _buildD2VModelFrom_T_FileList(listDocsT, globalModelFilename, vector_size, window, alpha, min_alpha, min_count, distributed_memory, epochs)
+				# r = _buildD2VModelFrom_T_FileList(listDocsT, globalModelFilename, vector_size, window, alpha, min_alpha, min_count, distributed_memory, epochs)
+
+				# train with .w files
 				r = _buildD2VModelFrom_W_FileList(listDocsW, globalModelFilename, vector_size, window, alpha, min_alpha, min_count, distributed_memory, epochs)
 
 				if (r == 0):
@@ -1427,35 +1432,35 @@ def doPh6(lenOriginalText, pctgesList):
 		fullListModels.append(modelFilename)
 
 
-		# # model has been created, let's check its quality
-		# print("Checking quality of:", modelFilename)
-		# listPairsMost = []
-		# listPairsLess = []
-		# listCross = []
-		# for idx, triple in enumerate(listMostSimilar):
-		# 	d2vSimilarity = _Doc2VecSimilarity(_MODELS_FOLDER+modelFilename, triple[1])
-		# 	pairSim = d2vSimilarity.doc2VecTextSimilarity(candidate_text=triple[2])  # sim between both parts of a similar doc
-		# 	crossSim = d2vSimilarity.doc2VecTextSimilarity(candidate_text=listLessSimilar[idx][1])   # sim between first part of a similar doc and first par of a dissimilar doc
-		# 	listPairsMost.append(pairSim)
-		# 	listCross.append(crossSim)
-		#
-		# for (doc, first, second) in listLessSimilar:
-		# 	d2vSimilarity = _Doc2VecSimilarity(_MODELS_FOLDER+modelFilename, first)
-		# 	pairSim = d2vSimilarity.doc2VecTextSimilarity(candidate_text=second)  # sim between both parts of a disssimilar doc
-		# 	listPairsLess.append(pairSim)
-		#
-		# # compute average and variance of each list
-		# meanPairsMost = statistics.mean(listPairsMost)
-		# varPairsMost = statistics.pvariance(listPairsMost)
-		# print("PairsMost:  average=", meanPairsMost, "  variance=", varPairsMost)
-		#
-		# meanPairsLess = statistics.mean(listPairsLess)
-		# varPairsLess = statistics.pvariance(listPairsLess)
-		# print("PairsLess:  average=", meanPairsLess, "  variance=", varPairsLess)
-		#
-		# meanCross = statistics.mean(listCross)
-		# varCross = statistics.pvariance(listCross)
-		# print("Cross  average=", meanCross, "  variance=", varCross)
+		# model has been created, let's check its quality
+		print("Checking quality of:", modelFilename)
+		listPairsMost = []
+		listPairsLess = []
+		listCross = []
+		for idx, triple in enumerate(listMostSimilar):
+			d2vSimilarity = _Doc2VecSimilarity(_MODELS_FOLDER+modelFilename, triple[1])
+			pairSim = d2vSimilarity.doc2VecTextSimilarity(candidate_text=triple[2])  # sim between both parts of a similar doc
+			crossSim = d2vSimilarity.doc2VecTextSimilarity(candidate_text=listLessSimilar[idx][1])   # sim between first part of a similar doc and first par of a dissimilar doc
+			listPairsMost.append(pairSim)
+			listCross.append(crossSim)
+
+		for (doc, first, second) in listLessSimilar:
+			d2vSimilarity = _Doc2VecSimilarity(_MODELS_FOLDER+modelFilename, first)
+			pairSim = d2vSimilarity.doc2VecTextSimilarity(candidate_text=second)  # sim between both parts of a disssimilar doc
+			listPairsLess.append(pairSim)
+
+		# compute average and variance of each list
+		meanPairsMost = statistics.mean(listPairsMost)
+		varPairsMost = statistics.pvariance(listPairsMost)
+		print("PairsMost:  average=", meanPairsMost, "  variance=", varPairsMost)
+
+		meanPairsLess = statistics.mean(listPairsLess)
+		varPairsLess = statistics.pvariance(listPairsLess)
+		print("PairsLess:  average=", meanPairsLess, "  variance=", varPairsLess)
+
+		meanCross = statistics.mean(listCross)
+		varCross = statistics.pvariance(listCross)
+		print("Cross  average=", meanCross, "  variance=", varCross)
 
 	result["P6_elapsedTimeF61"] = globalPreprocessingTime
 	result["P6_elapsedTimeF62"] = globalTrainingTime

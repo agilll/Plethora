@@ -41,7 +41,8 @@ def getContentAfterChanges (sfilename, pfilename):
 	sfile = open(sfilename, 'r')
 
 	if not os.path.isfile(pfilename):
-		_Print(pfilename+" not found!")
+		_Print("getContentAfterChanges: "+pfilename+" not found!!")
+		input("Continue?")
 		return (finalContent, finalHTMLContent)
 
 	pfile = open(pfilename, 'rb')

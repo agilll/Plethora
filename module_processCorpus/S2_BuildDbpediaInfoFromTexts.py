@@ -138,8 +138,9 @@ def processS2List(fileList, confidence=0.5, support=1):
 
 		try:
 			entities = findEntities(sFullFilename, confidence, support)
-		except:
-			_Print("Could not process ", sFullFilename)
+		except Exception as ex:
+			_Print("processS2List: findEntities raised exception ("+str(ex)+")! Could not process ", sFullFilename)
+			input("Continue?")
 			continue
 
 		time.sleep(2)

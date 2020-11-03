@@ -67,7 +67,7 @@ def processS1Folder (foldername):
 	txt_folder = foldername + _TXT_FOLDER  # subfolder with the input .txt files
 	# check that the subfolder files_txt/  exists
 	if not os.path.exists(txt_folder):
-		print(txt_folder, "not found!")
+		print("processS1Folder:", txt_folder, "not found!")
 		return -1
 
 	listFullFilenamesTXT = sorted(glob.glob(txt_folder+"*.txt"))

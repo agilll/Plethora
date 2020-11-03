@@ -1,15 +1,15 @@
-# training with .w files (preprocessed .txt files, but also text files)
+# training Doc2Vec models with .w files (preprocessed .txt files, but still text files)
 
 import os
 import collections
 import glob
 from gensim.models.doc2vec import Doc2Vec, TaggedDocument
-from gensim.parsing.preprocessing import remove_stopwords
+from gensim.parsing.preprocessing import remove_stopwords as Gensim_remove_stopwords
 from gensim.utils import simple_preprocess
 
-remove_stopWords = True	# use remove_stopWords to indicate if stopwords must be removed or not
+flag_remove_stopWords = True	# use flag_remove_stopWords to indicate if stopwords must be removed or not
 suffix = "with_stopwords"
-if (remove_stopWords == True):
+if (flag_remove_stopWords == True):
 	print("Removing stopwords")
 	suffix = "without_stopwords"
 
@@ -45,9 +45,9 @@ def buildD2VModelFrom_W_FileList(training_files, model_name, vector_size, window
 		text = training_fd.read()
 		training_texts.append(text)
 
-	# remove stopwords if specified
-	if (remove_stopWords):
-		training_texts = [remove_stopwords(text) for text in training_texts]
+	# remove stopwords, if specified, with Gensim remove_stopwords function
+	if (flag_remove_stopWords):
+		training_texts = [Gensim_remove_stopwords(text) for text in training_texts]
 
 	# preprocess each text (tokenize, lower, remove punctuation, remove <2 and >50 log words)
 	training_lists = [simple_preprocess(text, max_len=50) for text in training_texts]
