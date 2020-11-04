@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 import glob
 from smart_open import open as _Open
 
-FOLDER ="/Users/agil/KORPUS/SCRAPPED_PAGES/en.wikipedia.org"
+FOLDER ="/Users/agil/CloudStation/KORPUS/SCRAPPED_PAGES/en.wikipedia.org"
 
 
 
