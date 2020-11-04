@@ -88,5 +88,4 @@ def buildD2VModelFrom_W_FileList(training_files, model_name, vector_size, window
 	documents_ranks = collections.Counter(ranks)
 	print(model_name, "ranks =", documents_ranks)
 
-
 	return 0
