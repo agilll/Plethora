@@ -32,7 +32,7 @@ def buildD2VModelFrom_W_Folder(wfiles_folder, model_name, vector_size, window, a
 
 
 # A function to build a model based on Doc2Vec, trained by our own training .w documents
-# receives a list of filenames .w documents
+# receives a list of filenames of .w documents
 def buildD2VModelFrom_W_FileList(training_files, model_name, vector_size, window, alpha, min_alpha, min_count, distributed_memory, epochs):
 
 	print("Training with", len(training_files), "files")
@@ -56,7 +56,7 @@ def buildD2VModelFrom_W_FileList(training_files, model_name, vector_size, window
 	tagged_training_lists = [TaggedDocument(words=l, tags=[i]) for i,l in enumerate(training_lists)]
 
 	# this is the input for training
-	# tagged_training_lists is a list [TaggedDocument(['token1','token2',...], ['0']), TaggedDocument(['token1','token2',...], ['1']), ...]
+	# tagged_training_lists is a list [TaggedDocument(['word1','word2',...], ['0']), TaggedDocument(['word1','word2',...], ['1']), ...]
 
 	# Create a Doc2Vec model with the selected parameters
 	model = Doc2Vec(vector_size=vector_size, window=window, alpha=alpha, min_alpha=min_alpha, min_count=min_count, dm=distributed_memory)
@@ -77,10 +77,10 @@ def buildD2VModelFrom_W_FileList(training_files, model_name, vector_size, window
 	# quality check 1: compute 1-ranks to show the percentage of cases where each document is the most similar to itself (ideally should be 100%)
 	ranks = []
 	print("Computing ranks")
-	for doc_index in range(len(tagged_training_lists)):  	# Go through each document of the training corpus
+	for doc_index in range(len(tagged_training_lists)):  	# Go through each tagged document of the training corpus
 		inferred_vector = model.infer_vector(tagged_training_lists[doc_index].words)  # Infer a new vector for each document of the training corpus
-		self_similarity = model.docvecs.most_similar([inferred_vector], topn=len(model.docvecs)) # get the most similars to it
-		rankList = [docindex for docindex,sim in self_similarity]
+		list_more_similar_docs = model.docvecs.most_similar([inferred_vector], topn=len(model.docvecs)) # get the docs most similar to it
+		rankList = [docindex for docindex,sim in list_more_similar_docs]
 		rank = rankList.index(doc_index)   # get its rank, ideally should be 1
 		ranks.append(rank)
 

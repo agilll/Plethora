@@ -24,8 +24,10 @@ _LEE_D2V_MODEL = HOME+"/KORPUS/MODELS/d2v_lee.without_stopwords.model"
 # _LEE_D2V_MODEL = HOME+"/KORPUS/MODELS/d2v_lee.with_stopwords.model"
 _AP_D2V_MODEL = HOME+"/KORPUS/MODELS/doc2vec.bin"
 
+_ADHOC_D2V_MODEL = HOME+"/KORPUS/MODELS/1926-w.1.model"  # for quality check 1 of the different ad hoc models (1-15)
+
 #CURRENT_MODEL = _LEE_D2V_MODEL
-CURRENT_MODEL = _AP_D2V_MODEL
+CURRENT_MODEL = _ADHOC_D2V_MODEL
 
 # the folder with teh candidate files
 _SCRAPPED_PAGES_FOLDER = HOME+"/KORPUS/SCRAPPED_PAGES/"
