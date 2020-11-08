@@ -157,7 +157,7 @@ def generateAgregate (foldername):
 			continue
 		else:
 			numFiles += 1
-			print(numFiles, "====================", filename)
+			_Print(numFiles, "====================", filename)
 			with open(spw_folder+"/"+filename, 'r') as content_file:
 				content = content_file.read()
 				global_content += content

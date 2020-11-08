@@ -16,7 +16,6 @@ import glob
 sys.path.append('../')    # to search for imported files in the parent folder
 
 from px_aux import getContentMarked as _getContentMarked, Print as _Print, saveFile as _saveFile
-
 from aux_process import SPW_FOLDER as _SPW_FOLDER
 
 
@@ -41,7 +40,7 @@ def getContentAfterChanges (sfilename, pfilename):
 	sfile = open(sfilename, 'r')
 
 	if not os.path.isfile(pfilename):
-		_Print("getContentAfterChanges: "+pfilename+" not found!!")
+		print("getContentAfterChanges: "+pfilename+" not found!!")
 		input("Continue?")
 		return (finalContent, finalHTMLContent)
 
@@ -184,15 +183,15 @@ def rebuild (byOffset):
 # source.s.w.p and source.w.p.html are also created
 def processS3File(source):
 	if not source.endswith(".s"):
-		print(source+" has not '.s' extension")
+		print("processS3File:", source+" has not '.s' extension")
 		return -1
 
 	if not os.path.exists(source):
-		print(source, "not found!")
+		print("processS3File:", source, "not found!")
 		return -1
 
 	if not os.path.exists(source+".p"):
-		print(source+".p", "not found!")
+		print("processS3File:", source+".p", "not found!")
 		return -1
 
 	print("Processing file "+source+"...\n")
@@ -220,7 +219,7 @@ def processS3Folder (foldername):
 
 	spw_folder = foldername + _SPW_FOLDER
 	if not os.path.exists(spw_folder):
-		print(spw_folder, "not found!")
+		print("processS3Folder:", spw_folder, "not found!")
 		return -1
 
 	print("\nS3: Processing folder "+foldername)

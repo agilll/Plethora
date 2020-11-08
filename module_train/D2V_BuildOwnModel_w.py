@@ -76,6 +76,7 @@ def buildD2VModelFrom_W_FileList(training_files, model_name, vector_size, window
 
 	# quality check 1: compute 1-ranks to show the percentage of cases where each document is the most similar to itself (ideally should be 100%)
 	ranks = []
+	print("Checking quality #1 of:", model_name)
 	print("Computing ranks")
 	r1 = 0
 	for doc_index in range(len(tagged_training_lists)):  	# Go through each tagged document of the training corpus

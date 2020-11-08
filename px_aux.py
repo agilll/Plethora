@@ -55,7 +55,6 @@ URL_DB_SL_annotate = "http://localhost:2222/rest/annotate"  # dbpedia spotlight 
 URL_WK = "https://query.wikidata.org/sparql"
 
 # folders and filenames involved in corpus construction
-# CORPUS_FOLDER = "KORPUS"
 
 # folder  with training texts
 TEXTS_FOLDER = './texts/'

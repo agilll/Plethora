@@ -2,14 +2,15 @@
 # it is also used by the main program, so it has been put in its own file
 
 import re
+from px_aux import Print as _Print
 
 # regexp that matches a word beginning uppercase followed by a space and roman number, ended by a not alphanumeric character   (we call it EVENT)
 reg_WordWithRomanNumber = re.compile('([A-Z]\w+) (?=[MDCLXVI])(M*)(C[MD]|D?C{0,3})(X[CL]|L?X{0,3})(I[XV]|V?I{0,3})(\W)')
 
 
-# aux functions 
+# aux functions
 
-# to change a newline by a space in a string 
+# to change a newline by a space in a string
 def rnl (cad):
 	return cad.replace("\n", " ")
 
@@ -27,7 +28,7 @@ def buildSecureReject (words, j):
 	if j-2 < 0:
 		w_2 = ""
 	else:
-		w_2 = words[j-2]	
+		w_2 = words[j-2]
 	if j-1 < 0:
 		w_1 = ""
 	else:
@@ -50,14 +51,14 @@ def buildSecureReject (words, j):
 		w4 = words[j+4]
 	txt = rnl(w_4+w_3+w_2+w_1+words[j]+w1+w2+w3+w4)
 	html = 	txt = rnl(w_4+w_3+w_2+w_1+"<span style='color: red'>"+words[j]+"</span>"+w1+w2+w3+w4)
-	
+
 	return(txt,html)
 
 
 # to decide if a word starting by uppercase is proper name or not
 # it is not a complete function, it is a repository of heuristics, there are much more cases (we need a better solution)
 def isProperName (n):
-	words = {"King", "Queen", "BC", "AD", "From"} 
+	words = {"King", "Queen", "BC", "AD", "From"}
 	if n in words:
 		return False
 	return True
@@ -69,9 +70,9 @@ def hasSentenceEnd (g):
 		return True
 	return False
 
-# to decide if to add or not a suffix to a NAME depending on its surroundings 
+# to decide if to add or not a suffix to a NAME depending on its surroundings
 # if it is followed by an uppercase word (without a mark of sentence end in middle) it is not changed
-# if it is preceded by an uppercase (proper name) word (without a mark of sentence end in middle) it is not changed 
+# if it is preceded by an uppercase (proper name) word (without a mark of sentence end in middle) it is not changed
 def changeAccordingContext  (words, j):
 	if j+2 < len(words):
 		if words[j+2].isidentifier() and words[j+2][0].isupper() and not hasSentenceEnd(words[j+1]):
@@ -85,101 +86,101 @@ def changeAccordingContext  (words, j):
 	elif j-2 > 0:
 		if words[j-2].isidentifier() and words[j-2][0].isupper() and isProperName(words[j-2]):
 			return False
-	
+
 	return True
 
-	
 
-# to process a content and return the result   
+
+# to process a content and return the result
 def processContent (content):
-	
+
 	# this is an offset dict, keys are offsets, values the detected matches (object with name and EVENT) in that offset
 	wordsWithNumber = {}
-	
-	# this is a dict of names, keys are name of matches, values are sets with all the different EVENTS involving such name  
+
+	# this is a dict of names, keys are name of matches, values are sets with all the different EVENTS involving such name
 	allSubstitutions = {}
-		
+
 	# first pass to content, to detect and store EVENTS
-			
-	# match is every case finding EVENTS 
+
+	# match is every case finding EVENTS
 	for match in reg_WordWithRomanNumber.finditer(content):
-		offset = match.start() # the position of the EVENT 
+		offset = match.start() # the position of the EVENT
 		# match.groups provides the different parts of the match
-		tuplaGroups1 = match.groups()[:-1] # remove the non-alphanumeric char ending the sequence   
+		tuplaGroups1 = match.groups()[:-1] # remove the non-alphanumeric char ending the sequence
 		tuplaGroups2 = (tuplaGroups1[0]," ")+tuplaGroups1[1:] # add a ' ' after the name
 		newFullWord = "".join(tuplaGroups2) # join all parts, without spaces, result is "name romannumber"
-		print(match.groups(), " --> ", tuplaGroups2, " --> ", newFullWord)
+		_Print(match.groups(), " --> ", tuplaGroups2, " --> ", newFullWord)
 
 		word = match.group(1) # the name
 		# add the match to the dict of offsets, key the offset, value an object with the name (word) and the match (fullWord)
 		wordsWithNumber[offset] = {"fullWord": newFullWord.strip(), "word": word}   # strip removes spaces before and after the string
-		
+
 		# add the EVENT to the dict of names, a set with all the EVENT of such name
 		if word not in  allSubstitutions:
 			allSubstitutions[word] = {newFullWord}
 		else:
 			allSubstitutions[word].add(newFullWord)
 
-	print('\n-------- Results of the first pass --------')
-	
-	print("There are", len(wordsWithNumber), "EVENTS, proper names followed by an space and a roman number")
-	
+	_Print('\n-------- Results of the first pass --------')
+
+	_Print("There are", len(wordsWithNumber), "EVENTS, proper names followed by an space and a roman number")
+
 	# EVENTS have been detected. Let's go with changes
-	
+
 	# second pass to the content, to make modifications (changes after EVENT or before for unique NAMEs)
-	# we study the content from offset to offset, and make modifications depending on current substitutions 
+	# we study the content from offset to offset, and make modifications depending on current substitutions
 
 	offsets = list(wordsWithNumber.keys())  # list of offsets of every EVENT
 	offsets.sort()  # ascending order
-	
+
 	negReportTxt = ""    # text negative report (transformations not done)
 	negReportHtml = ""   # html negative report
-	
+
 	if len(offsets) == 0:
 		return None
 
-	
+
 	# dict to storecurrent substitutions, key is the name, value is object with the EVENT and its offset (not necessary)
 	currentSubstitutions = {}
-	
+
 
 	# start with the initial text, before the first EVENT
 	initial= content[0:offsets[0]]
-	
+
 	# convert the string to a list of words separated by non-alphanumeric chars
-	# with the parenthesis, the detected groups marking the word separation are also returned, that is, 
+	# with the parenthesis, the detected groups marking the word separation are also returned, that is,
 	# words is a list contaning everything in the string, the words and, between them, the non-alphanumeric groups separating them
 	words = re.split('(\W+)', initial)
 	wordsHTML = re.split('(\W+)', initial)  # the same for the HTML result
-	
+
 	for j in range(0, len(words)):
 		if words[j] in allSubstitutions:
 			if len(allSubstitutions[words[j]]) == 1:
 				sustituto = list(allSubstitutions[words[j]])[0]  # to get the only one set member
-				if changeAccordingContext(words, j): 
-					# change is done					
+				if changeAccordingContext(words, j):
+					# change is done
 					words[j] = sustituto
 					wordsHTML[j] = "<span style='color: green'><b>"+sustituto+"</b></span>"
 				else:
 					# change is not done, and it is annotated in the negative report
-					negReportTxt += "Before: ("+sustituto+")  -->  **" 
+					negReportTxt += "Before: ("+sustituto+")  -->  **"
 					negReportTxt += buildSecureReject(words, j)[0]+"**\n"
-					negReportHtml += "Before: ("+sustituto+")  -->  **" 
+					negReportHtml += "Before: ("+sustituto+")  -->  **"
 					negReportHtml += buildSecureReject(words, j)[1]+"**<p>"
 
 	# 'finalContent' contains the text after processing and  changes
 	finalContent = "".join(words)
-	finalContentHTML = "".join(wordsHTML).replace("\n", "<p>") 
-	
+	finalContentHTML = "".join(wordsHTML).replace("\n", "<p>")
+
 	# let's go with rest of text after the first offset
-	
+
 	for i in range(0, len(offsets)):  # range(0,n) goes from 0 to n-1
 		o = wordsWithNumber[offsets[i]] # the object with the i event, we study the text from here to the following
 
 		# add the event to the final content and to the dict of current substituions
 		finalContent += o["fullWord"]
 		finalContentHTML += o["fullWord"]
-		
+
 		currentSubstitutions[o["word"]] = {"sub": o["fullWord"], "offset": offsets[i]}  # if that word already existed, it is changed by the new one
 
 		# search the limit of the text fragment, from teh current event to the following one (or teh end of text)
@@ -190,20 +191,20 @@ def processContent (content):
 
 		# take the string from the current offset + len(added) to the limit
 		currentSubstring = content[offsets[i]+len(o["fullWord"]):limit]
-		
-		# convert such string to a list of words separated by non-alphanumeric chars 
-		# with the parenthesis, the detected groups marking the word separation are also returned, that is, 
+
+		# convert such string to a list of words separated by non-alphanumeric chars
+		# with the parenthesis, the detected groups marking the word separation are also returned, that is,
 		# words is a list contaning everything in the string, the words and, between them, the non-alphanumeric groups separating them
 		words = re.split('(\W+)', currentSubstring)
 		wordsHTML = re.split('(\W+)', currentSubstring)
-		
+
 		# study each one of the words in list, that is, of the string after the current event to limit
 		for j in range(0, len(words)):
 			# if current word is in the list of substitutions, change it
 			if words[j] in currentSubstitutions:
 				sustituto = currentSubstitutions[words[j]]["sub"]
 				if changeAccordingContext(words, j):
-					# change is done 
+					# change is done
 					words[j] = sustituto
 					wordsHTML[j] = "<span style='color: green'><b>"+sustituto+"</b></span>"
 				else:
@@ -217,7 +218,7 @@ def processContent (content):
 					if len(allSubstitutions[words[j]]) == 1:
 						sustituto = list(allSubstitutions[words[j]])[0]
 						if changeAccordingContext(words, j):
-							# change is done 
+							# change is done
 							words[j] = sustituto
 							wordsHTML[j] = "<span style='color: green'><b>"+sustituto+"</b></span>"
 						else:
@@ -228,9 +229,7 @@ def processContent (content):
 							negReportHtml += buildSecureReject(words, j)[1]+"**<p>"
 
 		# rebuild the studied fragment from the list of words, and add it to the final content
-		finalContent += "".join(words)  
+		finalContent += "".join(words)
 		finalContentHTML += "".join(wordsHTML).replace("\n", "<p>")
-	
+
 	return (finalContent, finalContentHTML, negReportTxt, negReportHtml)
-
-

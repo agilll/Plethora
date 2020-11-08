@@ -80,7 +80,7 @@ def processS2File(source, confidence=0.5, support=1):
 		print(source, "not found!")
 		return -1
 
-	print("Processing file "+source+"...\n")
+	_Print("Processing file "+source+"...\n")
 	entities = findEntities(source, confidence, support)
 	pickle.dump(entities, open(source+".p", "wb" ))
 
@@ -139,7 +139,7 @@ def processS2List(fileList, confidence=0.5, support=1):
 		try:
 			entities = findEntities(sFullFilename, confidence, support)
 		except Exception as ex:
-			_Print("processS2List: findEntities raised exception ("+str(ex)+")! Could not process ", sFullFilename)
+			print("processS2List: findEntities raised exception ("+str(ex)+")! Could not process ", sFullFilename)
 			input("Continue?")
 			continue
 

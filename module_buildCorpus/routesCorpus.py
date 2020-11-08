@@ -1441,22 +1441,23 @@ def doPh6(lenOriginalText, pctgesList):
 
 		# the current model has been created, let's check its quality
 
-		print("Checking quality of:", modelFilename)
+		print("Checking quality #2 of:", modelFilename)
 
 		# quality check 2: check the average similarities among first and second part of each document
 
 		listPairsMost = []
 		listPairsLess = []
 		listCross = []
-		for idx, triple in enumerate(listMostSimilar):
-			d2vSimilarity = _Doc2VecSimilarity(_MODELS_FOLDER+modelFilename, triple[1])
-			pairSim = d2vSimilarity.doc2VecTextSimilarity(candidate_text=triple[2])  # sim between both parts of a similar doc
-			crossSim = d2vSimilarity.doc2VecTextSimilarity(candidate_text=listLessSimilar[idx][1])   # sim between first part of a similar doc and first par of a dissimilar doc
+		# each triple of listMostSimilar and listLessSimilar is (filename, first-part, second-part)
+		for idx,triple in enumerate(listMostSimilar):
+			d2vSimilarity = _Doc2VecSimilarity(_MODELS_FOLDER+modelFilename, triple[1]) # object to compare to first-part of the more similar doc[idx]
+			pairSim = d2vSimilarity.doc2VecTextSimilarity(candidate_text=triple[2])  # compare to the second-part of the same doc
+			crossSim = d2vSimilarity.doc2VecTextSimilarity(candidate_text=listLessSimilar[idx][1])  # compare to first-part of a less similar doc
 			listPairsMost.append(pairSim)
 			listCross.append(crossSim)
 
-		for (doc, first, second) in listLessSimilar:
-			d2vSimilarity = _Doc2VecSimilarity(_MODELS_FOLDER+modelFilename, first)
+		for (docname,first, second) in listLessSimilar:
+			d2vSimilarity = _Doc2VecSimilarity(_MODELS_FOLDER+modelFilename, first)  # object to compare to first-part of the doc idx
 			pairSim = d2vSimilarity.doc2VecTextSimilarity(candidate_text=second)  # sim between both parts of a disssimilar doc
 			listPairsLess.append(pairSim)
 
@@ -1473,7 +1474,7 @@ def doPh6(lenOriginalText, pctgesList):
 		varCross = statistics.pvariance(listCross)
 		print("Cross Fragment Pairs (first part of more similar to first part of less similar):  average=", meanCross, "  variance=", varCross)
 
-		# end of the creation and quality testing for one of the models
+		# end of the creation and quality testing #2 for one of the models
 
 	result["P6_elapsedTimeF61"] = globalPreprocessingTime
 	result["P6_elapsedTimeF62"] = globalTrainingTime
