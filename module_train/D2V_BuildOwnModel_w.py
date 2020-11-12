@@ -80,6 +80,8 @@ def buildD2VModelFrom_W_FileList(training_files, model_name, vector_size, window
 	print("Computing ranks")
 	r1 = 0
 	for doc_index in range(len(tagged_training_lists)):  	# Go through each tagged document of the training corpus
+		if (doc_index % 1000) == 0:
+			print(doc_index, end=' ', flush=True)
 		# tagged_training_lists[doc_index].tags = [doc_index]
 		inferred_vector = model.infer_vector(tagged_training_lists[doc_index].words)  # Infer a new vector for each document of the training corpus
 		list_more_similar_docs = model.docvecs.most_similar([inferred_vector], topn=len(model.docvecs)) # get the docs most similar to it

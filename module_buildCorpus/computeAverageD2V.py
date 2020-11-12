@@ -49,9 +49,9 @@ try:
             listAP.append(row[0])
         csvFile.close()
 except:
-	print("Problem read¡ing csvFile:", listBestAPFilename)
+	print("Problem reading csvFile:", listBestAPFilename)
 
-listToTest = listWKSB  # listWKSB  o   listAP[:1000]
+listToTest = listAP[:1000]  # listWKSB  o   listAP[:1000]
 ping = int(len(listToTest) / 20)
 
 
@@ -68,7 +68,7 @@ listEntityFilesOriginalText  = list(map(lambda x: "en.wikipedia.org/wiki.."+x+".
 print("Starting execution")
 
 models = {}
-for x in range(1,30):
+for x in range(8,9):
     model = "1926-w."+str(x)+".model"
     models[model] = 0
 

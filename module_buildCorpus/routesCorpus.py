@@ -5,6 +5,7 @@ import time
 import json
 import csv
 import statistics
+import random
 
 from flask import request, jsonify
 from smart_open import open as _Open
@@ -1281,10 +1282,14 @@ def doPh6(lenOriginalText, pctgesList):
 
 	listDocs = [] # to store the list of candidate texts ordered by best similarity in previous phase
 	listDocsBestSimFile =  lengthFolder+str(lenOriginalText)+".ph5-3.simsBest.csv"  # list of (candidate, sim) ordered by best similarity in previous phase
+	listDocsSimFile =  lengthFolder+str(lenOriginalText)+".ph5-1.sims.csv"   # list of (candidate, sim) not ordered
+
+	listDocsFile = listDocsSimFile  # read unordered set of candidates
+	#listDocsFile = listDocsBestSimFile  # read ordered (best sim) set of candidates
 
 	# try to read existing best similarity sims file
 	try:
-		with _Open(listDocsBestSimFile, 'r') as csvFile:
+		with _Open(listDocsFile, 'r') as csvFile:
 			reader = csv.reader(csvFile, delimiter=' ')
 			next(reader)  # to skip header
 			for row in reader:
@@ -1418,6 +1423,8 @@ def doPh6(lenOriginalText, pctgesList):
 				# r = _buildD2VModelFrom_T_FileList(listDocsT, globalModelFilename, vector_size, window, alpha, min_alpha, min_count, distributed_memory, epochs)
 
 				# train with .w files
+				#random.shuffle(listDocsW)  # to shuffle the list, not usually, only to observe the differences
+				#listDocsW.reverse() # to reverse the list, from less to more similar
 				r = _buildD2VModelFrom_W_FileList(listDocsW, globalModelFilename, vector_size, window, alpha, min_alpha, min_count, distributed_memory, epochs)
 
 				if (r == 0):
