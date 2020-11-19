@@ -28,15 +28,15 @@ from textSimilarities import textSimilarityFunctions as _textSimilarityFunctions
 
 # to preprocess corpus files
 sys.path.append('../module_processCorpus')
-from S1_AddSuffixToTexts import processS1List as _processS1List
-from S2_BuildDbpediaInfoFromTexts import processS2List as _processS2List
-from S3_UpdateTextsEntities import processS3List as _processS3List
+from S1_AddSuffixToTexts import processS1List as _processS1List, processS1File as _processS1File
+from S2_BuildDbpediaInfoFromTexts import processS2List as _processS2List, processS2File as _processS2File
+from S3_UpdateTextsEntities import processS3List as _processS3List, processS3File as _processS3File
 from S4_tokenize import processS4List as _processS4List   # requires Standord CoreNLP server started
 
 # to train the D2V model
 sys.path.append('../module_train')
 from D2V_BuildOwnModel_t import buildD2VModelFrom_T_FileList as _buildD2VModelFrom_T_FileList
-from D2V_BuildOwnModel_w import buildD2VModelFrom_W_FileList as _buildD2VModelFrom_W_FileList
+from D2V_BuildOwnModel_w import buildD2VModelFrom_FileList as _buildD2VModelFrom_FileList
 
 
 # D2V training hyperparameters
@@ -75,6 +75,8 @@ def doPh1getWikicatsFromText():
 def doPh1 (P0_originalText):
 	print("Executing Phase 1")
 
+	result = {}   # to return results
+
 	lenOriginalText = len(P0_originalText)  # length of the received text
 
 	if not os.path.exists(_CORPUS_FOLDER):  # create KORPUS folder if not exists
@@ -94,27 +96,44 @@ def doPh1 (P0_originalText):
 	_appendFile(logFilename, "\n\nExecuting Phase 1")
 
 	# file to store original text
-	filename_txt = lengthFolder+str(lenOriginalText)+".ph0.txt"   # save the received text with length.ph0.txt filename
+	filename_txt = lengthFolder+str(lenOriginalText)+".ph1.txt"   # save the received text with length.ph1.txt filename
 
 	# check if file for original text already exists and has equal contents
-	if not os.path.exists(filename_txt):
+	try:
+		if not os.path.exists(filename_txt):
+			raise Exception("No file")
+		else:
+			with _Open(filename_txt) as fp:  # if already exists, save only if it has different contents
+				text = fp.read()
+				if text != P0_originalText:
+					raise Exception("New contents")
+				else:
+					print("No need to save original text")
+	except Exception as e:
 		print("Saving original text")
 		_saveFile(filename_txt, P0_originalText)  # if not exists, save it
-	else:
-		with _Open(filename_txt) as fp:  # if already exists, save only if it has different contents
-			text = fp.read()
-			if text != P0_originalText:
-				print("Saving original text")
-				_saveFile(filename_txt, P0_originalText)
-			else:
-				print("No need to save original text")
 
-	filename_wk = lengthFolder+str(lenOriginalText)+".ph1.wk"   # filename for wikicats (length.ph1.wk)
-	filename_sb = lengthFolder+str(lenOriginalText)+".ph1.sb"   # filename for subjects (length.ph1.sb)
-	filename_en = lengthFolder+str(lenOriginalText)+".ph1.en"   # filename for entities (length.ph1.en)
+		# preprocess txt file to obtain .s, .p and .w
+		try:
+			print("Processing S1...")
+			_processS1File(filename_txt)  # creates .s file
 
-	result = {}
+			print("Processing S2...")
+			_processS2File(filename_txt+".s")  # creates .p file
 
+			print("Processing S3...")
+			_processS3File(filename_txt+".s")  # creates .w file
+
+		except Exception as e:
+			result["error"] = str(e)
+			print("Exception in preprocessing "+modelFilename+" in doPh6:", str(e))
+			_appendFile(logFilename, "Exception in preprocessing "+modelFilename+" in doPh6: "+str(e))
+			return result
+
+
+	filename_wk = lengthFolder+str(lenOriginalText)+".ph1.txt.wk"   # filename for wikicats (length.ph1.wk)
+	filename_sb = lengthFolder+str(lenOriginalText)+".ph1.txt.sb"   # filename for subjects (length.ph1.sb)
+	filename_en = lengthFolder+str(lenOriginalText)+".ph1.txt.en"   # filename for entities (length.ph1.en)
 
 	try:  # open wikicats file if exists and it is newer than original text file
 		if os.path.exists(filename_wk) and _moreRecent(filename_wk, filename_txt):
@@ -477,7 +496,8 @@ def doPh3(lenOriginalText):
 
 		P3_numUrlsDownloaded = 0  # number of urls downloaded from Internet IN THIS ITERATION
 
-		for idx, page in enumerate(listWithoutDuplicates, start=1):
+		# download new files from Internet
+		for idx,page in enumerate(listWithoutDuplicates, start=1):
 			if (idx % 5000) == 0:  # to print something on console, to be sure it is ongoing
 				print(".", end=' ', flush=True)
 
@@ -650,23 +670,22 @@ def doPh4(lenOriginalText):
 
 		startTime = datetime.now()
 
-		for idx, rFileNameCandidate in enumerate(listEnoughContent, start=1):
+		for idx,rFileNameCandidate in enumerate(listEnoughContent, start=1):
 			if (idx % 5000) == 0:  # to print something on console, to be sure it is ongoing
 				print(".", end=' ', flush=True)
 			_Print("\n("+str(idx)+" of "+str(lenListEnoughContent)+") -- ", rFileNameCandidate)
 
 			# Build filenames for this doc
 			fileNameCandidate = _SCRAPPED_PAGES_FOLDER+rFileNameCandidate
-			fileNameCandidateBase = fileNameCandidate[:fileNameCandidate.rfind(".")]
-			fileNameCandidateWikicats = fileNameCandidateBase+".wk"    # wikicats file for this doc
-			fileNameCandidateSubjects = fileNameCandidateBase+".sb"    # subjects file for this doc
+			fileNameCandidateWikicats = fileNameCandidate+".wk"    # wikicats file for this doc
+			fileNameCandidateSubjects = fileNameCandidate+".sb"    # subjects file for this doc
 
 			# if both files (wikicats and subjects) exist, use them from local store
 			if os.path.exists(fileNameCandidateWikicats) and os.path.exists(fileNameCandidateSubjects):
 				_Print("Files WK and SB already available in local DB for", fileNameCandidate)
 				fwsize = os.path.getsize(fileNameCandidateWikicats)
 				fssize = os.path.getsize(fileNameCandidateSubjects)
-				# if these two files are empty (no wikicats and no subjects), this doc will not be used
+				# if these two files are empty (no wikicats and no subjects), this doc should not be used
 				if (fwsize == 0) and (fssize == 0):
 					listWithWKSB.append(rFileNameCandidate)  # we will compute both similarities even though there is no info (no wikicats and no subjects)
 				else:
@@ -814,7 +833,7 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 
 
 	# read the original text entities (E0) from local store, to later measure the quality of similarities
-	filename_en = lengthFolder+str(lenOriginalText)+".ph1.en"   # filename for entities E0 (length.ph1.en)
+	filename_en = lengthFolder+str(lenOriginalText)+".ph1.txt.en"   # filename for entities E0 (length.ph1.en)
 	try:
 		with _Open(filename_en) as fp:	# format    http://dbpedia.org/resource/Title
 			listEntitiesOriginalText = fp.read().splitlines()
@@ -834,7 +853,7 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 
 
 	# read the original text subjects from local store
-	filename_sb = lengthFolder+str(lenOriginalText)+".ph1.sb"   # filename for subjects (length.ph1.sb)
+	filename_sb = lengthFolder+str(lenOriginalText)+".ph1.txt.sb"   # filename for subjects (length.ph1.txt.sb)
 	try:
 		with _Open(filename_sb) as fp:
 			listSubjectsOriginalText = fp.read().splitlines()
@@ -848,13 +867,8 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 
 	print("\n", "********** Computing similarities for", lenListWithWKSB, "candidate texts...", "\n")
 
-	# variables to store results
+	# filename to store results
 	filenameSims = lengthFolder+str(lenOriginalText)+".ph5-1.sims.csv"  # file to store all similarities
-
-	# to store jaccard wikicats/subjects similarity distribution
-	# distribution_wk = {"0":0, "1":0, "2":0, "3":0, "4":0, "5":0, "6":0, "7":0, "8":0, "9":0}
-	# distribution_sb = {"0":0, "1":0, "2":0, "3":0, "4":0, "5":0, "6":0, "7":0, "8":0, "9":0}
-
 
 	# dict_sims_db and dict_sims_new: dicts to store all the similarities of all candidates to To
 	# key: partial filename of candidate. Format = en.wikipedia.org/wiki..Dolno_Dupeni.txt
@@ -868,49 +882,52 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 			reader = csv.reader(csvFile, delimiter=' ')
 			next(reader)  # to skip header
 			for row in reader:
-				# row[0]=rDocName, row[1]=shared wk sim, row[2]=shared sb sim, row[3]=spaCy sim, row[4]=d2v sim, row[5] = euclidean sim, row[6] = full wk sim, row[7] = full sb sim
-				dict_sims_db[row[0]] = (float(row[1]), float(row[2]), float(row[3]), float(row[4]), float(row[5]), float(row[6]), float(row[7]), float(row[8]))
+				# row[0]=rDocName, row[1]=full wk sim, row[2]=full sb sim, row[3]=spaCy sim, row[4]=d2v_ap sim
+				dict_sims_db[row[0]] = (float(row[1]), float(row[2]), float(row[3]), float(row[4]) )
 
 			csvFile.close()
-	except:
-		print("No similarities file")
+	except Exception as e:
+		print("No similarities file:", str(e))
+		print("All similarities must be computed")
 
 
 	startTime = datetime.now()
 
+	P0_originalTextFilenameW = _CORPUS_FOLDER+"1926/1926.ph1.txt.s.w"   # W to compare similarity of .w files
+	with open(P0_originalTextFilenameW, 'r') as fp:
+	  P0_originalTextW = fp.read()
+
 	# Create a textSimilarityFunctions object to measure text similarities. It requires the original text, its wikicats and subjects.
 	similarities = _textSimilarityFunctions(P0_originalText, P1_selectedWikicats, listSubjectsOriginalText, logFilename)
 
-	# create object to measure Doc2Vec similarity with LEE_D2V_MODEL
-	d2vLeeSimilarity = _Doc2VecSimilarity(_LEE_D2V_MODEL, P0_originalText)
-	d2vAPSimilarity = _Doc2VecSimilarity(_AP_D2V_MODEL, P0_originalText)
+	# create object to measure Doc2Vec similarity with AP_MODEL
+	d2vAPSimilarity = _Doc2VecSimilarity(_AP_D2V_MODEL, P0_originalText)  # W to compare .w files
 
 
-	for idx, rFileNameCandidate in enumerate(listWithWKSB, start=1):  # format rFileNameCandidate = en.wikipedia.org/wiki..Title.txt
+	changes = False
+	for idx,rFileNameCandidate in enumerate(listWithWKSB, start=1):  # format rFileNameCandidate = en.wikipedia.org/wiki..Title.txt
 		if (idx % 1000) == 0:
 			print(idx/1000, end=' ', flush=True)
 		_Print("\n("+str(idx)+" of "+str(lenListWithWKSB)+") -- ", rFileNameCandidate)
 
 		# Build filenames for this page
 		fileNameCandidate = _SCRAPPED_PAGES_FOLDER+rFileNameCandidate   # format $HOME/KORPUS/SCRAPPED_PAGES/en.wikipedia.org/wiki..Title.txt
-		fileNameCandidateBase = fileNameCandidate[:fileNameCandidate.rfind(".")]   # $HOME/KORPUS/SCRAPPED_PAGES/en.wikipedia.org/wiki..Title
-		fileNameCandidateWikicats = fileNameCandidateBase+".wk"    # wikicats file for this doc  $HOME/KORPUS/SCRAPPED_PAGES/en.wikipedia.org/wiki..Title.wk
-		fileNameCandidateSubjects = fileNameCandidateBase+".sb"    # subjects file for this doc  $HOME/KORPUS/SCRAPPED_PAGES/en.wikipedia.org/wiki..Title.sb
+		fileNameCandidateWikicats = fileNameCandidate+".wk"    # wikicats file for this doc  $HOME/KORPUS/SCRAPPED_PAGES/en.wikipedia.org/wiki..Title.txt.wk
+		fileNameCandidateSubjects = fileNameCandidate+".sb"    # subjects file for this doc  $HOME/KORPUS/SCRAPPED_PAGES/en.wikipedia.org/wiki..Title.txt.sb
+
+		fileNameCandidateW = _CORPUS_FOLDER+"1926/files_s_p_w/"+rFileNameCandidate[1+rFileNameCandidate.rfind("/"):]+".s.w"  # to compare .w files
 
 		# Now compute similarities. First, check if already stored in length.ph5-1.sims.csv (already read in dict_sims_db)
 		try:
-			sims = dict_sims_db[rFileNameCandidate] # if exists, return tuple with (wk_sim, sb_sim, spacy_sim, doc2vec_sim, euclidean_sim, full_wk_sim, full_sb_sim)
+			sims = dict_sims_db[rFileNameCandidate] # if exists, return tuple with (full_wk_sim, full_sb_sim, spacy_sim, doc2vec_sim)
 			_Print("Found already computed similarities for", rFileNameCandidate)
 			full_wikicats_jaccard_sim = sims[0]
 			full_subjects_jaccard_sim = sims[1]
-			shared_wikicats_jaccard_sim = sims[2]
-			shared_subjects_jaccard_sim = sims[3]
-			spacy_sim = sims[4]
-			d2v_lee_sim = sims[5]
-			euclidean_sim = sims[6]
-			d2v_ap_sim = sims[7]
+			spacy_sim = sims[2]
+			d2v_ap_sim = sims[3]
 
 		except Exception as e:   # no sims found for this candidate in local DB file, they must be computed
+			changes = True
 			_Print(idx, ". Sims not in local DB:", str(e))
 			_appendFile(logFilename, "Sims not in local DB:"+str(e))
 
@@ -922,89 +939,44 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 			_Print("Computing full subjects jaccard similarity for", rFileNameCandidate)
 			full_subjects_jaccard_sim = similarities.fullSubjectsJaccardSimilarity(fileNameCandidateSubjects)
 
-			# Measure shared wikicats jaccard similarity (requires shared matching). Code -1 is returned if some error
-			_Print("Computing shared wikicats similarity for", rFileNameCandidate)
-			shared_wikicats_jaccard_sim = similarities.sharedWikicatsJaccardSimilarity(fileNameCandidateWikicats)
-			if shared_wikicats_jaccard_sim < 0:
-				_Print("ERROR computing sharedWikicatsJaccard ("+str(shared_wikicats_jaccard_sim)+"):", fileNameCandidateWikicats)
-				_appendFile(logFilename, "ERROR computing sharedWikicatsJaccard: "+fileNameCandidateWikicats)
-				continue
-
-			# Measure shared subjects jaccard similarity (requires shared matching). Code -1 is returned if some error
-			_Print("Computing shared subjects similarity for", rFileNameCandidate)
-			shared_subjects_jaccard_sim = similarities.sharedSubjectsJaccardSimilarity(fileNameCandidateSubjects)
-			if shared_subjects_jaccard_sim < 0:
-				_Print("ERROR computing sharedSubjectsJaccard ("+str(shared_subjects_jaccard_sim)+"):", fileNameCandidateSubjects)
-				_appendFile(logFilename, "ERROR computing sharedSubjectsJaccard: "+fileNameCandidateSubjects)
-				continue
-
 			# Measure the spaCy distance
 			_Print("Computing spaCy similarity for", rFileNameCandidate)
 			spacy_sim = similarities.spacyTextSimilarity_calc(candidate_file=fileNameCandidate)
-
-			# Measure the Doc2Vec (Lee) distance
-			_Print("Computing Doc2Vec Lee similarity for", rFileNameCandidate)
-			d2v_lee_sim = d2vLeeSimilarity.doc2VecTextSimilarity(candidate_file=fileNameCandidate)
-
-			# Measure the euclidean distance using SKLEARN
-			_Print("Computing Euclidean similarity for", rFileNameCandidate)
-			euclidean_sim = similarities.euclideanTextSimilarity(candidate_file=fileNameCandidate)
 
 			# Measure the Doc2Vec (AP) distance
 			_Print("Computing Doc2Vec AP similarity for", rFileNameCandidate)
 			d2v_ap_sim = d2vAPSimilarity.doc2VecTextSimilarity(candidate_file=fileNameCandidate)
 
+			# # Measure shared wikicats jaccard similarity (requires shared matching). Code -1 is returned if some error
+			# _Print("Computing shared wikicats similarity for", rFileNameCandidate)
+			# shared_wikicats_jaccard_sim = similarities.sharedWikicatsJaccardSimilarity(fileNameCandidateWikicats)
+			# if shared_wikicats_jaccard_sim < 0:
+			# 	_Print("ERROR computing sharedWikicatsJaccard ("+str(shared_wikicats_jaccard_sim)+"):", fileNameCandidateWikicats)
+			# 	_appendFile(logFilename, "ERROR computing sharedWikicatsJaccard: "+fileNameCandidateWikicats)
+			# 	continue
+			#
+			# # Measure shared subjects jaccard similarity (requires shared matching). Code -1 is returned if some error
+			# _Print("Computing shared subjects similarity for", rFileNameCandidate)
+			# shared_subjects_jaccard_sim = similarities.sharedSubjectsJaccardSimilarity(fileNameCandidateSubjects)
+			# if shared_subjects_jaccard_sim < 0:
+			# 	_Print("ERROR computing sharedSubjectsJaccard ("+str(shared_subjects_jaccard_sim)+"):", fileNameCandidateSubjects)
+			# 	_appendFile(logFilename, "ERROR computing sharedSubjectsJaccard: "+fileNameCandidateSubjects)
+			# 	continue
+
+			# Measure the Doc2Vec (Lee) distance
+			#_Print("Computing Doc2Vec Lee similarity for", rFileNameCandidate)
+			#d2v_lee_sim = d2vLeeSimilarity.doc2VecTextSimilarity(candidate_file=fileNameCandidate)
+
+			# Measure the euclidean distance using SKLEARN
+			#_Print("Computing Euclidean similarity for", rFileNameCandidate)
+			#euclidean_sim = similarities.euclideanTextSimilarity(candidate_file=fileNameCandidate)
+
+
+
 		# all sims for this doc have been read or newly computed
 
 		# add them to the dict_sims_new dict
-		dict_sims_new[rFileNameCandidate] = (full_wikicats_jaccard_sim, full_subjects_jaccard_sim, shared_wikicats_jaccard_sim, shared_subjects_jaccard_sim, spacy_sim, d2v_lee_sim, euclidean_sim, d2v_ap_sim)
-
-
-
-		# add this page value to compute distributions for shared wikicats and subjects jaccard
-
-		# if shared_wikicats_jaccard_sim < 0.1:
-		# 	distribution_wk["0"] = distribution_wk["0"] + 1
-		# elif shared_wikicats_jaccard_sim < 0.2:
-		# 	distribution_wk["1"] = distribution_wk["1"] + 1
-		# elif shared_wikicats_jaccard_sim < 0.3:
-		# 	distribution_wk["2"] = distribution_wk["2"] + 1
-		# elif shared_wikicats_jaccard_sim < 0.4:
-		# 	distribution_wk["3"] = distribution_wk["3"] + 1
-		# elif shared_wikicats_jaccard_sim < 0.5:
-		# 	distribution_wk["4"] = distribution_wk["4"] + 1
-		# elif shared_wikicats_jaccard_sim < 0.6:
-		# 	distribution_wk["5"] = distribution_wk["5"] + 1
-		# elif shared_wikicats_jaccard_sim < 0.7:
-		# 	distribution_wk["6"] = distribution_wk["6"] + 1
-		# elif shared_wikicats_jaccard_sim < 0.8:
-		# 	distribution_wk["7"] = distribution_wk["7"] + 1
-		# elif shared_wikicats_jaccard_sim < 0.9:
-		# 	distribution_wk["8"] = distribution_wk["8"] + 1
-		# else:
-		# 	distribution_wk["9"] = distribution_wk["9"] + 1
-		#
-		#
-		# if shared_subjects_jaccard_sim < 0.1:
-		# 	distribution_sb["0"] = distribution_sb["0"] + 1
-		# elif shared_subjects_jaccard_sim < 0.2:
-		# 	distribution_sb["1"] = distribution_sb["1"] + 1
-		# elif shared_subjects_jaccard_sim < 0.3:
-		# 	distribution_sb["2"] = distribution_sb["2"] + 1
-		# elif shared_subjects_jaccard_sim < 0.4:
-		# 	distribution_sb["3"] = distribution_sb["3"] + 1
-		# elif shared_subjects_jaccard_sim < 0.5:
-		# 	distribution_sb["4"] = distribution_sb["4"] + 1
-		# elif shared_subjects_jaccard_sim < 0.6:
-		# 	distribution_sb["5"] = distribution_sb["5"] + 1
-		# elif shared_subjects_jaccard_sim < 0.7:
-		# 	distribution_sb["6"] = distribution_sb["6"] + 1
-		# elif shared_subjects_jaccard_sim < 0.8:
-		# 	distribution_sb["7"] = distribution_sb["7"] + 1
-		# elif shared_subjects_jaccard_sim < 0.9:
-		# 	distribution_sb["8"] = distribution_sb["8"] + 1
-		# else:
-		# 	distribution_sb["9"] = distribution_sb["9"] + 1
+		dict_sims_new[rFileNameCandidate] = (full_wikicats_jaccard_sim, full_subjects_jaccard_sim, spacy_sim, d2v_ap_sim)
 
 	# end of loop for docs similarity computing
 
@@ -1014,22 +986,23 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 	print("\n\n", "Duration F5 (computing similarities):", str(elapsedTimeF5.seconds))
 
 
-	# Update the csv file with all similarities
-	with _Open(filenameSims, 'w') as csvFile:
-		fieldnames = ['Page', 'Fwikicats', 'Fsubjects', 'Swikicats', 'Ssubjects', 'Spacy', 'Doc2vec-Lee', 'Euclidean', 'Doc2vec-AP']	# Name columns
-		writer = csv.DictWriter(csvFile, fieldnames=fieldnames, delimiter=" ") # Create csv headers
-		writer.writeheader()	# Write the column headers
+	# Update the csv file if necessary
+	if changes:
+		with _Open(filenameSims, 'w') as csvFile:
+			fieldnames = ['Page', 'Fwikicats', 'Fsubjects', 'Spacy', 'Doc2Vec-AP']	# Name columns
+			writer = csv.DictWriter(csvFile, fieldnames=fieldnames, delimiter=" ") # Create csv headers
+			writer.writeheader()	# Write the column headers
 
-		writer = csv.writer(csvFile, delimiter=' ')
-		for key in dict_sims_new:
-			try:
-				sims = dict_sims_new[key]
-				writer.writerow([key, sims[0], sims[1], sims[2], sims[3], sims[4], sims[5], sims[6], sims[7]])
-			except Exception as e:
-				print("Error writing csv with similarities ("+str(e)+"):", row)
-				_appendFile(logFilename, "Error writing csv with similarities  ("+str(e)+"):"+str(row))
+			writer = csv.writer(csvFile, delimiter=' ')
+			for key in dict_sims_new:
+				try:
+					sims = dict_sims_new[key]
+					writer.writerow([key, sims[0], sims[1], sims[2], sims[3] ])
+				except Exception as e:
+					print("Error writing csv with similarities ("+str(e)+"):", row)
+					_appendFile(logFilename, "Error writing csv with similarities  ("+str(e)+"):"+str(row))
 
-		csvFile.close()
+			csvFile.close()
 
 
 
@@ -1037,8 +1010,8 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 
 	# compute ratings for similarities to eval their quality and select the one to use
 
-	# convert dict_sims_new in list of tuplas (filenameCandidate, simFullWikicats, simFullSubjects, simSharedWikicats, simSharedSubjects, simSpacy, simD2V-Lee, simEuclidean) to be able to order them
-	list_sims_tuplas = [ (k, dict_sims_new[k][0], dict_sims_new[k][1], dict_sims_new[k][2], dict_sims_new[k][3], dict_sims_new[k][4], dict_sims_new[k][5], dict_sims_new[k][6], dict_sims_new[k][7]) for k in dict_sims_new]
+	# convert dict_sims_new in list of tuplas (filenameCandidate, simFullWikicats, simFullSubjects, simSpacy, simD2V-AP) to be able to order them
+	list_sims_tuplas = [ (k, dict_sims_new[k][0], dict_sims_new[k][1], dict_sims_new[k][2], dict_sims_new[k][3]) for k in dict_sims_new]
 
 	ratings = {}	# dict to store rating info for all sims
 	# ratings[sim] is also a dict
@@ -1065,19 +1038,15 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 		listPositions = [pos for name,pos in ratings[nameSim]["originalEntities"]]   # get a list with all the positions of the entities
 		averagePosition = sum(listPositions) / len(listPositions)  # average position
 
-		print("average for", nameSim, "=", averagePosition)
+		print("Average for", nameSim, "=", averagePosition)
 		ratings[nameSim]["average"]  = averagePosition
 		return
 
 
 	computeRating(1, "Fwikicats")
 	computeRating(2, "Fsubjects")
-	computeRating(3, "Swikicats")
-	computeRating(4, "Ssubjects")
-	computeRating(5, "Spacy")
-	computeRating(6, "Doc2vec-Lee")
-	computeRating(7, "Euclidean")
-	computeRating(8, "Doc2vec-AP")
+	computeRating(3, "Spacy")
+	computeRating(4, "Doc2Vec-AP")
 
 
 	# name of the file to save the positions of E0 entities for all sims, used for measure rating quality
@@ -1090,23 +1059,21 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 	# it is only to process all names, idx is irrelevant
 	# next(i for (n,i) in ratings["Fwikicats"]["originalEntities"] if n == name) --> i of first tupla where n == name
 	for name, idx in ratings["Fwikicats"]["originalEntities"]:
-		# dict with an entry for each entity, a 7-tupla with the positions for each sim
+		# dict with an entry for each entity, a 4-tupla with the positions for each sim
 		E0entitiesPositions[name] = (next(i for (n,i) in ratings["Fwikicats"]["originalEntities"] if n == name), next(i for (n,i) in ratings["Fsubjects"]["originalEntities"] if n == name),\
-									next(i for (n,i) in ratings["Swikicats"]["originalEntities"] if n == name), next(i for (n,i) in ratings["Ssubjects"]["originalEntities"] if n == name),\
-									next(i for (n,i) in ratings["Spacy"]["originalEntities"] if n == name), next(i for (n,i) in ratings["Doc2vec-Lee"]["originalEntities"] if n == name), \
-									next(i for (n,i) in ratings["Euclidean"]["originalEntities"] if n == name), next(i for (n,i) in ratings["Doc2vec-AP"]["originalEntities"] if n == name))
+									next(i for (n,i) in ratings["Spacy"]["originalEntities"] if n == name), next(i for (n,i) in ratings["Doc2Vec-AP"]["originalEntities"] if n == name))
 
 
 	# store all positions of E0 entities in a file
 	with _Open(fileE0entitiesPositions, 'w') as csvFile:
-		fieldnames = ['Entity', 'Fwikicats', 'Fsubjects', 'Swikicats', 'Ssubjects', 'Spacy', 'Doc2vec-Lee', 'Euclidean', 'Doc2vec-AP']	# Name columns
+		fieldnames = ['Entity', 'Fwikicats', 'Fsubjects', 'Spacy', 'Doc2Vec-AP']	# Name columns
 		writer = csv.DictWriter(csvFile, fieldnames=fieldnames, delimiter=" ") # Create csv headers
 		writer.writeheader()	# Write the column headers
 
 		writer = csv.writer(csvFile, delimiter=' ')
 		for key in E0entitiesPositions:
 			try:
-				writer.writerow([key, E0entitiesPositions[key][0], E0entitiesPositions[key][1], E0entitiesPositions[key][2], E0entitiesPositions[key][3], E0entitiesPositions[key][4], E0entitiesPositions[key][5], E0entitiesPositions[key][6], E0entitiesPositions[key][7]])
+				writer.writerow([key, E0entitiesPositions[key][0], E0entitiesPositions[key][1],  E0entitiesPositions[key][2], E0entitiesPositions[key][3] ])
 			except:
 				print("Error writing csv with entities E0 positions", row)
 				_appendFile(logFilename, "Error writing csv with entities E0 positions"+str(row))
@@ -1117,14 +1084,6 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 	# The precise results of D2V models cannot computed this way, because they are slightly different in each run
 	# The precise results are computed by the "computeAverageD2V" script, that should be run 5 times for each model, and averaged for every entity
 	# In any case, the results may change, but only slightly, so the conclusion of this phase (which one is the best similarity) is still correct
-
-
-	# print the position of all the entities for each sim (shown ordered, because they are appended in order), and the average
-	# for key in ratings:
-	# 	_Print("\n**", key)
-	# 	for (page,idx)  in ratings[key]["originalEntities"]:
-	# 		_Print(page, "=", idx)
-	# 	print("## Average "+key+" = ", ratings[key]["average"])
 
 
 	# list of 2-tuplas (name_sim, rating) being rating = numEntitiesOriginalText/average_sim
@@ -1284,8 +1243,8 @@ def doPh6(lenOriginalText, pctgesList):
 	listDocsBestSimFile =  lengthFolder+str(lenOriginalText)+".ph5-3.simsBest.csv"  # list of (candidate, sim) ordered by best similarity in previous phase
 	listDocsSimFile =  lengthFolder+str(lenOriginalText)+".ph5-1.sims.csv"   # list of (candidate, sim) not ordered
 
-	listDocsFile = listDocsSimFile  # read unordered set of candidates
-	#listDocsFile = listDocsBestSimFile  # read ordered (best sim) set of candidates
+	#listDocsFile = listDocsSimFile  # read unordered set of .txt candidates
+	listDocsFile = listDocsBestSimFile  # read ordered (best sim) set of .txt candidates
 
 	# try to read existing best similarity sims file
 	try:
@@ -1303,50 +1262,15 @@ def doPh6(lenOriginalText, pctgesList):
 		_appendFile(logFilename, "No sims file with the whole set of candidate texts and the ratings of the best similarity: "+listDocsBestSimFile)
 		return result
 
+	# listDocs are .txt files ordered by best AP sim
 	lenListDocs = len(listDocs)
-
-	# the following lists will be used to compute the queality of each one of the created models
-
-	listMostSimilar = [] # list with the 100 more similar candidates (greater than 3K) according to the best similarity (filename, doc first half, doc second half)
-	for d in listDocs:
-		filename = _SCRAPPED_PAGES_FOLDER+d
-		fsize = os.path.getsize(filename)
-		if (fsize > 3000):
-			with _Open(filename) as fp:
-				content = fp.read()
-			middle = int(len(content)/2)
-			firstPartContent = content[:middle]
-			secondPartContent = content[middle:]
-			listMostSimilar.append((d, firstPartContent, secondPartContent))
-			if len(listMostSimilar) == 100:
-				break
-	print("Created list with most similar:", len(listMostSimilar))
-
-
-	listLessSimilar = []    # list with the 100 less similar candidates (greater than 3K) according to the best similarity (filename, doc first half, doc second half)
-	for d in reversed(listDocs):
-		filename = _SCRAPPED_PAGES_FOLDER+d
-		fsize = os.path.getsize(filename)
-		if (fsize > 3000):
-			with _Open(filename) as fp:
-				content = fp.read()
-			middle = int(len(content)/2)
-			firstPartContent = content[:middle]
-			secondPartContent = content[middle:]
-			listLessSimilar.append((d, firstPartContent, secondPartContent))
-			if len(listLessSimilar) == 100:
-				break
-	print("Created list with less similar:", len(listLessSimilar))
-
 
 	globalPreprocessingTime = 0
 	globalTrainingTime = 0
 	fullListModels = []
 
 	# let's train all requested models
-
 	for pctgeInitialCorpus in pctgesList:
-
 		# one training
 		print("Let's go to do training with the best", pctgeInitialCorpus,"%")
 
@@ -1354,7 +1278,7 @@ def doPh6(lenOriginalText, pctgesList):
 		modelFilename = str(lenOriginalText)+ "-w."+str(pctgeInitialCorpus)+".model"
 
 		listDocsCorpus = listDocs[:sizeCorpus] # the x% candidates with higher sims according to the best similarity
-		listDocsCorpus = list(map(lambda x: _SCRAPPED_PAGES_FOLDER+x, listDocsCorpus))   # get the absolute names
+		listDocsTXT = list(map(lambda x: _SCRAPPED_PAGES_FOLDER+x, listDocsCorpus))   # get the absolute TXT names
 
 	    # initial corpus ready, do preprocessing
 		print("Preprocessing ", str(sizeCorpus), " documents for "+modelFilename)
@@ -1362,16 +1286,16 @@ def doPh6(lenOriginalText, pctgesList):
 		startTime = datetime.now()
 
 		try:
-			print("Processing S1...")
-			np1 = _processS1List(lengthFolder, listDocsCorpus)  # creates corspusFolder/lengthFolder/files_s_p_w and saves .s files
+			print("Preprocessing S1...")
+			np1 = _processS1List(lengthFolder, listDocsTXT)  # creates corspusFolder/lengthFolder/files_s_p_w and saves .s files
 
-			listDocsS = list(map(lambda x: lengthFolder+"files_s_p_w/"+x[(1+x.rfind("/")):]+".s", listDocsCorpus))
+			listDocsS = list(map(lambda x: lengthFolder+"files_s_p_w/"+x[(1+x.rfind("/")):]+".s", listDocsTXT))
 
-			print("Processing S2...")
-			np2 = _processS2List(listDocsS)
+			print("Preprocessing S2...")
+			np2 = _processS2List(listDocsS)  # creates .p files
 
-			print("Processing S3...")
-			np3 = _processS3List(listDocsS)
+			print("Preprocessing S3...")
+			np3 = _processS3List(listDocsS)  # creates .w files
 
 			listDocsW = list(map(lambda x: x+".w", listDocsS))
 
@@ -1409,79 +1333,117 @@ def doPh6(lenOriginalText, pctgesList):
 		globalModelFilename =  _MODELS_FOLDER+modelFilename
 
 		try:
-			if os.path.exists(globalModelFilename) and np == 0:
-				print("No changes, training not necessary for "+modelFilename+"!!")
-			else:
-				if np == 0:
-					print("No model yet: "+modelFilename)
-				else:
-					print("New files for "+modelFilename)
+			if not os.path.exists(globalModelFilename):
+				print("No model yet: "+modelFilename)
+				raise Exception("No model")
 
-				# this code was for training with .t files,  we now train D2V with .w files
-				# listDocsT = list(map(lambda x: lengthFolder+"files_t/"+x[(1+x.rfind("/")):]+".t", listDocsW))
-				# Build a doc2vec model trained with files in list
-				# r = _buildD2VModelFrom_T_FileList(listDocsT, globalModelFilename, vector_size, window, alpha, min_alpha, min_count, distributed_memory, epochs)
+			if not _moreRecent(globalModelFilename, listDocsFile):
+				print("Sims file is newer than model "+modelFilename)
+				raise Exception("Sims file newer")
 
-				# train with .w files
-				#random.shuffle(listDocsW)  # to shuffle the list, not usually, only to observe the differences
-				#listDocsW.reverse() # to reverse the list, from less to more similar
-				r = _buildD2VModelFrom_W_FileList(listDocsW, globalModelFilename, vector_size, window, alpha, min_alpha, min_count, distributed_memory, epochs)
+			if np > 0:
+				print("New files for "+modelFilename)
+				raise Exception("New files")
 
-				if (r == 0):
-					print("Training success for "+modelFilename+"!!")
-					_appendFile(logFilename, "Computed model: "+modelFilename)
-				else:
-					print("Training failed for "+modelFilename+"!")
-					_appendFile(logFilename, "Training failed: "+modelFilename)
-
+			print("No changes, training not necessary for "+modelFilename+"!!")
 		except Exception as e:
-			result["error"] = str(e)
-			print("Exception in training "+modelFilename+" in doPh6:", str(e))
-			_appendFile(logFilename, "Exception in training "+modelFilename+" in doPh6: "+str(e))
-			return result
+
+			# this code was for training with .t files,  we now train D2V with .w files
+			# listDocsT = list(map(lambda x: lengthFolder+"files_t/"+x[(1+x.rfind("/")):]+".t", listDocsW))
+			# Build a doc2vec model trained with files in list
+			# r = _buildD2VModelFrom_T_FileList(listDocsT, globalModelFilename, vector_size, window, alpha, min_alpha, min_count, distributed_memory, epochs)
+
+			# train with .w files
+			#listDocsW.reverse() # to reverse the list, from less to more similar
+
+			# listDocsTXT for training with .txt, listDocsW for .w
+			listDocsTraining = listDocsW
+			#random.shuffle(listDocsTraining)  # # to shuffle the list, not usually, only to observe the differences
+			try:
+				r = _buildD2VModelFrom_FileList(listDocsTraining, globalModelFilename, vector_size, window, alpha, min_alpha, min_count, distributed_memory, epochs)
+			except Exception as e:
+				result["error"] = str(e)
+				print("Exception in training "+modelFilename+" in doPh6:", str(e))
+				_appendFile(logFilename, "Exception in training "+modelFilename+" in doPh6: "+str(e))
+				return result
+
+			if (r == 0):
+				print("Training success for "+modelFilename+"!!")
+				_appendFile(logFilename, "Computed model: "+modelFilename)
+			else:
+				print("Training failed for "+modelFilename+"!")
+				_appendFile(logFilename, "Training failed: "+modelFilename)
+
+			# the current model has been created, let's check its quality
+
+			print("Checking quality #2 of:", modelFilename)
+
+			# quality check 2: check the average similarities among first and second part of each document
+
+			# listMostSimilar = [] # list with the 100 more similar candidates (greater than 3K) according to the best similarity (filename, doc first half, doc second half)
+			# for filename in listDocsTraining: # listDocsTraining are ordered according AP sim
+			# 	fsize = os.path.getsize(filename)
+			# 	if (fsize > 3000):
+			# 		with _Open(filename) as fp:
+			# 			content = fp.read()
+			# 		middle = int(len(content)/2)
+			# 		firstPartContent = content[:middle]
+			# 		secondPartContent = content[middle:]
+			# 		listMostSimilar.append((filename, firstPartContent, secondPartContent))
+			# 		if len(listMostSimilar) == 100:
+			# 			break
+			# print("Created list with most similar:", len(listMostSimilar))
+			#
+			# listLessSimilar = []    # list with the 100 less similar candidates (greater than 3K) according to the best similarity (filename, doc first half, doc second half)
+			# for filename in reversed(listDocsTraining):
+			# 	fsize = os.path.getsize(filename)
+			# 	if (fsize > 3000):
+			# 		with _Open(filename) as fp:
+			# 			content = fp.read()
+			# 		middle = int(len(content)/2)
+			# 		firstPartContent = content[:middle]
+			# 		secondPartContent = content[middle:]
+			# 		listLessSimilar.append((filename, firstPartContent, secondPartContent))
+			# 		if len(listLessSimilar) == 100:
+			# 			break
+			# print("Created list with less similar:", len(listLessSimilar))
+			#
+			# listPairsMost = []
+			# listPairsLess = []
+			# listCross = []
+			# # each triple of listMostSimilar and listLessSimilar is (filename.w, first-part, second-part)
+			# for idx,triple in enumerate(listMostSimilar):
+			# 	d2vSimilarity = _Doc2VecSimilarity(_MODELS_FOLDER+modelFilename, triple[1]) # object to compare to first-part of the more similar doc[idx]
+			# 	pairSim = d2vSimilarity.doc2VecTextSimilarity(candidate_text=triple[2])  # compare to the second-part of the same doc
+			# 	crossSim = d2vSimilarity.doc2VecTextSimilarity(candidate_text=listLessSimilar[idx][1])  # compare to first-part of a less similar doc
+			# 	listPairsMost.append(pairSim)
+			# 	listCross.append(crossSim)
+			#
+			# for (docname,first,second) in listLessSimilar:
+			# 	d2vSimilarity = _Doc2VecSimilarity(_MODELS_FOLDER+modelFilename, first)  # object to compare to first-part of the doc idx
+			# 	pairSim = d2vSimilarity.doc2VecTextSimilarity(candidate_text=second)  # sim between both parts of a disssimilar doc
+			# 	listPairsLess.append(pairSim)
+			#
+			# # compute average and variance of each list
+			# meanPairsMost = statistics.mean(listPairsMost)
+			# varPairsMost = statistics.pvariance(listPairsMost)
+			# print("Fragment Pairs of Most Similar (first part of more similar to second part of more similar):  average=", meanPairsMost, "  variance=", varPairsMost)
+			#
+			# meanPairsLess = statistics.mean(listPairsLess)
+			# varPairsLess = statistics.pvariance(listPairsLess)
+			# print("Fragment Pairs of Less Similar (first part of less similar to second part of less similar):  average=", meanPairsLess, "  variance=", varPairsLess)
+			#
+			# meanCross = statistics.mean(listCross)
+			# varCross = statistics.pvariance(listCross)
+			# print("Cross Fragment Pairs (first part of more similar to first part of less similar):  average=", meanCross, "  variance=", varCross)
+
+			# end of the creation and quality testing #2 for one of the models
 
 		endTime = datetime.now()
 		elapsedTimeF62 = endTime - startTime
 		globalTrainingTime += elapsedTimeF62.seconds
 		fullListModels.append(modelFilename)
 
-
-		# the current model has been created, let's check its quality
-
-		print("Checking quality #2 of:", modelFilename)
-
-		# quality check 2: check the average similarities among first and second part of each document
-
-		listPairsMost = []
-		listPairsLess = []
-		listCross = []
-		# each triple of listMostSimilar and listLessSimilar is (filename, first-part, second-part)
-		for idx,triple in enumerate(listMostSimilar):
-			d2vSimilarity = _Doc2VecSimilarity(_MODELS_FOLDER+modelFilename, triple[1]) # object to compare to first-part of the more similar doc[idx]
-			pairSim = d2vSimilarity.doc2VecTextSimilarity(candidate_text=triple[2])  # compare to the second-part of the same doc
-			crossSim = d2vSimilarity.doc2VecTextSimilarity(candidate_text=listLessSimilar[idx][1])  # compare to first-part of a less similar doc
-			listPairsMost.append(pairSim)
-			listCross.append(crossSim)
-
-		for (docname,first, second) in listLessSimilar:
-			d2vSimilarity = _Doc2VecSimilarity(_MODELS_FOLDER+modelFilename, first)  # object to compare to first-part of the doc idx
-			pairSim = d2vSimilarity.doc2VecTextSimilarity(candidate_text=second)  # sim between both parts of a disssimilar doc
-			listPairsLess.append(pairSim)
-
-		# compute average and variance of each list
-		meanPairsMost = statistics.mean(listPairsMost)
-		varPairsMost = statistics.pvariance(listPairsMost)
-		print("Fragment Pairs of Most Similar (first part of more similar to second part of more similar):  average=", meanPairsMost, "  variance=", varPairsMost)
-
-		meanPairsLess = statistics.mean(listPairsLess)
-		varPairsLess = statistics.pvariance(listPairsLess)
-		print("Fragment Pairs of Less Similar (first part of less similar to second part of less similar):  average=", meanPairsLess, "  variance=", varPairsLess)
-
-		meanCross = statistics.mean(listCross)
-		varCross = statistics.pvariance(listCross)
-		print("Cross Fragment Pairs (first part of more similar to first part of less similar):  average=", meanCross, "  variance=", varCross)
-
-		# end of the creation and quality testing #2 for one of the models
 
 	result["P6_elapsedTimeF61"] = globalPreprocessingTime
 	result["P6_elapsedTimeF62"] = globalTrainingTime
@@ -1514,16 +1476,18 @@ def doPh7reviewCorpus():
 		resultPh3 = doPh3(lenOriginalText)
 		resultPh4 = doPh4(lenOriginalText)
 		resultPh5 = doPh5(P0_originalText, P1_selectedWikicats)
-		pctgesList = [10] # it can only be provided by user through interface
+		pctgesList = [6] # it can only be provided by user through interface, let's select 6%, the best model we obtained
 		resultPh6 = doPh6(lenOriginalText, pctgesList)
 		if "error" in resultPh6:
 			return jsonify(resultPh6);
 		else:
-			modelList = [10]
+			modelList = [6]
 
 	else:
 		P7_models = request.values.get("P7_models")
 		modelList = computePercentages(P7_models)
+		if modelList == []:  # if not frommStart, and no percentage was received, select 8%, our best
+			modelList = [6]
 
 	result = doPh7(P0_originalText, modelList)
 	if "error" in result:
@@ -1565,16 +1529,21 @@ def doPh7reviewCorpus():
 
 
 
-def doPh7(P0_originalText, modelList):
+# modelList should be a list with only one percentage, the best one (currently 6%)
+def doPh7(P0_originalText, modelNumberList):
 
 	lenOriginalText = len(P0_originalText)
 	lengthFolder = _CORPUS_FOLDER+str(lenOriginalText)+"/"
 
+	# logging
 	logFilename = lengthFolder+str(lenOriginalText)+".log"
 	print("Executing Phase 7", flush=True)
 	_appendFile(logFilename, "\n\nExecuting Phase 7")
 
-	result = {}  # object to store the results to be returned to the request
+	modelTargetNumber = modelNumberList[0] # let's study only one, the first one, currently 6
+
+	result = {}  # object to store the results to be returned to this request
+
 
 	# read the full list of candidate files
 	listWithWKSBFile =  lengthFolder+str(lenOriginalText)+".ph4.listWithWKSB"
@@ -1583,13 +1552,15 @@ def doPh7(P0_originalText, modelList):
 		with _Open(listWithWKSBFile) as fp:
 			listWithWKSB = fp.read().splitlines()
 	except:
+		print("No file", listWithWKSBFile)
 		result["error"]  = "No file "+listWithWKSBFile    # no file listWithWKSBFile
 		return result
 
 	lenListWithWKSB = len(listWithWKSB)
 
+
 	# read the original text entities (E0) from local store, to measure the quality of ad hoc D2V results
-	filename_en = lengthFolder+str(lenOriginalText)+".ph1.en"   # filename for entities E0 (length.ph1.en)
+	filename_en = lengthFolder+str(lenOriginalText)+".ph1.txt.en"   # filename for entities E0 (length.ph1.txt.en)
 	try:
 		with _Open(filename_en) as fp:	# format    http://dbpedia.org/resource/Title
 			listEntitiesOriginalText = fp.read().splitlines()
@@ -1608,254 +1579,119 @@ def doPh7(P0_originalText, modelList):
 	print("numEntitiesOriginalText=", numEntitiesOriginalText, flush=True)
 
 
-	# to aggregate elapsed time and average positions for each model
-	globalReviewingTime = 0
-	averagePositions = {}
-
-	if modelList == []:
-		modelList = ["1926-w.5.model.STOP", "1926-w.5.model.END"]
-	else:
-		modelList = list(map(lambda x: str(lenOriginalText)+"-w."+str(x)+".model", modelList))
-
-	for m in modelList:
-		print(m)
-
-	# let's review all requested models
-	for modelName in modelList:
-
-		# let's review one model
-		modelFilename = _MODELS_FOLDER+modelName
-
-		# try to read existing AdHocD2VSims file for such model
-		filenameAdHocD2VSims = lengthFolder+str(lenOriginalText)+".ph7.AdHocD2V."+modelName+".sims.csv"
-		simsAdHocD2V = {} # dict to read AdHoc D2V sims stored in local DB (sims computed with the ad hoc trained model)
-
-		# read ad hoc sims file if exists and it is more recent than model
-		if os.path.exists(filenameAdHocD2VSims) and _moreRecent(filenameAdHocD2VSims, modelFilename):
-			try:
-				with _Open(filenameAdHocD2VSims, 'r') as csvFile:
-					reader = csv.reader(csvFile, delimiter=' ')
-					next(reader)  # to skip header
-					for row in reader:
-						simsAdHocD2V[row[0]] = float(row[1])
-
-					csvFile.close()
-			except:
-				print("\nNo ad hoc D2V similarities file")
-				result["error"] = "doPh7 ERROR: could not open similarities file: "+filenameAdHocD2VSims
-				return result
-		else:
-			print("\nModel is newer. Ad hoc sims will be recalculated", flush=True)
-
-		# create the object to evaluate D2V similarity with the current model
-		d2vSimilarity = _Doc2VecSimilarity(modelFilename, P0_originalText)
-
-		print("Reviewing corpus ("+str(lenListWithWKSB)+" files) with Doc2Vec similarity derived from model:", modelName, flush=True)
-		startTime = datetime.now()
-
-		for idx, rCandidateFile in enumerate(listWithWKSB, start=1):
-			if (idx % 5000) == 0:
-				print(int(idx/5000), end=' ', flush=True)
-			_Print("("+str(idx)+" of "+str(lenListWithWKSB)+") -- ", rCandidateFile)
-
-			if rCandidateFile in simsAdHocD2V:
-				doc2vec_trained_cosineSimilarity = simsAdHocD2V[rCandidateFile]
-				_Print("Ad hoc D2V similarity found for candidate in local DB:", doc2vec_trained_cosineSimilarity)
-			else:
-				_Print("Computing ad hoc D2V similarity for candidate:", rCandidateFile)
-				candidateFile = _SCRAPPED_PAGES_FOLDER+rCandidateFile
-				candidateTextFD = _Open(candidateFile, "r")
-				candidateText = candidateTextFD.read()
-				doc2vec_trained_cosineSimilarity = d2vSimilarity.doc2VecTextSimilarity(candidate_text=candidateText)
-				simsAdHocD2V[rCandidateFile] = doc2vec_trained_cosineSimilarity
-				_Print("Ad hoc D2V similarity computed for candidate:", doc2vec_trained_cosineSimilarity)
-
-		endTime = datetime.now()
-		elapsedTimeF7 = endTime - startTime
-		globalReviewingTime += elapsedTimeF7.seconds
-
-		_appendFile(logFilename, "List of sims with ad hoc D2V for "+modelName+" computed: "+filenameAdHocD2VSims)
-
-		# convert dict simsAdHocD2V in list of tuplas (filenameCandidate, simAdHocD2V) to be able to order them
-		listOrdered = [ (k, simsAdHocD2V[k]) for k in simsAdHocD2V]
-
-		# _SortTuplaList_byPosInTupla: function to order a list of tuplas (0,1,2,3,4,5,6,7...) by the element in the position 'pos'=1,2...
-		_SortTuplaList_byPosInTupla(listOrdered, 1)  # order sims list by ad hoc d2v similarity
-
-		listOrdered_OnlyNames = list(map(lambda x: x[0], listOrdered))  # keep only the names of the docs
-
-		# Update the csv file with all ad hoc D2V similarities for current model
-
-		with _Open(filenameAdHocD2VSims, 'w') as csvFile:
-			fieldnames = ['Text', 'AdHocD2V']	# Name columns
-			writer = csv.DictWriter(csvFile, fieldnames=fieldnames, delimiter=" ") # Create csv headers
-			writer.writeheader()	# Write the column headers
-
-			writer = csv.writer(csvFile, delimiter=' ')
-			for doc,sim in listOrdered:
-				try:
-					writer.writerow([doc, sim])
-				except:
-					print("Error writing csv with ad hoc D2V similarities for", modelName, ":", row)
-					_appendFile(logFilename, "Error writing csv with ad hoc D2V similarities for "+modelName+": "+str(row))
-					result["error"] = "doPh7 ERROR: problem writing sv with ad hoc D2V similarities for: "+modelName
-					return result
-
-			csvFile.close()
-
-
-		# Now we have ad hoc sims. It is time to calculate average positions of E0 entities
-		positions = [] # list of pairs (entity, position)
-
-		for idx, name in enumerate(listOrdered_OnlyNames, start=1):
-			if name in listEntityFilesOriginalText:  # one entity of the original text found in list
-				positions.append((name, idx))
-			if len(positions) == len(listEntityFilesOriginalText):  # all entities of the original text have been found in the list
-				break
-
-		for name, pos in positions:
-			_Print(name,"=", pos)
-
-			listPositions = [pos for name,pos in positions]   # get a list with all the positions of the entities
-
-		if len(listPositions) == 0:
-			averagePosition = -1
-		else:
-			averagePosition = sum(listPositions) / len(listPositions)  # average position
-
-		print("\nAverage position for model", modelName, "=", averagePosition, flush=True)
-		averagePositions[modelName] = averagePosition
-
-	P7_adhocD2Vaverages = ""
-	for m in averagePositions:
-		print("Ad hoc D2V average for "+m+" = ", averagePositions[m], flush=True)
-		P7_adhocD2Vaverages = P7_adhocD2Vaverages+str(averagePositions[m])+","
-
-	P7_adhocD2Vaverages = P7_adhocD2Vaverages[0:-1]  # remove last ','
-
-	result["P7_adhocD2Vaverages"] = P7_adhocD2Vaverages
-	result["P7_elapsedTimeF7"] = globalReviewingTime
-
-	return result
-
-
-	# enhance initial corpus with new files
-
-	# search the name of last file used for traing M5 model (the last one in the 5% higher)
-
-	listDocs = [] # list of docs for training
+	# get the files used for training the 6% D2V model
+	listAllDocsOrdered = [] # list of docs ordered by AP sim
 	listDocsBestSimFile =  lengthFolder+str(lenOriginalText)+".ph5-3.simsBest.csv"
 
-	# try to read existing sims file
+	# try to read existing best sims file
 	try:
 		with _Open(listDocsBestSimFile, 'r') as csvFile:
 			reader = csv.reader(csvFile, delimiter=' ')
 			next(reader)  # to skip header
 			for row in reader:
 				# row[0]=rDocName, row[1]=sim
-				listDocs.append(row[0])
+				listAllDocsOrdered.append(row[0])
 			csvFile.close()
 	except:
 		print("No sims file with docs and their best similarity:", listDocsBestSimFile)
 		result["error"] = "doPh7 ERROR: No sims file with docs and their best similarity: "+listDocsBestSimFile
 		return result
 
+	sizeCorpus = int(len(listAllDocsOrdered) / 100) *  modelTargetNumber
+	listDocsUsedForTraining = listAllDocsOrdered[:sizeCorpus] # the x% candidates with higher sims according to the best similarity
 
-	lenListDocs = len(listDocs)
+	# to aggregate elapsed time
+	globalReviewingTime = 0
 
-	pctgeInitialCorpus = 5
-	sizeBlock = int(lenListDocs / 100) *  pctgeInitialCorpus
-
-	listCorpusFiles = listDocs[:sizeBlock]
-	globalModelFilename = _MODELS_FOLDER+"1926-w.5.model"
-
-	# compute the 5% of order CTd5
-
-	CTd5File = lengthFolder+str(lenOriginalText)+".ph7.AdHocD2V.1926-w.5.model.sims.csv"
-	listDocs = []
-	# try to read existing sims file
-	try:
-		with _Open(CTd5File, 'r') as csvFile:
-			reader = csv.reader(csvFile, delimiter=' ')
-			next(reader)  # to skip header
-			for row in reader:
-				# row[0]=rDocName, row[1]=sim
-				listDocs.append((row[0],row[1]))
-			csvFile.close()
-	except:
-		print("No CTd5 file:", CTd5File)
-		result["error"] = "doPh7 ERROR: No CT5d file: "+CTd5File
-		return result
+	# continuar el entrenamiento del modelo AP con estos ficheros? no se puede
 
 
-	_SortTuplaList_byPosInTupla(listDocs, 1)  # order sims list by ad hoc d2v similarity
 
-	listOrdered_OnlyNames = list(map(lambda x: x[0], listDocs))  # keep only the names of the docs
-	listOrdered_OnlyNames = listOrdered_OnlyNames[:sizeBlock]
 
-	NIC = list(set(listOrdered_OnlyNames) - set(listCorpusFiles))
-	print("New files:", len(NIC))
-	# we have
-	# modelName: current model
-	# listCorpusFiles: list of files used to train that model
-	# NIC: new files to be added to the training
+
+	# vamos pues con el proceso iterativo
+	# qué tenemos?
+	# listWithWKSB --> todos los candidatos
+	# listEntityFilesOriginalText --> las entidades de E0
+	# listDocsUsedForTraining --> lista de los ficheros usados para entrenar M6
+
+	modelBaseFilename = _MODELS_FOLDER+str(lenOriginalText)+"-w."+str(modelTargetNumber)+".model"    # fichero del modelo M6 inicial
+	modelFilename = modelBaseFilename
+	hay_nuevos = True
 	iterations = 0
-	while len(NIC) > 0:
+
+
+	while hay_nuevos:
 		iterations += 1
-		globalModelFilename = globalModelFilename+"1"
-		listCorpusFiles = listCorpusFiles + NIC
+		print("\n\nIteration", iterations)
 
-		# train a new model
-		print("Training", globalModelFilename, "with", len(listCorpusFiles), "files")
-		listCorpusFilesGlobalNames = list(map(lambda x: _SCRAPPED_PAGES_FOLDER+x, listCorpusFiles))
+		startTime = datetime.now()
 
-		r = _buildD2VModelFrom_W_FileList(listCorpusFilesGlobalNames, globalModelFilename, vector_size, window, alpha, min_alpha, min_count, distributed_memory, epochs)
+		simsAdHocD2V = {} # dict to compute new AdHoc D2V sims
+		print("Reviewing candidates  ("+str(len(listWithWKSB))+" files) with Doc2Vec similarity derived from current model:", modelFilename, flush=True)
 
-		if (r == 0):
-			print("Training success for "+globalModelFilename+"!!")
-			_appendFile(logFilename, "Computed model: "+globalModelFilename)
-		else:
-			print("Training failed for "+globalModelFilename+"!")
-			_appendFile(logFilename, "Training failed: "+globalModelFilename)
-			result["error"] = "doPh7 ERROR: error training: "+globalModelFilename
-			return result
+		d2vSimilarity = _Doc2VecSimilarity(modelFilename, P0_originalText)
 
-		# compute CT ordered with the new model
-
-		print("Computing ordered CT")
-
-		# create the object to evaluate D2V similarity with the current model
-		d2vSimilarity = _Doc2VecSimilarity(globalModelFilename, P0_originalText)
-
-		print("Reviewing corpus ("+str(lenListWithWKSB)+" files) with Doc2Vec similarity derived from model:", globalModelFilename, flush=True)
-
-		newListCT = []
-
-		for idx, rCandidateFile in enumerate(listWithWKSB, start=1):
-			if (idx % 5000) == 0:
-				print(int(idx/5000), end=' ', flush=True)
-			_Print("("+str(idx)+" of "+str(lenListWithWKSB)+") -- ", rCandidateFile)
+		for idx,rCandidateFile in enumerate(listWithWKSB, start=1):
+			if (idx % 2000) == 0:
+				print(int(idx/2000), end=' ', flush=True)
+			_Print("("+str(idx)+" of "+str(len(listWithWKSB))+") -- ", rCandidateFile)
 
 			candidateFile = _SCRAPPED_PAGES_FOLDER+rCandidateFile
 			candidateTextFD = _Open(candidateFile, "r")
 			candidateText = candidateTextFD.read()
 			doc2vec_trained_cosineSimilarity = d2vSimilarity.doc2VecTextSimilarity(candidate_text=candidateText)
-			newListCT.append((rCandidateFile, doc2vec_trained_cosineSimilarity))
-			_Print("Ad hoc D2V similarity computed for candidate:", doc2vec_trained_cosineSimilarity)
+			simsAdHocD2V[rCandidateFile] = doc2vec_trained_cosineSimilarity
 
-		_SortTuplaList_byPosInTupla(newListCT, 1)  # order sims list by ad hoc d2v similarity
+		print("Candidates reviewed")
 
-		listOrdered_OnlyNames = list(map(lambda x: x[0], newListCT))  # keep only the names of the docs
-		listOrdered_OnlyNames = listOrdered_OnlyNames[:sizeBlock]
+		listOrdered = [ (k, simsAdHocD2V[k]) for k in simsAdHocD2V]
+		_SortTuplaList_byPosInTupla(listOrdered, 1)  # order sims list by ad hoc d2v similarity
 
-		NIC = list(set(listOrdered_OnlyNames) - set(listCorpusFiles))
-		print("\nNew files:", len(NIC))
+		# ELEGIR A LOS NUEVOS PARA INCORPORAR AL CORPUS
 
+		listBest = listOrdered[:sizeCorpus]   # mejores 6%
+		listBest_OnlyNames = list(map(lambda x: x[0], listBest))  # keep only the names of the docs
+
+		nuevos  = list(set(listBest_OnlyNames) - set(listDocsUsedForTraining))  # los que han aparecido nuevos en ese 6%
+		print("En esta iteracion hay nuevos:", len(nuevos))
+
+		if len(nuevos) > 10:
+			# train a new model
+			modelFilename = modelBaseFilename+str(iterations)
+			listDocsUsedForTraining = list(set(listDocsUsedForTraining) | set(nuevos))
+
+			print("Training", modelFilename, "with", len(listDocsUsedForTraining), "files")
+			listCorpusFilesGlobalNames = list(map(lambda x: _SCRAPPED_PAGES_FOLDER+x, listDocsUsedForTraining))
+
+			r = _buildD2VModelFrom_FileList(listCorpusFilesGlobalNames, modelFilename, vector_size, window, alpha, min_alpha, min_count, distributed_memory, epochs)
+
+			if (r == 0):
+				print("Training success for "+modelFilename+"!!")
+				_appendFile(logFilename, "Computed model: "+modelFilename)
+			else:
+				print("Training failed for "+modelFilename+"!")
+				_appendFile(logFilename, "Training failed: "+modelFilename)
+				result["error"] = "doPh7 ERROR: error training: "+modelFilename
+				return result
+		else:
+			hay_nuevos = False
+
+		endTime = datetime.now()
+		elapsedTime = endTime - startTime
+		globalReviewingTime += elapsedTime.seconds
+		print("Tiempo de esta iteración:", elapsedTime.seconds)
 	else:
-		# modelo final 1926-w.5.model111111111
-		print("Iterative process finished ("+str(iterations)+" iterations). Final corpus =", len(listCorpusFiles))
+		print("Iterative process finished ("+str(iterations)+" iterations). Final corpus =", len(listDocsUsedForTraining))
+
+	result["P7_elapsedTimeF7"] = globalReviewingTime
 
 	return result
+
+
+
+
+
 
 
 

@@ -52,6 +52,8 @@ def getContentAfterChanges (sfilename, pfilename):
 	currentPosition = 0  # marks the position in the original file
 
 	offsets = list(dicsEntities["byOffset"].keys())
+	if offsets == []:
+		return (content, content)
 
 	# new offset for every entity identified in the .w file, it is necessary to correct it wrt the .s as we change the text of the file
 	nuevoOffset = 0  # marks the position in the result file

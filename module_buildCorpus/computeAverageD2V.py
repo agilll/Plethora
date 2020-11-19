@@ -13,23 +13,28 @@
 import os
 import sys
 import csv
+import random
 sys.path.append('../')
 
 from textSimilarities import Doc2VecSimilarity as _Doc2VecSimilarity
 from aux_build import SortTuplaList_byPosInTupla as _SortTuplaList_byPosInTupla
 from aux_build import MODELS_FOLDER as _MODELS_FOLDER, CORPUS_FOLDER as _CORPUS_FOLDER
 
-# select the model with or withput stopwords. WARNING: textsimilarities.py preprocessing must be equal than this
-_LEE_D2V_MODEL = "d2v_lee.without_stopwords.model"
 _AP_D2V_MODEL = "doc2vec.bin"
+_HYB_D2V_MODEL = "hibrido.model"
 
 # the folder with teh candidate files
 _SCRAPPED_PAGES_FOLDER = _CORPUS_FOLDER+"SCRAPPED_PAGES/"
 
 # read the initial text
-P0_originalTextFilename = _CORPUS_FOLDER+"1926/1926.ph0.txt"
+P0_originalTextFilename = _CORPUS_FOLDER+"1926/1926.ph1.txt"  # to compare similarity of .txt files
 with open(P0_originalTextFilename, 'r') as fp:
   P0_originalText = fp.read()
+
+P0_originalTextFilenameW = _CORPUS_FOLDER+"1926/1926.ph1.txt.s.w"   # to compare similarity of .w files
+with open(P0_originalTextFilenameW, 'r') as fp:
+  P0_originalTextW = fp.read()
+
 
 
 # read the list of candidates to evaluate from 1926.ph4.listWithWKSB
@@ -48,16 +53,17 @@ try:
         for row in reader:
             listAP.append(row[0])
         csvFile.close()
-except:
-	print("Problem reading csvFile:", listBestAPFilename)
+except Exception as e:
+    print("Exception reading csvFile:", listBestAPFilename, str(e))
 
 listToTest = listAP[:1000]  # listWKSB  o   listAP[:1000]
-ping = int(len(listToTest) / 20)
+ping = int(len(listToTest) / 20) # the number of candidates to echo a ping after
 
-
+# listToTest.reverse()          # just to test influence
+# random.shuffle(listToTest)
 
 # read the relevant entities in the initial text
-entitiesFilename = _CORPUS_FOLDER+"1926/1926.ph1.en"
+entitiesFilename = _CORPUS_FOLDER+"1926/1926.ph1.txt.en"
 with open(entitiesFilename) as fp:	# format    http://dbpedia.org/resource/Title
   listEntitiesOriginalText = fp.read().splitlines()
 
@@ -68,29 +74,36 @@ listEntityFilesOriginalText  = list(map(lambda x: "en.wikipedia.org/wiki.."+x+".
 print("Starting execution")
 
 models = {}
-for x in range(8,9):
+for x in range(1,11):
+    #model = "1926-w.8.model"+str(x)
     model = "1926-w."+str(x)+".model"
-    models[model] = 0
+    models[model] = {'lpos': {}, 'lsims': {}, 'apos': 0, 'asim': 0}
 
-#models = {}
-#models[_AP_D2V_MODEL] = 0
+models = {}
+#models[_AP_D2V_MODEL] = {'lpos': {}, 'lsims': {}, 'apos': 0, 'asim': 0}
+models[_HYB_D2V_MODEL] = {'lpos': {}, 'lsims': {}, 'apos': 0, 'asim': 0}
+#models["1926-w.8.model"] = {'lpos': {}, 'lsims': {}, 'apos': 0, 'asim': 0}
 
 for model in models:
-    print("Starting execution for model", model)
+    print("\nStarting execution for model", model)
     CURRENT_MODEL = _MODELS_FOLDER+model
 
     listOrdered_Names_Sims = []
-    d2vSimilarity = _Doc2VecSimilarity(CURRENT_MODEL, P0_originalText)
+    d2vSimilarity = _Doc2VecSimilarity(CURRENT_MODEL, P0_originalText)  # ***** with W to eval .w files
 
-    # process the best 1000 candidates to study where the initial entities are
+    # process the best candidates to observe where the initial entities are
     for idx,rFileNameCandidate in enumerate(listToTest, start=1):  # format rFileNameCandidate = en.wikipedia.org/wiki..Title.txt
         if (idx % ping) == 0:
             print(idx, end=' ', flush=True)
+
         fileNameCandidate = _SCRAPPED_PAGES_FOLDER+rFileNameCandidate   # format CORPUS_FOLDER/SCRAPPED_PAGES/en.wikipedia.org/wiki..Title.txt
-        d2v_sim = d2vSimilarity.doc2VecTextSimilarity(candidate_file=fileNameCandidate)
+
+        fileNameCandidateW = _CORPUS_FOLDER+"1926/files_s_p_w/"+rFileNameCandidate[1+rFileNameCandidate.rfind("/"):]+".s.w"  # to compare .w files
+
+        d2v_sim = d2vSimilarity.doc2VecTextSimilarity(candidate_file=fileNameCandidate) # ****** with W to eval .w files
         listOrdered_Names_Sims.append((rFileNameCandidate, d2v_sim))
 
-    print(" All docs evaluated")
+    print(" All candidate sims computed")
 
     # order the results by sim
     _SortTuplaList_byPosInTupla(listOrdered_Names_Sims, 1)
@@ -101,7 +114,8 @@ for model in models:
     for idx, name in enumerate(listOrdered_OnlyNames, start=1):
         if name in listEntityFilesOriginalText:  # one entity of the original text found in list
             originalEntitiesPositions.append(idx)
-            print("entity", name, "found in postion", idx)
+            print("entity", name, "found in position", idx)
+            models[model]['lpos'][name] = idx
         if len(originalEntitiesPositions) == len(listEntityFilesOriginalText):  # all entities of the original text have been found in the list
             break
         if idx == len(listOrdered_OnlyNames):
@@ -109,10 +123,25 @@ for model in models:
 
 
     averagePosition = sum(originalEntitiesPositions) / len(originalEntitiesPositions)  # average position
-    print("D2V average for this execution", " =", averagePosition)
-    models[model] = averagePosition
+    print("D2V N average for this execution", " =", averagePosition)
+    models[model]['apos'] = averagePosition
+
+    d2v_sim = 0
+    for e in listEntityFilesOriginalText:
+        fileNameEntity = _SCRAPPED_PAGES_FOLDER+e
+        fileNameEntityW = _CORPUS_FOLDER+"1926/files_s_p_w/"+fileNameEntity[1+fileNameEntity.rfind("/"):]+".s.w"  # to compare .w files
+        new_d2v_sim = d2vSimilarity.doc2VecTextSimilarity(candidate_file=fileNameEntity)  # ****** with W to eval .w files
+        models[model]['lsims'][e] = new_d2v_sim
+        d2v_sim += new_d2v_sim
+
+    averageEntitySim = d2v_sim / len(listEntityFilesOriginalText)
+    print("D2V Entity SIM average for this execution", "=", averageEntitySim)
+    models[model]['asim'] = averageEntitySim
+
 
 print("Complete results")
 
 for model in models:
-    print(model, models[model])
+    print(model, models[model]['apos'], models[model]['asim'])
+    for e in models[model]['lpos']:
+        print(e, models[model]['lpos'][e], models[model]['lsims'][e])
