@@ -126,8 +126,8 @@ def doPh1 (P0_originalText):
 
 		except Exception as e:
 			result["error"] = str(e)
-			print("Exception in preprocessing "+modelFilename+" in doPh6:", str(e))
-			_appendFile(logFilename, "Exception in preprocessing "+modelFilename+" in doPh6: "+str(e))
+			print("Exception in preprocessing "+modelFilename+" in doPh1:", str(e))
+			_appendFile(logFilename, "Exception in preprocessing "+modelFilename+" in doPh1: "+str(e))
 			return result
 
 
@@ -1476,18 +1476,18 @@ def doPh7reviewCorpus():
 		resultPh3 = doPh3(lenOriginalText)
 		resultPh4 = doPh4(lenOriginalText)
 		resultPh5 = doPh5(P0_originalText, P1_selectedWikicats)
-		pctgesList = [6] # it can only be provided by user through interface, let's select 6%, the best model we obtained
+		pctgesList = [2] # it can only be provided by user through interface, let's select 6%, the best model we obtained
 		resultPh6 = doPh6(lenOriginalText, pctgesList)
 		if "error" in resultPh6:
 			return jsonify(resultPh6);
 		else:
-			modelList = [6]
+			modelList = [2]
 
 	else:
 		P7_models = request.values.get("P7_models")
 		modelList = computePercentages(P7_models)
 		if modelList == []:  # if not frommStart, and no percentage was received, select 8%, our best
-			modelList = [6]
+			modelList = [2]
 
 	result = doPh7(P0_originalText, modelList)
 	if "error" in result:
@@ -1529,7 +1529,8 @@ def doPh7reviewCorpus():
 
 
 
-# modelList should be a list with only one percentage, the best one (currently 6%)
+# proceso iterativo incremental añadiendo los nuevos en el x%
+# modelList should be a list with only one percentage, the best one (currently 2%)
 def doPh7(P0_originalText, modelNumberList):
 
 	lenOriginalText = len(P0_originalText)
@@ -1540,7 +1541,158 @@ def doPh7(P0_originalText, modelNumberList):
 	print("Executing Phase 7", flush=True)
 	_appendFile(logFilename, "\n\nExecuting Phase 7")
 
-	modelTargetNumber = modelNumberList[0] # let's study only one, the first one, currently 6
+	modelTargetNumber = modelNumberList[0] # let's study only one, the first one, currently 2
+
+	result = {}  # object to store the results to be returned to this request
+
+
+	# read the original text entities (E0) from local store, to measure the quality of ad hoc D2V results
+	filename_en = lengthFolder+str(lenOriginalText)+".ph1.txt.en"   # filename for entities E0 (length.ph1.txt.en)
+	try:
+		with _Open(filename_en) as fp:	# format    http://dbpedia.org/resource/Title
+			listEntitiesOriginalText = fp.read().splitlines()
+
+		listEntityTitlesOriginalText  = list(map(lambda x: x[1+x.rfind("/"):], listEntitiesOriginalText))	# keep only Title
+		# add prefix and sufix to get format    en.wikipedia.org/wiki..Title.txt   DANGER!!!! may be not this way in future
+		listEntityFilesOriginalText  = list(map(lambda x: "en.wikipedia.org/wiki.."+x+".txt", listEntityTitlesOriginalText))
+	except:
+		listEntityFilesOriginalText = []    # no entities for original text
+		print("Entities file not available: "+filename_en)
+		_appendFile(logFilename, "Entities file not available: "+filename_en)
+		result["error"] = "doPh7 ERROR: E0 Entities file not available: "+filename_en
+		return result
+
+	numEntitiesOriginalText = len(listEntityFilesOriginalText)
+	print("numEntitiesOriginalText=", numEntitiesOriginalText, flush=True)
+
+
+	# get the files used for training the x% D2V model
+
+	# try to read existing best sims file
+	filenameListDocsBestSim =  lengthFolder+str(lenOriginalText)+".ph5-3.simsBest.csv"
+	listFull_OrderedAP = []
+	try:
+		with _Open(filenameListDocsBestSim, 'r') as csvFile:
+			reader = csv.reader(csvFile, delimiter=' ')
+			next(reader)  # to skip header
+			for row in reader:
+				# row[0]=rDocName, row[1]=sim
+				listFull_OrderedAP.append(row[0])
+			csvFile.close()
+	except:
+		print("No sims file with docs and their best similarity:", filenameListDocsBestSim)
+		result["error"] = "doPh7 ERROR: No sims file with docs and their best similarity: "+filenameListDocsBestSim
+		return result
+
+	sizeCorpus = int(len(listFull_OrderedAP) / 100) *  modelTargetNumber
+	# the x% candidates with higher sims according to the best similarity (AP)
+	listDocsUsedForTraining = [] # listFull_OrderedAP[:sizeCorpus]  # set to [] start with the x% better according to the Mx model, not to the AP model
+
+	# to aggregate elapsed time
+	globalReviewingTime = 0
+
+	# continuar el entrenamiento del modelo AP con estos ficheros? no se puede
+
+
+
+
+
+	# vamos pues con el proceso iterativo
+	# qué tenemos?
+	# listWithWKSB --> todos los candidatos
+	# listEntityFilesOriginalText --> las entidades de E0
+	# listDocsUsedForTraining --> lista de los ficheros usados para entrenar M6
+
+	modelBaseFilename = _MODELS_FOLDER+str(lenOriginalText)+"-w."+str(modelTargetNumber)+".model"    # fichero del modelo Mx inicial
+	modelFilename = modelBaseFilename
+	hay_nuevos = True
+	iterations = 0
+
+
+	while hay_nuevos:
+		iterations += 1
+		print("\n\nIteration", iterations)
+
+		startTime = datetime.now()
+
+		simsAdHocD2V = {} # dict to compute new AdHoc D2V sims
+		print("Reviewing candidates  ("+str(len(listFull_OrderedAP))+" files) with Doc2Vec similarity derived from current model:", modelFilename, flush=True)
+
+		d2vSimilarity = _Doc2VecSimilarity(modelFilename, P0_originalText)
+
+		for idx,rCandidateFile in enumerate(listFull_OrderedAP, start=1):
+			if (idx % 2000) == 0:
+				print(int(idx/2000), end=' ', flush=True)
+			_Print("("+str(idx)+" of "+str(len(listFull_OrderedAP))+") -- ", rCandidateFile)
+
+			candidateFile = _SCRAPPED_PAGES_FOLDER+rCandidateFile
+			candidateTextFD = _Open(candidateFile, "r")
+			candidateText = candidateTextFD.read()
+			doc2vec_trained_cosineSimilarity = d2vSimilarity.doc2VecTextSimilarity(candidate_text=candidateText)
+			simsAdHocD2V[rCandidateFile] = doc2vec_trained_cosineSimilarity
+
+		print("Candidates reviewed")
+
+		listOrdered = [ (k, simsAdHocD2V[k]) for k in simsAdHocD2V]
+		_SortTuplaList_byPosInTupla(listOrdered, 1)  # order sims list by ad hoc d2v similarity
+
+		# ELEGIR A LOS NUEVOS PARA INCORPORAR AL CORPUS
+
+		listBest = listOrdered[:sizeCorpus]   # mejores x% de acuerdo al modelo Mx
+		listBest_OnlyNames = list(map(lambda x: x[0], listBest))  # keep only the names of the docs
+		nuevos  = list(set(listBest_OnlyNames) - set(listDocsUsedForTraining))  # los que han aparecido nuevos en ese x%
+		print("En esta iteracion hay nuevos:", len(nuevos))
+
+
+		if len(nuevos) > 10:
+			# train a new model
+			modelFilename = modelBaseFilename+str(iterations)
+			listDocsUsedForTraining = list(set(listDocsUsedForTraining) | set(nuevos))  # union de los que ya hay más los nuevos
+
+			print("Training", modelFilename, "with", len(listDocsUsedForTraining), "files")
+			listDocsW = list(map(lambda x: lengthFolder+"files_s_p_w/"+x[(1+x.rfind("/")):]+".s.w", listDocsUsedForTraining))
+
+			r = _buildD2VModelFrom_FileList(listDocsW, modelFilename, vector_size, window, alpha, min_alpha, min_count, distributed_memory, epochs)
+
+			if (r == 0):
+				print("Training success for "+modelFilename+"!!")
+				_appendFile(logFilename, "Computed model: "+modelFilename)
+			else:
+				print("Training failed for "+modelFilename+"!")
+				_appendFile(logFilename, "Training failed: "+modelFilename)
+				result["error"] = "doPh7 ERROR: error training: "+modelFilename
+				return result
+		else:
+			hay_nuevos = False
+
+		endTime = datetime.now()
+		elapsedTime = endTime - startTime
+		globalReviewingTime += elapsedTime.seconds
+		print("Tiempo de esta iteración:", elapsedTime.seconds)
+	else:
+		print("Iterative process finished ("+str(iterations)+" iterations). Final corpus =", len(listDocsUsedForTraining))
+
+	result["P7_elapsedTimeF7"] = globalReviewingTime
+
+	return result
+
+
+
+
+
+# proceso iterativo pero añadiendo las sims mayores que la del último de lso mejores
+
+def doPh7b(P0_originalText, modelNumberList):
+
+	lenOriginalText = len(P0_originalText)
+	lengthFolder = _CORPUS_FOLDER+str(lenOriginalText)+"/"
+
+	# logging
+	logFilename = lengthFolder+str(lenOriginalText)+".log"
+	print("Executing Phase 7b", flush=True)
+	_appendFile(logFilename, "\n\nExecuting Phase 7")
+
+	modelTargetNumber = modelNumberList[0] # let's study only one, the first one, currently 2
 
 	result = {}  # object to store the results to be returned to this request
 
@@ -1579,8 +1731,9 @@ def doPh7(P0_originalText, modelNumberList):
 	print("numEntitiesOriginalText=", numEntitiesOriginalText, flush=True)
 
 
-	# get the files used for training the 6% D2V model
+	# get the files used for training the x% D2V model
 	listAllDocsOrdered = [] # list of docs ordered by AP sim
+	listAllSimsOrdered = []
 	listDocsBestSimFile =  lengthFolder+str(lenOriginalText)+".ph5-3.simsBest.csv"
 
 	# try to read existing best sims file
@@ -1591,6 +1744,7 @@ def doPh7(P0_originalText, modelNumberList):
 			for row in reader:
 				# row[0]=rDocName, row[1]=sim
 				listAllDocsOrdered.append(row[0])
+				listAllSimsOrdered.append(float(row[1]))
 			csvFile.close()
 	except:
 		print("No sims file with docs and their best similarity:", listDocsBestSimFile)
@@ -1598,14 +1752,11 @@ def doPh7(P0_originalText, modelNumberList):
 		return result
 
 	sizeCorpus = int(len(listAllDocsOrdered) / 100) *  modelTargetNumber
-	listDocsUsedForTraining = listAllDocsOrdered[:sizeCorpus] # the x% candidates with higher sims according to the best similarity
+	# the x% candidates with higher sims according to the best similarity (AP)
+	listDocsUsedForTraining = [] # listAllDocsOrdered[:sizeCorpus]  # set to [] start with the x% better according to the Mx model, not to the AP model
 
 	# to aggregate elapsed time
 	globalReviewingTime = 0
-
-	# continuar el entrenamiento del modelo AP con estos ficheros? no se puede
-
-
 
 
 
@@ -1615,12 +1766,12 @@ def doPh7(P0_originalText, modelNumberList):
 	# listEntityFilesOriginalText --> las entidades de E0
 	# listDocsUsedForTraining --> lista de los ficheros usados para entrenar M6
 
-	modelBaseFilename = _MODELS_FOLDER+str(lenOriginalText)+"-w."+str(modelTargetNumber)+".model"    # fichero del modelo M6 inicial
+	modelBaseFilename = _MODELS_FOLDER+str(lenOriginalText)+"-w."+str(modelTargetNumber)+".model"    # fichero del modelo Mx inicial
 	modelFilename = modelBaseFilename
 	hay_nuevos = True
 	iterations = 0
 
-
+	simLastBest=0
 	while hay_nuevos:
 		iterations += 1
 		print("\n\nIteration", iterations)
@@ -1650,16 +1801,25 @@ def doPh7(P0_originalText, modelNumberList):
 
 		# ELEGIR A LOS NUEVOS PARA INCORPORAR AL CORPUS
 
-		listBest = listOrdered[:sizeCorpus]   # mejores 6%
+		listBest = listOrdered[:sizeCorpus]   # mejores x% de acuerdo al modelo Mx
 		listBest_OnlyNames = list(map(lambda x: x[0], listBest))  # keep only the names of the docs
 
-		nuevos  = list(set(listBest_OnlyNames) - set(listDocsUsedForTraining))  # los que han aparecido nuevos en ese 6%
-		print("En esta iteracion hay nuevos:", len(nuevos))
+		# nuevos = los que tengan sim > simLastBest
+
+		if simLastBest == 0:
+			simLastBest = listOrdered[sizeCorpus-1][1]  # la sim del último del corpus de los x% mejores
+			print("Sim of the last candidate of the initial corpus =", simLastBest)
+			nuevos = listBest_OnlyNames[:sizeCorpus]
+		else:
+			mayores_que_sim = [file for file,sim in listOrdered if sim > simLastBest]
+			print("En esta iteracion hay mayores que", simLastBest, "=", len(mayores_que_sim))
+			nuevos  = list(set(mayores_que_sim) - set(listDocsUsedForTraining))  # los que han aparecido nuevos
+			print("En esta iteracion hay nuevos:", len(nuevos))
 
 		if len(nuevos) > 10:
 			# train a new model
 			modelFilename = modelBaseFilename+str(iterations)
-			listDocsUsedForTraining = list(set(listDocsUsedForTraining) | set(nuevos))
+			listDocsUsedForTraining = list(set(listDocsUsedForTraining) | set(nuevos))  # union de los que ya hay más los nuevos
 
 			print("Training", modelFilename, "with", len(listDocsUsedForTraining), "files")
 			listCorpusFilesGlobalNames = list(map(lambda x: _SCRAPPED_PAGES_FOLDER+x, listDocsUsedForTraining))
@@ -1687,6 +1847,7 @@ def doPh7(P0_originalText, modelNumberList):
 	result["P7_elapsedTimeF7"] = globalReviewingTime
 
 	return result
+
 
 
 
