@@ -74,8 +74,8 @@ listEntityDocsOriginalText  = list(map(lambda x: "en.wikipedia.org/wiki.."+x+".t
 print("Starting execution")
 
 models = {}
-for x in range(1,14):
-    model = "M2.model_"+str(x)
+for x in range(1,38):
+    model = "M1.model_"+str(x)
     #model = "1926-w."+str(x)+".model"
     #model = "1926-w.2.model"+str(x)
     models[model] = {'lpos': {}, 'lsims': {}, 'apos': 0, 'asim': 0}

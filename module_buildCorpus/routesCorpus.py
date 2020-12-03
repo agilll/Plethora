@@ -1358,7 +1358,8 @@ def doPh6(lenOriginalText, pctgesList):
 
 			# listDocsTXT for training with .txt, listDocsW for .w
 			listDocsTraining = listDocsW
-			#random.shuffle(listDocsTraining)  # # to shuffle the list, not usually, only to observe the differences
+			#listDocsTraining.reverse()  # to shuffle the list, not usually, only to observe the differences
+			random.shuffle(listDocsTraining)
 			try:
 				r = _buildD2VModelFrom_FileList(listDocsTraining, globalModelFilename, vector_size, window, alpha, min_alpha, min_count, distributed_memory, epochs)
 			except Exception as e:
