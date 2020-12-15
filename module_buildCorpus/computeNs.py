@@ -10,6 +10,7 @@ import os
 import sys
 import csv
 import random
+import statistics
 sys.path.append('../')
 
 from computeN import computeN as _computeN
@@ -39,31 +40,22 @@ except Exception as e:
 
 listTOP_OrderedAP = listFull_OrderedAP[:EVALUATE]
 
-listToTest = listFull_OrderedAP
+# listFull_OrderedAP para TODOS, listTOP_OrderedAP para 1000
+listToTest = listTOP_OrderedAP
 
 print("Starting evaluation")
 
 listModels = []
-for x in range(1,2):
-    #modelFilename = "M5.model_"+str(x)
-    #modelFilename = "1926-w."+str(x)+".model"
+for x in range(1,11):
     #model = "1926-w.2.model"+str(x)
     #models[_HYB_D2V_MODEL] = {'lpos': {}, 'lsims': {}, 'apos': 0, 'asim': 0}
     #models["M1.model"] = {'lpos': {}, 'lsims': {}, 'apos': 0, 'asim': 0}
     #models["1926-w.2.model"] = {'lpos': {}, 'lsims': {}, 'apos': 0, 'asim': 0}
 
-    listModels.append("M"+str(x)+".model")
-
-#listModels.append(_AP_D2V_MODEL)
+    #listModels.append("M"+str(x)+".model")
+    #listModels.append("1926-w."+str(x)+".model")
+    listModels.append(_AP_D2V_MODEL)
 
 models = {}
 for m in listModels:
     models[m]  = _computeN(m, listToTest)
-
-
-print("\n\nComplete results")
-
-for modelFilename in models:
-    print("Model=", modelFilename, "N=", models[modelFilename]['avgPos'])
-    for e in models[modelFilename]['lPos']:
-        print(e, models[modelFilename]['lPos'][e])

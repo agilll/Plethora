@@ -1357,7 +1357,7 @@ def doPh6(lenOriginalText, pctgesList):
 			#listDocsW.reverse() # to reverse the list, from less to more similar
 
 			# listDocsTXT for training with .txt, listDocsW for .w
-			listDocsTraining = listDocsW
+			listDocsTraining = list(listDocsW)
 			#listDocsTraining.reverse()  # to shuffle the list, not usually, only to observe the differences
 			random.shuffle(listDocsTraining)
 			try:

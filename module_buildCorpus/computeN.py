@@ -6,6 +6,7 @@ import os
 import sys
 import csv
 import random
+import statistics
 from datetime import datetime
 
 sys.path.append('../')
@@ -15,14 +16,14 @@ from aux_build import SortTuplaList_byPosInTupla as _SortTuplaList_byPosInTupla
 from aux_build import MODELS_FOLDER as _MODELS_FOLDER, CORPUS_FOLDER as _CORPUS_FOLDER, SCRAPPED_PAGES_FOLDER as _SCRAPPED_PAGES_FOLDER
 
 EVALUATE  = 1000 # the number of candidates to evaluate (they are the number more similar)
-SEARCH_ENTITIES = 1000 # the number of candidates to search the entities in
 
 def computeN (modelFilename, listToTest):
     print("\nStarting evaluation for model", modelFilename)
     ping = int(len(listToTest) / 10) # the number of candidates to echo a ping after
     CURRENT_MODEL = _MODELS_FOLDER+modelFilename
 
-    model = {'lPos': {}, 'avgPos': 0}
+    #model = {'lPos': {}, 'lSim': {}, 'avgPos': 0}
+    model = {}
 
     # read the initial text
     P0_originalTextFilename = _CORPUS_FOLDER+"1926/1926.ph1.txt"  # to compare similarity of .txt files
@@ -37,12 +38,14 @@ def computeN (modelFilename, listToTest):
     startTime = datetime.now()
     # process the best candidates to observe where the initial entities are
     print("Evaluating", len(listToTest), "candidates")
+    sims = {}
     for idx,docCandidate in enumerate(listToTest, start=1):  # format docCandidate = en.wikipedia.org/wiki..Title.txt
         if (idx % ping) == 0:
             print(idx, end=' ', flush=True)
 
         fileNameCandidate = _SCRAPPED_PAGES_FOLDER+docCandidate   # format SCRAPPED_PAGES_FOLDER/en.wikipedia.org/wiki..Title.txt
         d2v_sim = d2vSimilarity.doc2VecTextSimilarity(candidate_file=fileNameCandidate) # ****** with W to eval .w files
+        sims[docCandidate] = d2v_sim
         listOrdered_Names_Sims.append((docCandidate, d2v_sim))
 
     print(" All candidate sims computed")
@@ -68,18 +71,38 @@ def computeN (modelFilename, listToTest):
 
     originalEntitiesPositions = []
     # search the entities of the initial text
-    for idx,name in enumerate(listOrdered_OnlyNames[:SEARCH_ENTITIES], start=1):
-        if name in listEntityDocsOriginalText:  # one entity of the original text found in list
+    for idx,docCandidate in enumerate(listOrdered_OnlyNames, start=1):
+        if docCandidate in listEntityDocsOriginalText:  # one entity of the original text found in list
             originalEntitiesPositions.append(idx)
-            model['lPos'][name] = idx
+            model[docCandidate] = (idx,sims[docCandidate])
+            print(docCandidate, "---", idx, "---", round(sims[docCandidate],1))
         if len(originalEntitiesPositions) == len(listEntityDocsOriginalText):  # all entities of the original text have been found in the list
             break
         if idx == len(listOrdered_OnlyNames):
             print("ERROR!!!! alcanzado el final del conjunto sin encontrar todas las entidades")
 
 
-    averagePosition = sum(originalEntitiesPositions) / len(originalEntitiesPositions)  # average position
-    print("N=", averagePosition)
-    model['avgPos'] = averagePosition
+    positions = [model[entity][0] for entity in model]
+    media = sum(positions)/len(positions)  # full average position
+    print("Full N=", round(media,1))
+
+    desvtip = statistics.stdev(positions)
+    print("Desviación típica=", round(desvtip,1)
+
+    toRemove=[]
+    for e in model:
+        if abs(model[e][0]- media) > desvtip:
+            print("Se ha quitado ", e)
+            toRemove.append(e)
+
+    for e in toRemove:
+        del model[e]
+
+
+    positions = [model[entity][0] for entity in model]
+    media = sum(positions)/len(positions)  # full average position
+    print("Significative N=", round(media,1))
+
+    desvtip = statistics.stdev(positions)
 
     return model
