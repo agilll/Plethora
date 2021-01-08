@@ -1,12 +1,12 @@
-Subproject to process original corpus files downloaded from Internet and generate .t files
+Subproject to process original corpus files downloaded from Internet and generate .w files
 
 Depends on px_aux, px_aux_add_suffix, px_DB_Manager of the main project
 
 
-They are executed in order to finally generate .t files:
+They are executed in order to finally generate .w files:
 
 1 - add suffixes to identified names (input .txt, output .txt.s)
-    The actual job of changing contents is done by the external 
+    The actual job of changing contents is done by the external
     processContent() function, shared with the main project
 
     python3 S1.py folder (calls functions in S1_AddSuffixToTexts.py)
@@ -19,6 +19,7 @@ They are executed in order to finally generate .t files:
 
     python3 S3.py.py folder
 
+this last step is obsolete
 4 - remove stopwords and tokenize (input .w, output .t)
     Requires the Stanford Core NLP server to be started and listening in port 9000
 

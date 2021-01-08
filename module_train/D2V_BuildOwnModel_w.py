@@ -7,9 +7,6 @@ from gensim.models.doc2vec import Doc2Vec, TaggedDocument
 from gensim.parsing.preprocessing import remove_stopwords as Gensim_remove_stopwords
 from gensim.utils import simple_preprocess
 
-flag_remove_stopWords = True	# use flag_remove_stopWords to indicate if stopwords must be removed or not
-
-
 
 # A function to build a model based on Doc2Vec, trained by our own training .w files
 # receives a folder with .w documents
@@ -45,15 +42,16 @@ def buildD2VModelFrom_txt_Folder(files_folder, model_name, vector_size, window, 
 
 
 
-# A function to build a model based on Doc2Vec, trained by our own training .w documents
+# A function to build a model based on Doc2Vec, trained by our own training documents
 # receives a list of filenames of .w documents
 def buildD2VModelFrom_FileList(training_files, model_name, vector_size, window, alpha, min_alpha, min_count, distributed_memory, epochs):
+	flag_remove_stopWords = True	# use flag_remove_stopWords to indicate if stopwords must be removed or not
 
 	print("Training with", len(training_files), "files")
 
 	training_texts = []	# each member is a text
 
-	# Add the content of the training_files to the training corpus (training_lists)
+	# Add the content of the training_files to the training corpus (training_texts)
 	for training_file in training_files:
 		training_fd = open(training_file, "r")
 		text = training_fd.read()

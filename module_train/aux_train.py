@@ -3,8 +3,6 @@
 
 # folders and filenames involved in corpus construction
 
-LEE_D2V_MODEL = "d2v_lee"
-
 OWN_D2V_MODEL = "d2v_own"
 
 CORPUS_FOLDER = "../CORPUS/"

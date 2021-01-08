@@ -832,26 +832,6 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 	lenListWithWKSB  = len(listWithWKSB)  # length of full list of candidate files to process
 
 
-	# read the original text entities (E0) from local store, to later measure the quality of similarities
-	filename_en = lengthFolder+str(lenOriginalText)+".ph1.txt.en"   # filename for entities E0 (length.ph1.en)
-	try:
-		with _Open(filename_en) as fp:	# format    http://dbpedia.org/resource/Title
-			listEntitiesOriginalText = fp.read().splitlines()
-
-		listEntityTitlesOriginalText = list(map(lambda x: x[1+x.rfind("/"):], listEntitiesOriginalText))	# keep only Title
-		# add prefix and sufix to get format    en.wikipedia.org/wiki..Title.txt   DANGER!!!! may be not this way in future
-		listEntityFilesOriginalText = list(map(lambda x: "en.wikipedia.org/wiki.."+x+".txt", listEntityTitlesOriginalText))
-	except:
-		listEntityFilesOriginalText = []    # no entities for original text
-		print("Entities file not available: "+filename_en)
-		_appendFile(logFilename, "Entities file not available: "+filename_en)
-		result["error"] = "doPh5 ERROR: Entities file not available: "+filename_en
-		return result
-
-	numEntitiesOriginalText = len(listEntityFilesOriginalText)
-	print("numEntitiesOriginalText=", str(numEntitiesOriginalText))
-
-
 	# read the original text subjects from local store
 	filename_sb = lengthFolder+str(lenOriginalText)+".ph1.txt.sb"   # filename for subjects (length.ph1.txt.sb)
 	try:
@@ -891,11 +871,13 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 		print("All similarities must be computed")
 
 
-	startTime = datetime.now()
-
-	P0_originalTextFilenameW = _CORPUS_FOLDER+"1926/1926.ph1.txt.s.w"   # W to compare similarity of .w files
+    # read originalText_W just in case we want to compare similarity of .w files
+	P0_originalTextFilenameW = _CORPUS_FOLDER+"1926/1926.ph1.txt.s.w"
 	with open(P0_originalTextFilenameW, 'r') as fp:
 	  P0_originalTextW = fp.read()
+
+
+	startTime = datetime.now()
 
 	# Create a textSimilarityFunctions object to measure text similarities. It requires the original text, its wikicats and subjects.
 	similarities = _textSimilarityFunctions(P0_originalText, P1_selectedWikicats, listSubjectsOriginalText, logFilename)
@@ -915,7 +897,8 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 		fileNameCandidateWikicats = fileNameCandidate+".wk"    # wikicats file for this doc  $HOME/KORPUS/SCRAPPED_PAGES/en.wikipedia.org/wiki..Title.txt.wk
 		fileNameCandidateSubjects = fileNameCandidate+".sb"    # subjects file for this doc  $HOME/KORPUS/SCRAPPED_PAGES/en.wikipedia.org/wiki..Title.txt.sb
 
-		fileNameCandidateW = _CORPUS_FOLDER+"1926/files_s_p_w/"+rFileNameCandidate[1+rFileNameCandidate.rfind("/"):]+".s.w"  # to compare .w files
+		justFileName = rFileNameCandidate[1+rFileNameCandidate.rfind("/"):]  # wiki..Title.txt
+		fileNameCandidateW = _CORPUS_FOLDER+"1926/files_s_p_w/"+justFileName+".s.w"  # just to compare .w files if decided
 
 		# Now compute similarities. First, check if already stored in length.ph5-1.sims.csv (already read in dict_sims_db)
 		try:
@@ -927,7 +910,8 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 			d2v_ap_sim = sims[3]
 
 		except Exception as e:   # no sims found for this candidate in local DB file, they must be computed
-			changes = True
+			changes = True  # to mark that new data has been computed and the results file should be updated
+
 			_Print(idx, ". Sims not in local DB:", str(e))
 			_appendFile(logFilename, "Sims not in local DB:"+str(e))
 
@@ -986,7 +970,7 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 	print("\n\n", "Duration F5 (computing similarities):", str(elapsedTimeF5.seconds))
 
 
-	# Update the csv file if necessary
+	# Update the csv file if changes took place
 	if changes:
 		with _Open(filenameSims, 'w') as csvFile:
 			fieldnames = ['Page', 'Fwikicats', 'Fsubjects', 'Spacy', 'Doc2Vec-AP']	# Name columns
@@ -1010,6 +994,27 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 
 	# compute ratings for similarities to eval their quality and select the one to use
 
+	# read the original text entities (E0) from local store, to measure the quality of similarities
+	filename_en = lengthFolder+str(lenOriginalText)+".ph1.txt.en"   # filename for entities E0 (length.ph1.en)
+	try:
+		with _Open(filename_en) as fp:	# format    http://dbpedia.org/resource/Title
+			listEntitiesOriginalText = fp.read().splitlines()
+
+		listEntityTitlesOriginalText = list(map(lambda x: x[1+x.rfind("/"):], listEntitiesOriginalText))	# keep only Title
+		# add prefix and sufix to get format    en.wikipedia.org/wiki..Title.txt   DANGER!!!! may be not this way in future
+		listEntityFilesOriginalText = list(map(lambda x: "en.wikipedia.org/wiki.."+x+".txt", listEntityTitlesOriginalText))
+	except:
+		listEntityFilesOriginalText = []    # no entities for original text
+		print("Entities file not available: "+filename_en)
+		_appendFile(logFilename, "Entities file not available: "+filename_en)
+		result["error"] = "doPh5 ERROR: Entities file not available: "+filename_en
+		return result
+
+	numEntitiesOriginalText = len(listEntityFilesOriginalText)
+	print("numEntitiesOriginalText=", str(numEntitiesOriginalText))
+
+
+
 	# convert dict_sims_new in list of tuplas (filenameCandidate, simFullWikicats, simFullSubjects, simSpacy, simD2V-AP) to be able to order them
 	list_sims_tuplas = [ (k, dict_sims_new[k][0], dict_sims_new[k][1], dict_sims_new[k][2], dict_sims_new[k][3]) for k in dict_sims_new]
 
@@ -1020,14 +1025,14 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 	# ratings[sim]["average"]
 
 	def computeRating(indexSim, nameSim):
-		listOrdered = list_sims_tuplas.copy()
+		listOrdered = list_sims_tuplas.copy()  # make a copy for this run
 		# _SortTuplaList_byPosInTupla: function to order a list of tuplas (0,1,2,3,4,5,6,7...) by the element in the position 'pos'=1,2...
-		_SortTuplaList_byPosInTupla(listOrdered, indexSim)  # order sims list by indexSim similarity
-		listOrdered_Names_Sims  = list(map(lambda x: (x[0], x[indexSim]), listOrdered)) # keep only the names of the docs and its indexedSim similarity
+		_SortTuplaList_byPosInTupla(listOrdered, indexSim)  # order sims list by indexSim similarity (1,2,3,4...)
+		listOrdered_Names_Sims  = list(map(lambda tupla: (tupla[0], tupla[indexSim]), listOrdered)) # keep only the names of the docs and its similarity number indexedSim
 		ratings[nameSim] = {}
 		ratings[nameSim]["orderedList"] = listOrdered_Names_Sims
 		ratings[nameSim]["originalEntities"] = []  # list of pairs (entity, position)
-		listOrdered_OnlyNames = list(map(lambda x: x[0], listOrdered_Names_Sims))  # keep only the names of the docs
+		listOrdered_OnlyNames = list(map(lambda tupla: tupla[0], listOrdered_Names_Sims))  # keep only the names of the docs
 
 		for idx, name in enumerate(listOrdered_OnlyNames, start=1):
 			if name in listEntityFilesOriginalText:  # one entity of the original text found in list
@@ -1054,7 +1059,7 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 
 	E0entitiesPositions = {}  # dict with an entry for each entity, a 6-tupla with the positions for each sim
 
-	# build dict E0entitiesPositions to store the 7-possitions for every entity E0
+	# build dict E0entitiesPositions to store the 4-possitions for every entity E0
 	# range over list of tuplas (name_E0entity, position_in_this sim)
 	# it is only to process all names, idx is irrelevant
 	# next(i for (n,i) in ratings["Fwikicats"]["originalEntities"] if n == name) --> i of first tupla where n == name
@@ -1082,7 +1087,7 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 
 	# WARNING!!!!!
 	# The precise results of D2V models cannot computed this way, because they are slightly different in each run
-	# The precise results are computed by the "computeAverageD2V" script, that should be run 5 times for each model, and averaged for every entity
+	# The precise results are computed by the "computeN" script, that is run 5 times for each model, and averaged
 	# In any case, the results may change, but only slightly, so the conclusion of this phase (which one is the best similarity) is still correct
 
 
@@ -1244,7 +1249,7 @@ def doPh6(lenOriginalText, pctgesList):
 	listDocsSimFile =  lengthFolder+str(lenOriginalText)+".ph5-1.sims.csv"   # list of (candidate, sim) not ordered
 
 	#listDocsFile = listDocsSimFile  # read unordered set of .txt candidates
-	listDocsFile = listDocsBestSimFile  # read ordered (best sim) set of .txt candidates
+	listDocsFile = listDocsBestSimFile  # read ordered (by best sim) set of .txt candidates
 
 	# try to read existing best similarity sims file
 	try:
@@ -1253,7 +1258,7 @@ def doPh6(lenOriginalText, pctgesList):
 			next(reader)  # to skip header
 			for row in reader:
 				# row[0]=rDocName, row[1]=sim
-				listDocs.append(row[0])
+				listDocs.append(row[0])  # format en.wikipedia.org/wiki..Title.txt
 			csvFile.close()
 	except Exception as ex:
 		print("Exception: "+str(ex))
@@ -1278,7 +1283,7 @@ def doPh6(lenOriginalText, pctgesList):
 		modelFilename = str(lenOriginalText)+ "-w."+str(pctgeInitialCorpus)+".model"
 
 		listDocsCorpus = listDocs[:sizeCorpus] # the x% candidates with higher sims according to the best similarity
-		listDocsTXT = list(map(lambda x: _SCRAPPED_PAGES_FOLDER+x, listDocsCorpus))   # get the absolute TXT names
+		listDocsTXT = [_SCRAPPED_PAGES_FOLDER+x for x in listDocsCorpus] # get the absolute TXT names
 
 	    # initial corpus ready, do preprocessing
 		print("Preprocessing ", str(sizeCorpus), " documents for "+modelFilename)
@@ -1359,7 +1364,7 @@ def doPh6(lenOriginalText, pctgesList):
 			# listDocsTXT for training with .txt, listDocsW for .w
 			listDocsTraining = list(listDocsW)
 			#listDocsTraining.reverse()  # to shuffle the list, not usually, only to observe the differences
-			random.shuffle(listDocsTraining)
+			#random.shuffle(listDocsTraining)
 			try:
 				r = _buildD2VModelFrom_FileList(listDocsTraining, globalModelFilename, vector_size, window, alpha, min_alpha, min_count, distributed_memory, epochs)
 			except Exception as e:
@@ -1377,7 +1382,7 @@ def doPh6(lenOriginalText, pctgesList):
 
 			# the current model has been created, let's check its quality
 
-			print("Checking quality #2 of:", modelFilename)
+			# print("Checking quality #2 of:", modelFilename)
 
 			# quality check 2: check the average similarities among first and second part of each document
 
