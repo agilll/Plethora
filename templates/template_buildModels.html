@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    
+    <title>Train Tool</title>
+    
+    <link rel="stylesheet" href="../css/style_buildModels.css">
+</head>
+<body>
+
+    <!-- Starting of the interface HTML page  -->
+
+    <div id="info"> <!-- Interface -->
+
+        <h1>Custom Train Tool</h1>
+
+        <h2>0. Create a group of D2V models with multiple parameters</h2>
+
+        <div id="trainingOptions"> <!-- Selects with build and train options -->
+
+            <h3>Training documents file:</h3><div><a class="inputPrefix">KORPUS/</a><input id="trainingDocsFileInput" value="{{training_docs_file}}"></input></div>
+            <h3>Models folder:</h3><div><a class="inputPrefix">KORPUS/</a><input id="modelsFolderInput" value="{{models_folder}}"></input></div>
+
+        </div>
+
+        <h3>Hyperameters list:</h3>
+
+        <div id="paramTable"><div class="paramCard plus"></div></div> <!-- Divs list to select multiple params -->
+
+        <div id="createGroupButton" class="button">Create group</div> <!-- Req /buildAndTrainNewModelGroup with all params -->
+        
+        <h2>1. Saved groups <div id="updateButton" class="button" enabled="true">Update view</div></h2> <!-- Req /getAllSavedD2VGroups to update the groups list -->
+
+        <div id="groupsList"></div> <!-- Show all saved groups -->
+
+    </div>
+
+
+    <div id="console"></div> <!-- Log console  -->
+
+    <!-- jQuery CDN -->
+    <script src="https://code.jquery.com/jquery-1.12.0.min.js"></script>
+
+    <script>
+
+        const SERVER_DIR = "http://localhost:6060"
+
+        const naturalNumbersPattern = '^(\d+|\d+-\d+)((,(\d+|\d+-\d+))*)$' // Pattern checker for [0,1,2,...]
+        const hyperparameters = ['window', 'epochs', 'vector_size', 'workers'] // All hyperparameters
+        const defaultHyperparameters = ['window', 'epochs', 'vector_size'] // Default selected hyperparameters
+        const logUpdate = { // Log console handler
+            stack: [],
+            lastLogIndex: -1,
+            init: function(callback=()=>{}) {
+                //console.log("init")
+                $("#console").empty()
+                $.ajax({
+                    type: "GET",
+                    url: SERVER_DIR + "/getLog",
+                    data: {"idx": logUpdate.lastLogIndex +1},
+                    success: function(result) {
+                        logUpdate.lastLogIndex = result.lastidx
+                        callback()
+                    }
+                })
+            },
+            upd: function() {
+                //console.log("upd - " + logUpdate.stack.length)
+                $.ajax({
+                    type: "GET",
+                    url: SERVER_DIR + "/getLog",
+                    data: {"idx":logUpdate.lastLogIndex +1},
+                    success: function(result) {
+                        if (logUpdate.lastLogIndex < result.lastidx) {
+                            let fidx = logUpdate.lastLogIndex
+                            logUpdate.lastLogIndex = result.lastidx
+                            result.msgs.forEach((msg, i) => {
+                                let newp = document.createElement('p')
+                                newp.innerText = `[${fidx + i + 1}] ${msg}`
+                                $("#console").append($(newp))
+                                $("#console").scrollTop($("#console")[0].scrollHeight)
+                            });
+                        } else if (logUpdate.lastLogIndex > result.lastidx) {
+                            logUpdate.init(() => logUpdate.upd())
+                        }
+
+                        if (logUpdate.stack.length > 0) setTimeout(logUpdate.upd, 1000)
+                    }
+                })
+            },
+            pop: function() {
+                setTimeout(() => {
+                    //console.log("pop")
+                    this.stack.pop()
+                }, 1000)
+            },
+            push: function() {
+                //console.log("push - " + logUpdate.stack.length)
+                logUpdate.stack.push(1)
+                if (logUpdate.stack.length == 1) logUpdate.upd()
+            }
+        }
+
+        function updateGroupsView() { // Update the groups list (1.) with the saved groups
+            $("#updateButton").attr("enabled", "false")
+            $.ajax({
+                type: "GET",
+                url: SERVER_DIR + "/getAllSavedD2VGroups",
+                data: {"models_folder": $("#modelsFolderInput").val()},
+                success: function(result) {
+                    $("#groupsList").empty()
+                    result.forEach(group => {
+                        let groupDiv = document.createElement('div')
+                        let groupTittle = document.createElement('h3')
+                        let groupList = document.createElement('ol')
+
+                        groupTittle.innerText = group.group
+                        group.models.forEach(model => {
+                            let listElement = document.createElement('li')
+                            listElement.innerText = model
+                            groupList.append(listElement)
+                        })
+
+                        groupDiv.classList.add('clickable')
+                        groupDiv.addEventListener('click', (e) => console.log("Clicked " + group.group))
+
+                        groupDiv.append(groupTittle)
+                        groupDiv.append(groupList)
+                        $("#groupsList").append(groupDiv)
+                    })
+                    $("#updateButton").attr("enabled", "true")
+                },
+                beforeSend: function() {logUpdate.push()},
+                complete: function() {logUpdate.pop()}
+            })
+        }
+
+        function createNewParamCard() { // Adds another card to define a new parameter-value
+            let plusDiv = $("#paramTable .plus")
+            
+            let remDiv = $(document.createElement("div"))
+            let dataDiv = $(document.createElement("div"))
+            let paramNameP = $(document.createElement("p"))
+            let paramNameSelect = $(document.createElement("select"))
+            let paramValueP = $(document.createElement("p"))
+            let paramValueInput = $(document.createElement("input"))
+            
+            plusDiv.removeClass('plus')
+            remDiv.addClass("rem")
+            dataDiv.addClass("data")
+            paramNameP.text("Param name")
+            paramNameSelect.addClass("paramName").attr("name", "paramName")
+            paramValueP.text("Param values")
+            paramValueInput.addClass("paramData").attr("name", "paramData").attr("type", "text").attr("placeholder", "5-10,15-20")
+
+            plusDiv.off("click")
+            remDiv.click(() => {plusDiv.remove(); updateSelectOptionsInParamCards()})
+            paramNameSelect.change(() => updateSelectOptionsInParamCards())
+
+            plusDiv.append(remDiv, dataDiv)
+            dataDiv.append(paramNameP, paramNameSelect, paramValueP, paramValueInput)
+            
+            let newPlus = document.createElement('div')
+            newPlus.classList.add('paramCard', 'plus')
+            $(newPlus).click(() => {if ($("#paramTable div.paramCard:not(.plus)").length < hyperparameters.length) createNewParamCard()})
+            $("#paramTable").append($(newPlus))
+
+            updateSelectOptionsInParamCards()
+            
+            return plusDiv
+        }
+
+        function updateSelectOptionsInParamCards() {
+            let paramCardsSelects = $("#paramTable div.paramCard:not(.plus) select.paramName")
+            let paramCardsSelectedOptionsValues = paramCardsSelects.find("option:selected").map((i, o) => o.value).toArray().filter(v => v)
+            let allOptionsValues = ["", ...hyperparameters]
+
+            paramCardsSelects.each((i, select) => {
+
+                let options = $(select).find("option")
+                let selectedOption = $(select).find("option:selected")
+
+                options.each((i, option) => {
+                    let val = $(option).val()
+                    if (paramCardsSelectedOptionsValues.includes(val) && val !== selectedOption.val())
+                        $(option).remove()
+                })
+
+                allOptionsValues.forEach(v => {
+                    let optionsValues = $(select).find("option").map((i, o) => o.value).toArray() 
+                    if (!optionsValues.includes(v) && !paramCardsSelectedOptionsValues.includes(v)) {
+                        let sortedIndex = optionsValues.indexOf(optionsValues.find(p => v < p))
+                        select.insertBefore($(document.createElement("option")).val(v).text(v ? v : " - select param - ")[0], select.children[sortedIndex])
+                    }
+                })
+
+            })
+        }
+
+        function collectParamsAndCreateGroup() { // Collects parameter-value pairs from all cards and makes a POST request to /buildAndTrainNewModelGroup
+            $("#createGroupButton").attr("disabled", "true")
+            let groupName = prompt('Escoja un nombre para el grupo: ', 'testgroup')
+            if (groupName == null) return -1
+
+            let modelsType = "d2v" //TODO
+            let trainingDocsFile = $("#trainingDocsFileInput").val()
+            let modelsFolder = $("#modelsFolderInput").val()
+
+            let params = {}
+            let cardsData = $(".paramCard .data")
+            cardsData.each(function(i, cardData) {
+                let key = $(cardData).find("select[name='paramName']").val()
+                let value = parsePattern($(cardData).find("input[name='paramData']").val(), 'naturals')
+                if (key.length > 0 && value.length > 0) params[key] = value
+            })
+
+            $.ajax({
+                type: "POST",
+                url: SERVER_DIR + "/buildAndTrainNewModelGroup",
+                contentType: 'application/json',
+                data: JSON.stringify({"group_name": groupName, "models_type": modelsType, "training_docs_file": trainingDocsFile, "models_folder": modelsFolder, "params": params}),
+                success: function(result) {
+                    console.log(result)
+                    updateGroupsView()
+                    $("#createGroupButton").attr("disabled", "false")
+                },
+                beforeSend: function() {logUpdate.push()},
+                complete: function() {logUpdate.pop()}
+            })
+        }
+
+        function parsePattern(input, type) { // Transforms the input pattern into a sorted list of numbers
+            switch (type) {
+                case 'naturals':
+                    let values = []
+                    input.split(',').forEach(v => {
+                        if (v.includes('-')) {
+                            let markers = v.split('-')
+                            let vInit = parseInt(markers[0])
+                            let vEnd = parseInt(markers[1])
+                            if (vInit <= vEnd)
+                                for (let i = vInit; i <= vEnd; i++) values.push(i)
+                            else
+                                for (let i = vInit; i >= vEnd; i--) values.push(i)
+                        } else {
+                            if (parseInt(v)) values.push(parseInt(v))
+                        }
+                    });
+                    if (values.length > 0) return [...new Set(values)].sort((a, b) => a - b)
+                    else return []
+
+                default:
+                    break
+            }
+        }
+
+        function addOptionsToSelectInput(select, optionsText) {
+            optionsText.forEach(txt => {
+                let option = document.createElement('option')
+                option.text = txt
+                option.value = txt.toLowerCase()
+                select.append(option)
+            });
+        }
+
+        $("#updateButton").click(updateGroupsView)
+        $("#createGroupButton").click(collectParamsAndCreateGroup)
+        $("#paramTable div").click(createNewParamCard)
+        $("#trainingOptions div").each((i, option) => {
+            let input = $(option).find("input")
+            let prefix = $(option).find("a.inputPrefix")
+            input.on("input", function() {
+                if (input.val().startsWith("/"))
+                    prefix.hide()
+                else
+                    prefix.show()
+            })
+        })
+
+        defaultHyperparameters.forEach(param => createNewParamCard().find(`option[value="${param}"]`).attr("selected", "selected"))
+        updateSelectOptionsInParamCards()
+        logUpdate.init(() => updateGroupsView())
+
+    </script>
+
+</body>
+</html>
