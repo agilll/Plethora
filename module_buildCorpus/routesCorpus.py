@@ -1024,6 +1024,38 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 	# ratings[sim]["originalEntities"] --> list of 2-tuplas (entityName, pos) with all the E0 entities ordered by pos in such sim
 	# ratings[sim]["average"]
 
+	def checkOutliar(lista):
+		from numpy import percentile
+		from numpy import mean
+		from numpy import std
+
+		outliar=False
+		# identify IRM outliers
+		q25, q75 = percentile(lista, 25), percentile(lista, 75)
+		iqr = q75 - q25
+		cut_off = iqr * 1.5
+		lower, upper = q25 - cut_off, q75 + cut_off
+
+		for pos in lista:
+			if (pos < lower) or (pos > upper):
+				print("IQR Outliar in", pos)
+				outliar=True
+				break
+
+		# identify Z-score outliers
+		mean, std = mean(lista), std(lista)
+		cut_off = std * 3
+		lower, upper = mean - cut_off, mean + cut_off
+
+		for pos in lista:
+			if (pos < lower) or (pos > upper):
+				print("Z-score Outliar in", pos)
+				outliar=True
+				break
+
+		return outliar
+
+
 	def computeRating(indexSim, nameSim):
 		listOrdered = list_sims_tuplas.copy()  # make a copy for this run
 		# _SortTuplaList_byPosInTupla: function to order a list of tuplas (0,1,2,3,4,5,6,7...) by the element in the position 'pos'=1,2...
@@ -1036,14 +1068,21 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 
 		for idx, name in enumerate(listOrdered_OnlyNames, start=1):
 			if name in listEntityFilesOriginalText:  # one entity of the original text found in list
+				# if len(ratings[nameSim]["originalEntities"]) > 8: # this is the 9th, let's start to check for outliars
+				# 	lpos = [pos for name,pos in ratings[nameSim]["originalEntities"]] # these are th epositions till now
+				# 	lpos.append(idx) # add the new one
+				# 	if checkOutliar(lpos):
+				# 		print("Found outliar for ", nameSim, ":", name, idx)
+				# 		# break to discard the outliar, here we don't do it
 				ratings[nameSim]["originalEntities"].append((name, idx))
+
 			if len(ratings[nameSim]["originalEntities"]) == len(listEntityFilesOriginalText):  # all entities of the original text have been found in the list
 				break
 
 		listPositions = [pos for name,pos in ratings[nameSim]["originalEntities"]]   # get a list with all the positions of the entities
 		averagePosition = sum(listPositions) / len(listPositions)  # average position
 
-		print("Average for", nameSim, "=", averagePosition)
+		print("Average for", nameSim, "=", averagePosition, "\n")
 		ratings[nameSim]["average"]  = averagePosition
 		return
 
@@ -1052,7 +1091,6 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 	computeRating(2, "Fsubjects")
 	computeRating(3, "Spacy")
 	computeRating(4, "Doc2Vec-AP")
-
 
 	# name of the file to save the positions of E0 entities for all sims, used for measure rating quality
 	fileE0entitiesPositions = lengthFolder+str(lenOriginalText)+".ph5-2.entities.positions.csv"

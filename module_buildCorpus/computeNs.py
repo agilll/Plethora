@@ -14,7 +14,7 @@ from textSimilarities import Doc2VecSimilarity as _Doc2VecSimilarity
 from aux_build import SortTuplaList_byPosInTupla as _SortTuplaList_byPosInTupla
 from aux_build import MODELS_FOLDER as _MODELS_FOLDER, CORPUS_FOLDER as _CORPUS_FOLDER, SCRAPPED_PAGES_FOLDER as _SCRAPPED_PAGES_FOLDER
 
-EVALUATE  = 9000 # the number of candidates to evaluate (they are the number more similar)
+EVALUATE  = 1000 # the number of candidates to evaluate (they are the number more similar)
 
 _AP_D2V_MODEL = "doc2vec.bin"
 _HYB_D2V_MODEL = "hibrido.model"
@@ -40,7 +40,7 @@ listToTest = listTOP_OrderedAP
 print("Starting multiple evaluation")
 
 listModels = [] # the list of models to evaluate
-#listModels.append(_AP_D2V_MODEL)
+listModels.append(_AP_D2V_MODEL)
 prefix="W_SSW/"
 for x in range(1,11):
     #listModels.append("M"+str(x)+".model")

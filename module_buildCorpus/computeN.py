@@ -9,11 +9,45 @@ import random
 import statistics
 from datetime import datetime
 from smart_open import open as _Open
-sys.path.append('../')
+#sys.path.append('../')
 
 from textSimilarities import Doc2VecSimilarity as _Doc2VecSimilarity
 from aux_build import SortTuplaList_byPosInTupla as _SortTuplaList_byPosInTupla
 from aux_build import MODELS_FOLDER as _MODELS_FOLDER, CORPUS_FOLDER as _CORPUS_FOLDER, SCRAPPED_PAGES_FOLDER as _SCRAPPED_PAGES_FOLDER
+
+def checkOutliar(lista):
+    from numpy import percentile
+    from numpy import mean
+    from numpy import std
+
+    outliarZ=False
+    outliarIRQ=False
+
+	# identify IRQ outliers
+    q25, q75 = percentile(lista, 25), percentile(lista, 75)
+    iqr = q75 - q25
+    cut_off = iqr * 1.5
+    lower, upper = q25 - cut_off, q75 + cut_off
+
+    for pos in lista:
+        if (pos < lower) or (pos > upper):
+            print("IQR Outliar in", pos)
+            outliarIRQ=True
+            break
+
+	# identify Z-score outliers
+    mean, std = mean(lista), std(lista)
+    cut_off = std * 3
+    lower, upper = mean - cut_off, mean + cut_off
+
+    for pos in lista:
+        if (pos < lower) or (pos > upper):
+            print("Z-score Outliar in", pos)
+            outliarZ=True
+            break
+
+    return (outliarIRQ and outliarZ)
+
 
 def computeN (modelFilename, listToTest):
     print("\nStarting evaluation for model", modelFilename)
@@ -69,7 +103,7 @@ def computeN (modelFilename, listToTest):
 
 
     # read the relevant entities in the initial text
-    entitiesFilename = _CORPUS_FOLDER+"1926/1926.ph1.txt.en"
+    entitiesFilename = _CORPUS_FOLDER+"1926/1926.ph6.txt.en"
     with open(entitiesFilename) as fp:	# format    http://dbpedia.org/resource/Title
         listEntitiesOriginalText = fp.read().splitlines()
 
@@ -83,9 +117,16 @@ def computeN (modelFilename, listToTest):
     originalEntitiesPositions = []
     for idx,docCandidate in enumerate(listOrdered_OnlyNames, start=1):
         if docCandidate in listEntityDocsOriginalText:  # one entity of the original text found in list
+            print("Found", docCandidate, "--- pos=", idx, "--- sim=", round(sims[docCandidate],3))
+            if len(originalEntitiesPositions) > 8: # this is the 9th, let's start to check for outliars
+                newlist = list(originalEntitiesPositions)
+                newlist.append(idx) # add the new one
+                if checkOutliar(newlist):
+                    print("Found outliar", ":", docCandidate, idx)
+                    break # to discard the outliar, here we don't do it
             originalEntitiesPositions.append(idx)
             model[docCandidate] = (idx,sims[docCandidate])
-            print(docCandidate, "---", idx, "---", round(sims[docCandidate],3))
+
         if len(originalEntitiesPositions) == len(listEntityDocsOriginalText):  # all entities of the original text have been found in the list
             break
         if idx == len(listOrdered_OnlyNames):
@@ -94,23 +135,6 @@ def computeN (modelFilename, listToTest):
 
     positions = [model[entity][0] for entity in model]  # the idx for every candidate found
     media = statistics.mean(positions)  # full average position
-    print("Full N =", round(media,1))
-
-    desvtip = statistics.stdev(positions)
-    print("Desviación típica =", round(desvtip,1))
-
-    toRemove=[]
-    for e in model:
-        if abs(model[e][0] - media) > desvtip:
-            print("Se ha quitado ", e)
-            toRemove.append(e)
-
-    for e in toRemove:
-        del model[e]
-
-
-    positions = [model[entity][0] for entity in model]
-    media = statistics.mean(positions)  # significative average position
-    print("Significative N=", round(media,1))
+    print("N =", round(media,1))
 
     return model
