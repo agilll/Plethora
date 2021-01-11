@@ -1,6 +1,6 @@
 # this script computes the N for a model
-# to do that, it evaluates the model for the received files, order them by sim, and search the position of the 10 T0 entities
-# the result is the average of the position of such 10 entities in the order
+# to do that, it evaluates the model for the received files, order them by sim, and search the position of the T0 entities
+# the result is the average of the position of such entities in the order
 
 import os
 import sys
@@ -15,12 +15,11 @@ from textSimilarities import Doc2VecSimilarity as _Doc2VecSimilarity
 from aux_build import SortTuplaList_byPosInTupla as _SortTuplaList_byPosInTupla
 from aux_build import MODELS_FOLDER as _MODELS_FOLDER, CORPUS_FOLDER as _CORPUS_FOLDER, SCRAPPED_PAGES_FOLDER as _SCRAPPED_PAGES_FOLDER
 
-def checkOutliar(lista):
+def checkIRQOutliar(lista):
     from numpy import percentile
     from numpy import mean
     from numpy import std
 
-    outliarZ=False
     outliarIRQ=False
 
 	# identify IRQ outliers
@@ -35,6 +34,16 @@ def checkOutliar(lista):
             outliarIRQ=True
             break
 
+
+    return outliarIRQ
+
+def checkZOutliar(lista):
+    from numpy import percentile
+    from numpy import mean
+    from numpy import std
+
+    outliarZ=False
+
 	# identify Z-score outliers
     mean, std = mean(lista), std(lista)
     cut_off = std * 3
@@ -46,7 +55,7 @@ def checkOutliar(lista):
             outliarZ=True
             break
 
-    return (outliarIRQ and outliarZ)
+    return outliarZ
 
 
 def computeN (modelFilename, listToTest):
@@ -121,7 +130,7 @@ def computeN (modelFilename, listToTest):
             if len(originalEntitiesPositions) > 8: # this is the 9th, let's start to check for outliars
                 newlist = list(originalEntitiesPositions)
                 newlist.append(idx) # add the new one
-                if checkOutliar(newlist):
+                if checkZOutliar(newlist):
                     print("Found outliar", ":", docCandidate, idx)
                     break # to discard the outliar, here we don't do it
             originalEntitiesPositions.append(idx)
