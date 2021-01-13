@@ -15,47 +15,8 @@ from textSimilarities import Doc2VecSimilarity as _Doc2VecSimilarity
 from aux_build import SortTuplaList_byPosInTupla as _SortTuplaList_byPosInTupla
 from aux_build import MODELS_FOLDER as _MODELS_FOLDER, CORPUS_FOLDER as _CORPUS_FOLDER, SCRAPPED_PAGES_FOLDER as _SCRAPPED_PAGES_FOLDER
 
-def checkIRQOutliar(lista):
-    from numpy import percentile
-    from numpy import mean
-    from numpy import std
+from aux_build import checkIRQOutliar as _checkIRQOutliar, checkZOutliar as _checkZOutliar
 
-    outliarIRQ=False
-
-	# identify IRQ outliers
-    q25, q75 = percentile(lista, 25), percentile(lista, 75)
-    iqr = q75 - q25
-    cut_off = iqr * 1.5
-    lower, upper = q25 - cut_off, q75 + cut_off
-
-    for pos in lista:
-        if (pos < lower) or (pos > upper):
-            print("IQR Outliar in", pos)
-            outliarIRQ=True
-            break
-
-
-    return outliarIRQ
-
-def checkZOutliar(lista):
-    from numpy import percentile
-    from numpy import mean
-    from numpy import std
-
-    outliarZ=False
-
-	# identify Z-score outliers
-    mean, std = mean(lista), std(lista)
-    cut_off = std * 3
-    lower, upper = mean - cut_off, mean + cut_off
-
-    for pos in lista:
-        if (pos < lower) or (pos > upper):
-            print("Z-score Outliar in", pos)
-            outliarZ=True
-            break
-
-    return outliarZ
 
 
 def computeN (modelFilename, listToTest):
@@ -120,30 +81,44 @@ def computeN (modelFilename, listToTest):
     # add prefix and sufix to get format    en.wikipedia.org/wiki..Title.txt   DANGER!!!! may be not this way in future
     listEntityDocsOriginalText  = list(map(lambda x: "en.wikipedia.org/wiki.."+x+".txt", listEntityTitlesOriginalText))
 
-    model = {} # to store results    model[doc] = (pos, sim)
+    model = {} # to store results    model[doc] = (pos, sim, outliar)
 
     # search the entities of the initial text
-    originalEntitiesPositions = []
+    outliar = False
+    validPositions = []
     for idx,docCandidate in enumerate(listOrdered_OnlyNames, start=1):
         if docCandidate in listEntityDocsOriginalText:  # one entity of the original text found in list
-            print("Found", docCandidate, "--- pos=", idx, "--- sim=", round(sims[docCandidate],3))
-            if len(originalEntitiesPositions) > 8: # this is the 9th, let's start to check for outliars
-                newlist = list(originalEntitiesPositions)
+            print("Found", docCandidate, "--- pos=", idx)
+            if (idx > 839) and not outliar: # above 1%, let's start to check for outliars
+                newlist = list(validPositions)
                 newlist.append(idx) # add the new one
-                if checkZOutliar(newlist):
+                if _checkZOutliar(newlist) and _checkIRQOutliar(newlist):
                     print("Found outliar", ":", docCandidate, idx)
-                    break # to discard the outliar, here we don't do it
-            originalEntitiesPositions.append(idx)
-            model[docCandidate] = (idx,sims[docCandidate])
+                    outliar=True
+            if not outliar:
+                validPositions.append(idx)
+            model[docCandidate] = (idx,sims[docCandidate],outliar)
 
-        if len(originalEntitiesPositions) == len(listEntityDocsOriginalText):  # all entities of the original text have been found in the list
+        if len(model) == len(listEntityDocsOriginalText):  # all entities of the original text have been found in the list
             break
         if idx == len(listOrdered_OnlyNames):
             print("ERROR!!!! alcanzado el final del conjunto sin encontrar todas las entidades")
 
+    for e in model:
+        print(e, model[e][0], model[e][2])
 
-    positions = [model[entity][0] for entity in model]  # the idx for every candidate found
-    media = statistics.mean(positions)  # full average position
+
+    positions = [model[entity][0] for entity in model]  # the idx for every candidate
+    media = statistics.mean(positions)  # average position
     print("N =", round(media,1))
+
+    positions = [model[entity][0] for entity in model if (model[entity][2] == False)]  # the idx for every candidate not outliar
+    media = statistics.mean(positions)  # average position removing outliars
+    print("N without outliars =", round(media,1))
+
+    positions = [model[entity][0] for entity in model]  # the idx for every candidate
+    positions = positions[:15] # the first 15 candidates
+    media = statistics.mean(positions)  # average position for 15 candidates
+    print("N for the first 15 =", round(media,1))
 
     return model

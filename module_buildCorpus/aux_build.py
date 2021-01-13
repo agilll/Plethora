@@ -250,3 +250,47 @@ def getSubjectComponents (subject):
 def separateSubjectComponents (subject):
 	components = subject.split("_")
 	return components
+
+
+
+def checkIRQOutliar(lista):
+    from numpy import percentile
+    from numpy import mean
+    from numpy import std
+
+    outliarIRQ=False
+
+	# identify IRQ outliers
+    q25, q75 = percentile(lista, 25), percentile(lista, 75)
+    iqr = q75 - q25
+    cut_off = iqr * 1.5
+    lower, upper = q25 - cut_off, q75 + cut_off
+
+    for pos in lista:
+        if (pos < lower) or (pos > upper):
+            print("*** IQR Outliar in", pos)
+            outliarIRQ=True
+            break
+
+
+    return outliarIRQ
+
+def checkZOutliar(lista):
+    from numpy import percentile
+    from numpy import mean
+    from numpy import std
+
+    outliarZ=False
+
+	# identify Z-score outliers
+    mean, std = mean(lista), std(lista)
+    cut_off = std * 3
+    lower, upper = mean - cut_off, mean + cut_off
+
+    for pos in lista:
+        if (pos < lower) or (pos > upper):
+            print("*** Z-score Outliar in", pos)
+            outliarZ=True
+            break
+
+    return outliarZ

@@ -14,7 +14,7 @@ from textSimilarities import Doc2VecSimilarity as _Doc2VecSimilarity
 from aux_build import SortTuplaList_byPosInTupla as _SortTuplaList_byPosInTupla
 from aux_build import MODELS_FOLDER as _MODELS_FOLDER, CORPUS_FOLDER as _CORPUS_FOLDER, SCRAPPED_PAGES_FOLDER as _SCRAPPED_PAGES_FOLDER
 
-EVALUATE  = 1000 # the number of candidates to evaluate (they are the number more similar)
+EVALUATE  = 30000 # the number of candidates to evaluate (they are the number more similar)
 
 _AP_D2V_MODEL = "doc2vec.bin"
 _HYB_D2V_MODEL = "hibrido.model"
@@ -35,7 +35,7 @@ except Exception as e:
 
 # listFull_OrderedAP for everyone, listTOP_OrderedAP for teh first 1000
 listTOP_OrderedAP = listFull_OrderedAP[:EVALUATE]
-listToTest = listTOP_OrderedAP
+listToTest = listFull_OrderedAP
 
 print("Starting multiple evaluation")
 
@@ -50,3 +50,27 @@ for x in range(1,11):
 models = {}
 for m in listModels:
     models[m]  = _computeN(m, listToTest)
+
+globalNumber=100
+for m in models:
+    thisNumber=0
+    for e in models[m]:
+        if models[m][e][2] == False:
+            thisNumber += 1
+    if thisNumber <  globalNumber:
+        globalNumber = thisNumber
+
+print("Numero a contabilizar para N = ", globalNumber)
+
+for m in models:
+    lista = []
+    number = 0
+    for e in models[m]:
+        if number < globalNumber:
+            lista.append(models[m][e][0])
+            number += 1
+        else:
+            break
+
+    media = statistics.mean(lista)  # full average position
+    print(m, "N =", round(media,1))

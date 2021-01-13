@@ -3,16 +3,18 @@
 # entrena un nuevo modelo con ese 5%
 # y vuelta a empezar, en cada iteracion un nuevo modelo
 
-modelTargetNumber = 1
+modelTargetNumber = 10
 
 import sys
 import os
 import csv
+import statistics
 
 sys.path.append('..')
 from px_DB_Manager import getCategoriesInText as _getCategoriesInText
 from aux_build import SortTuplaList_byPosInTupla as _SortTuplaList_byPosInTupla
 from aux_build import CORPUS_FOLDER as _CORPUS_FOLDER,  SCRAPPED_PAGES_FOLDER as _SCRAPPED_PAGES_FOLDER, MODELS_FOLDER as _MODELS_FOLDER
+from aux_build import checkIRQOutliar as _checkIRQOutliar, checkZOutliar as _checkZOutliar
 
 from textSimilarities import Doc2VecSimilarity as _Doc2VecSimilarity
 
@@ -33,6 +35,7 @@ distributed_memory = 1	# Defines the training algorithm. If dm=1, ‘distributed
 epochs = 100	# epochs (int, optional) – Number of iterations (epochs) over the corpus
 
 
+
 # read the initial text
 P0_originalTextFilename = _CORPUS_FOLDER+"1926/1926.ph1.txt"  # to compare similarity of .txt files
 with open(P0_originalTextFilename, 'r') as fp:
@@ -43,7 +46,7 @@ lengthFolder = _CORPUS_FOLDER+str(lenOriginalText)+"/"
 
 
 # read the relevant entities in the initial text
-entitiesFilename = _CORPUS_FOLDER+"1926/1926.ph1.txt.en"
+entitiesFilename = _CORPUS_FOLDER+"1926/1926.ph6.txt.en"
 with open(entitiesFilename) as fp:	# format    http://dbpedia.org/resource/Title
   listEntitiesOriginalText = fp.read().splitlines()
 
@@ -104,71 +107,57 @@ while True:
     _SortTuplaList_byPosInTupla(listOrdered, 1)  # order sims list by ad hoc d2v similarity
     listOrdered_OnlyNames = [doc for (doc, sim) in listOrdered]   # keep only the names of the docs
 
-    # compute N
-    SEARCH_ENTITIES = 1000 # the number of candidates to search the entities in
-    originalEntitiesPositions = []
+
+    model = {} # to store results    model[doc] = (pos, outliar)
+
     # search the entities of the initial text
-    for idx,name in enumerate(listOrdered_OnlyNames[:SEARCH_ENTITIES], start=1):
-        if name in listEntityDocsOriginalText:  # one entity of the original text found in list
-            originalEntitiesPositions.append(idx)
-            print("entity", name, "found in position", idx)
-        if len(originalEntitiesPositions) == len(listEntityDocsOriginalText):  # all entities of the original text have been found in the list
+    outliar = False
+    validPositions = []
+    for idx,docCandidate in enumerate(listOrdered_OnlyNames, start=1):
+        if docCandidate in listEntityDocsOriginalText:  # one entity of the original text found in list
+            print("Found", docCandidate, "--- pos=", idx)
+            if (idx > 839) and not outliar: # above 1%, let's start to check for outliars
+                newlist = list(validPositions)
+                newlist.append(idx) # add the new one
+                if _checkZOutliar(newlist) and _checkIRQOutliar(newlist):
+                    print("Found outliar", ":", docCandidate, idx)
+                    outliar=True
+            if not outliar:
+                validPositions.append(idx)
+            model[docCandidate] = (idx, outliar)
+
+        if len(model) == len(listEntityDocsOriginalText):  # all entities of the original text have been found in the list
             break
         if idx == len(listOrdered_OnlyNames):
             print("ERROR!!!! alcanzado el final del conjunto sin encontrar todas las entidades")
 
-    averagePosition = sum(originalEntitiesPositions) / len(originalEntitiesPositions)  # average position
-    print("D2V N average for this execution", "=", averagePosition)
+    for e in model:
+        print(e, model[e][0], model[e][1])
 
 
+    positions = [model[entity][0] for entity in model]  # the idx for every candidate
+    media = statistics.mean(positions)  # average position
+    print("N =", round(media,1))
 
-    max=0
-    media=0
-    for doc in listDocsCorpus:
-        pos = listOrdered_OnlyNames.index(doc)
-        media += pos
-        if pos > max:
-            max = pos
+    positions = [model[entity][0] for entity in model if (model[entity][1] == False)]  # the idx for every candidate not outliar
+    media = statistics.mean(positions)  # average position removing outliars
+    print("N without outliars =", round(media,1))
 
-    media = media/len(listDocsCorpus)
-
-	# save data in csv file
-    with open("order_eval_"+modelFilename+".csv", 'w') as csvFile:
-        fieldnames = ['Doc', 'POS_ap', 'SIM_ap', 'POS_new', 'SIM_new']	# Name columns
-        writer = csv.DictWriter(csvFile, fieldnames=fieldnames, delimiter=" ") # Create csv headers
-        writer.writeheader()	# Write the column headers
-
-        writer = csv.writer(csvFile, delimiter=' ')
-        for idx,pair in enumerate(listOrdered):
-            doc = pair[0]
-            sim = pair[1]
-            try:
-                writer.writerow([doc, listFull_OrderedAP.index(doc), simsAP[doc],  idx, sim])
-            except Exception as e:
-                print("Error writing csv with new similarities ("+str(e)+")")
-
-        csvFile.close()
+    positions = [model[entity][0] for entity in model]  # the idx for every candidate
+    positions = positions[:15] # the first 15 candidates
+    media = statistics.mean(positions)  # average position for 15 candidates
+    print("N for the first 15 =", round(media,1))
 
 
-
-    newCorpus = listOrdered_OnlyNames[:max]
-    print("Última posición de un miembro del corpus anterior en el nuevo ordenamiento=", max)
-    print("Posición media de un miembro del corpus anterior en el nuevo ordenamiento=", media)
-
-    print("Longitud del nuevo corpus=", len(newCorpus))
-    listDocsCorpus = list(newCorpus)
-
-
-
-
-    # nuevos=0
-    # for doc in listOrdered_OnlyNames:
-    #     if not doc in listDocsCorpus:
-    #         listDocsCorpus.append(doc)
-    #         nuevos += 1
-    #     if nuevos == 10:
-    #         break
-    # print("Le añado 10 nuevos")
+    INCREMENTO=100
+    nuevos=0
+    for doc in listOrdered_OnlyNames:
+        if not doc in listDocsCorpus:
+            listDocsCorpus.append(doc)
+            nuevos += 1
+        if nuevos == INCREMENTO:
+            break
+    print("Le he añadido", INCREMENTO, "nuevos")
 
 	# train a new model
     modelFilename = modelBaseFilename+"_"+str(iterations)
