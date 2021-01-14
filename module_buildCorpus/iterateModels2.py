@@ -3,7 +3,7 @@
 # entrena un nuevo modelo con ese 5%
 # y vuelta a empezar, en cada iteracion un nuevo modelo
 
-modelTargetNumber = 10
+modelTargetNumber = 2
 
 import sys
 import os
@@ -149,15 +149,14 @@ while True:
     print("N for the first 15 =", round(media,1))
 
 
-    INCREMENTO=100
+    INCREMENTO=1678
     nuevos=0
-    for doc in listOrdered_OnlyNames:
+    for doc in listOrdered_OnlyNames[:1678]:
         if not doc in listDocsCorpus:
             listDocsCorpus.append(doc)
             nuevos += 1
-        if nuevos == INCREMENTO:
-            break
-    print("Le he añadido", INCREMENTO, "nuevos")
+
+    print("Le he añadido", nuevos, "nuevos")
 
 	# train a new model
     modelFilename = modelBaseFilename+"_"+str(iterations)
