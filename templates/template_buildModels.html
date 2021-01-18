@@ -282,6 +282,14 @@
         defaultHyperparameters.forEach(param => createNewParamCard().find(`option[value="${param}"]`).attr("selected", "selected"))
         updateSelectOptionsInParamCards()
         logUpdate.init(() => updateGroupsView())
+        
+        $.ajax({
+            type: "GET",
+            url: SERVER_DIR + "/getKorpusPath",
+            success: function(result) {
+                $("#trainingOptions .inputPrefix").text(result.korpus)
+            }
+        })
 
     </script>
 
