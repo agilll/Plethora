@@ -226,6 +226,7 @@
                     updateGroupsView()
                     $("#createGroupButton").attr("disabled", "false")
                 },
+                error: function(res) {},
                 beforeSend: function() {logUpdate.push()},
                 complete: function() {logUpdate.pop()}
             })

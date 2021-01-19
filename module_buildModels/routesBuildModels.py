@@ -70,6 +70,15 @@ def buildAndTrainNewModelGroup():
     # actual absolute path of the 'training_docs_file'
     abs_training_docs_file = training_docs_file if training_docs_file.startswith("/") else korpus_dir + training_docs_file
 
+    # check query arguments validity. The http error code is always 400
+    # TODO do it with every argument
+    if not os.path.isfile(abs_training_docs_file):
+        LOG.append("ERROR: Invalid query argument 'training_docs_file' in /buildAndTrainNewModelGroup request")
+        return jsonify({
+            'reason': "invalid argument",
+            'msg': "training_docs_file argument does not refer to any existing file"
+        }), 400
+
     # opens the file with all training files paths and stores them in 'abs_training_files' variable. Each line may be
     # a relative path or a absolute path (if it starts with '/')
     with open(abs_training_docs_file) as df:
