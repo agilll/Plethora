@@ -1,5 +1,6 @@
+from model_groups import getAllD2VGroups as _getAllD2VGroups
+from model_groups import D2VModelGroup as _D2VModelGroup
 from itertools import zip_longest as zipl, product as prod
-from model_groups import D2VModelGroup, get_all_d2v_groups
 from gensim.models.doc2vec import TaggedDocument, Doc2Vec
 from gensim.parsing.preprocessing import remove_stopwords
 from gensim.utils import simple_preprocess
@@ -27,19 +28,25 @@ def getAllSavedD2VGroups():
     models_folder = request.args.get("models_folder")
     # this variable is the actual absolute path for the new models groups. If 'models_folder' doesn't start
     # with '/', means it is a relative path from the Corpus path
-    abs_models_folder = (models_folder if models_folder.startswith("/") else korpus_dir + models_folder) + "/" if not models_folder.endswith("/") else ""
+    if models_folder.startswith("/"):
+        abs_models_folder = models_folder
+    else:
+        abs_models_folder = korpus_dir + ("/" if not korpus_dir.endswith("/") else "") + models_folder  # add "/" if is necessary
 
     # append new server log message
     LOG.append("Get all saved D2V groups in DB")
 
     # get all saved models groups in the 'models_folder' path
-    groups = get_all_d2v_groups(abs_models_folder)
+    groups = _getAllD2VGroups(abs_models_folder)
 
     # return a list of groups. Each element is a dict with the group name and a list of models
-    return jsonify([{
-        'group': group.name,
-        'models': os.listdir(group.group_folder)
-    } for group in groups]), 200
+    groups_list = []
+    for group in groups:
+        groups_list.append({
+            'group': group.name,
+            'models': os.listdir(group.group_folder)
+        })
+    return jsonify(groups_list), 200
 
 
 # this function builds a new group of models and trains these models with a specific corpus. Then the new group is
@@ -65,9 +72,16 @@ def buildAndTrainNewModelGroup():
     params = request.get_json().get('params')
 
     # actual absolute path of the 'models_folder'
-    abs_models_folder = models_folder if models_folder.startswith("/") else korpus_dir + models_folder
+    if models_folder.startswith("/"):
+        abs_models_folder = models_folder
+    else:
+        abs_models_folder = korpus_dir + ("/" if not korpus_dir.endswith("/") else "") + models_folder  # add "/" if is necessary
+
     # actual absolute path of the 'training_docs_file'
-    abs_training_docs_file = training_docs_file if training_docs_file.startswith("/") else korpus_dir + training_docs_file
+    if training_docs_file.startswith("/"):
+        abs_training_docs_file = training_docs_file
+    else:
+        abs_training_docs_file = korpus_dir + ("/" if not korpus_dir.endswith("/") else "") + training_docs_file  # add "/" if is necessary
 
     # check query arguments validity. The http error code is always 400
     # TODO do it with every argument
@@ -99,8 +113,13 @@ def buildAndTrainNewModelGroup():
 
     # opens the file with all training files paths and stores them in 'abs_training_files' variable. Each line may be
     # a relative path or a absolute path (if it starts with '/')
+    abs_training_files = []
     with open(abs_training_docs_file) as df:
-        abs_training_files = [file.strip() if file.startswith("/") else korpus_dir + file.strip() for file in df]
+        for file in df:
+            if file.startswith("/"):
+                abs_training_files.append(file.strip())
+            else:
+                abs_training_files.append(korpus_dir + ("/" if not korpus_dir.endswith("/") else "") + file.strip())  # add "/" if is necessary
 
     training_texts = []  # each member is a text
 
@@ -108,7 +127,7 @@ def buildAndTrainNewModelGroup():
 
     # Add the content of the training_files to the training corpus (training_texts)
     for training_file in abs_training_files:
-        training_fd = open(training_file, "r")
+        training_fd = open(training_file, 'r')
         text = training_fd.read()
         training_texts.append(text)
 
@@ -127,7 +146,7 @@ def buildAndTrainNewModelGroup():
     #   [TaggedDocument(['word1','word2',...], ['0']), TaggedDocument(['word1','word2',...], ['1']), ...]
 
     # create an instance of D2VModelGroup
-    group = D2VModelGroup(group_name, abs_models_folder, autoload=False)  # autoload: True to add models, False to override
+    group = _D2VModelGroup(group_name, abs_models_folder, autoload=False)  # autoload: True to add models, False to override
     # create one model with parameters in each element of the parameters_list and adds them to the new group
     group.add([Doc2Vec(**hp) for hp in parameters_list])
 
@@ -151,12 +170,15 @@ def buildAndTrainNewModelGroup():
     LOG.append("The new group '%s' was saved!" % group_name)
 
     # return the new group in a dict with the name of the group and a list with all models in the group
-    return jsonify({
-        'group': group_name,
-        'models': [{
+    group_models = []
+    for i, model in enumerate(group):
+        group_models.append({
             'model': i,
             'total_training_time': model.total_train_time
-        } for i, model in enumerate(group)]
+        })
+    return jsonify({
+        'group': group_name,
+        'models': group_models
     }), 200
 
 
@@ -168,9 +190,14 @@ def getLog():
     idx = request.args.get('idx', default=0, type=int)
 
     # return a dict with the messages list of the runtime Log from the given index, and the last index number
-    return jsonify({'msgs': LOG[idx:], 'lastidx': len(LOG)-1}), 200
+    return jsonify({
+        'msgs': LOG[idx:],
+        'lastidx': len(LOG)-1
+    }), 200
 
 
 # this function simply returns the Corpus folder, defined directly in this script.
 def getKorpusPath():
-    return jsonify({'korpus': korpus_dir})
+    return jsonify({
+        'korpus': korpus_dir
+    })

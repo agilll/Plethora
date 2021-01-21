@@ -14,7 +14,7 @@ class D2VModelGroup:
         # folder path when the group folder will be saved
         self.models_folder = models_folder
         # folder path for the group. Models will be saved here
-        self.group_folder = self.models_folder + '/' + self.name
+        self.group_folder = self.models_folder + ("/" if not self.models_folder.endswith("/") else "") + self.name
         # models list
         self.models: list[Doc2Vec] = []
         if autoload:
@@ -46,13 +46,24 @@ class D2VModelGroup:
             m_id = self.get_next_model_id()
             # each model is saved with the same name pattern:
             #   <group_name>_id<model_id>_dm<param_dm>_ep<param_epochs>_vs<param_vectorsize>_wn<param_window>.d2v.model
-            mdl.save(self.group_folder + '/' + '%s_id%i_dm%i_ep%i_vs%i_wn%i.%s.model'
-                     % (self.name, m_id, mdl.dm, mdl.epochs, mdl.vector_size, mdl.window, 'd2v'))
+            mdl.save(self.group_folder + "/" + "%s_id%i_dm%i_ep%i_vs%i_wn%i.%s.model"
+                     % (self.name, m_id, mdl.dm, mdl.epochs, mdl.vector_size, mdl.window, "d2v"))
 
-    # Load all saved models in 'group_folder' to 'self.models' variable. Try to load ALL the files in the folder.
+    # Load all saved models in 'group_folder' to 'self.models' variable. Load all the files in the folder which
+    # end with the '.d2v.model' extension
     def load(self):
-        if os.path.isdir(self.group_folder):
-            self.models = [Doc2Vec.load(self.group_folder + '/' + mdl) for mdl in os.listdir(self.group_folder) if mdl.endswith('.d2v.model')]
+        # do nothing if the group folder does not exist. The new folder will be created when the group is saved
+        if not os.path.isdir(self.group_folder):
+            return
+
+        saved_models = []
+        # get all the files paths in the folder and load them to a new Doc2Vec instance
+        for model in os.listdir(self.group_folder):
+            if model.endswith(".d2v.model"):
+                d2v_model = Doc2Vec.load(self.group_folder + "/" + model)
+                saved_models.append(d2v_model)
+
+        self.models = saved_models
 
     # This function gets a new id for a new model in this group. Calculate the next unused number id in the group to
     # assign it to a new d2v model
@@ -67,7 +78,11 @@ class D2VModelGroup:
 
         # get all number ids from the name of all files. The name patters must be:
         #   <group_name>_id<model_id>_dm<param_dm>_ep<param_epochs>_vs<param_vectorsize>_wn<param_window>.d2v.model
-        models_ids = [int(filename.split('_')[1][len(self.name):]) for filename in os.listdir(self.group_folder)]  # TODO error with unknown files
+        models_ids = []
+        for filename in os.listdir(self.group_folder):
+            if filename.endswith(".d2v.model"):
+                model_id = filename.split("_")[1][len(self.name):]  # TODO error with wrong name formats
+                models_ids.append(int(model_id))
 
         # return 0 if there are no files in the folder
         if len(models_ids) == 0:
@@ -88,7 +103,14 @@ class D2VModelGroup:
 
 # This function gets all saved d2v groups in the given folder. The return is a list of instances of D2VModelGroup
 # with all the models of the group already loaded
-def get_all_d2v_groups(models_folder):
-    if os.path.isdir(models_folder):
-        return [D2VModelGroup(name=group_folder, models_folder=models_folder, autoload=True) for group_folder in os.listdir(models_folder) if os.path.isdir(models_folder + group_folder)]
-    return []
+def getAllD2VGroups(models_folder_path):
+    if not os.path.isdir(models_folder_path):
+        return []
+
+    saved_groups = []
+    for group_folder_name in os.listdir(models_folder_path):
+        if os.path.isdir(models_folder_path + ("/" if not models_folder_path.endswith("/") else "") + group_folder_name):
+            new_group = D2VModelGroup(name=group_folder_name, models_folder=models_folder_path, autoload=True)
+            saved_groups.append(new_group)
+
+    return saved_groups
