@@ -45,14 +45,14 @@ class D2VModelGroup:
         for mdl in self.models:
             m_id = self.get_next_model_id()
             # each model is saved with the same name pattern:
-            #   d2v_<group_name>_<model_id>_<param_dm>_<param_epochs>_<param_vectorsize>_<param_window>
-            mdl.save(self.group_folder + '/' + '%s_%s%i_%i_%i_%i_%i.m'
-                     % ('d2v', self.name, m_id, mdl.dm, mdl.epochs, mdl.vector_size, mdl.window))
+            #   <group_name>_id<model_id>_dm<param_dm>_ep<param_epochs>_vs<param_vectorsize>_wn<param_window>.d2v.model
+            mdl.save(self.group_folder + '/' + '%s_id%i_dm%i_ep%i_vs%i_wn%i.%s.model'
+                     % (self.name, m_id, mdl.dm, mdl.epochs, mdl.vector_size, mdl.window, 'd2v'))
 
     # Load all saved models in 'group_folder' to 'self.models' variable. Try to load ALL the files in the folder.
     def load(self):
         if os.path.isdir(self.group_folder):
-            self.models = [Doc2Vec.load(self.group_folder + '/' + mdl) for mdl in os.listdir(self.group_folder)]
+            self.models = [Doc2Vec.load(self.group_folder + '/' + mdl) for mdl in os.listdir(self.group_folder) if mdl.endswith('.d2v.model')]
 
     # This function gets a new id for a new model in this group. Calculate the next unused number id in the group to
     # assign it to a new d2v model
@@ -66,7 +66,7 @@ class D2VModelGroup:
             return 0
 
         # get all number ids from the name of all files. The name patters must be:
-        #   d2v_<group_name>_<model_id>_<param_dm>_<param_epochs>_<param_vectorsize>_<param_window>
+        #   <group_name>_id<model_id>_dm<param_dm>_ep<param_epochs>_vs<param_vectorsize>_wn<param_window>.d2v.model
         models_ids = [int(filename.split('_')[1][len(self.name):]) for filename in os.listdir(self.group_folder)]  # TODO error with unknown files
 
         # return 0 if there are no files in the folder

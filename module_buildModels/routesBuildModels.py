@@ -44,8 +44,7 @@ def getAllSavedD2VGroups():
 
 # this function builds a new group of models and trains these models with a specific corpus. Then the new group is
 # saved in the given path with this pattern name for each model:
-#   d2v_<group_name>_<model_id>_<param_dm>_<param_epochs>_<param_vectorsize>_<param_window>
-#
+#   <group_name>_id<model_id>_dm<param_dm>_ep<param_epochs>_vs<param_vectorsize>_wn<param_window>.d2v.model
 def buildAndTrainNewModelGroup():
     global LOG
 
@@ -79,11 +78,6 @@ def buildAndTrainNewModelGroup():
             'msg': "training_docs_file argument does not refer to any existing file"
         }), 400
 
-    # opens the file with all training files paths and stores them in 'abs_training_files' variable. Each line may be
-    # a relative path or a absolute path (if it starts with '/')
-    with open(abs_training_docs_file) as df:
-        abs_training_files = [file.strip() if file.startswith("/") else korpus_dir + file.strip() for file in df]
-
     # append new server log message
     LOG.append("Build the new '%s' models group '%s' in the folder '%s', with files in '%s'" % (models_type, group_name, abs_models_folder, abs_training_docs_file))
 
@@ -103,9 +97,14 @@ def buildAndTrainNewModelGroup():
             new_json[name] = value
         parameters_list.append(new_json)
 
-    LOG.append("Training with " + str(len(abs_training_files)) + " files")
+    # opens the file with all training files paths and stores them in 'abs_training_files' variable. Each line may be
+    # a relative path or a absolute path (if it starts with '/')
+    with open(abs_training_docs_file) as df:
+        abs_training_files = [file.strip() if file.startswith("/") else korpus_dir + file.strip() for file in df]
 
     training_texts = []  # each member is a text
+
+    LOG.append("Training with " + str(len(abs_training_files)) + " files")
 
     # Add the content of the training_files to the training corpus (training_texts)
     for training_file in abs_training_files:
@@ -114,7 +113,7 @@ def buildAndTrainNewModelGroup():
         training_texts.append(text)
 
     # remove stopwords, if specified, with Gensim remove_stopwords function
-    if (flag_remove_stopWords):
+    if flag_remove_stopWords:
         training_texts = [remove_stopwords(text) for text in training_texts]
 
     # preprocess each text (tokenize, lower, remove punctuation, remove <2 and >50 length words)
@@ -128,7 +127,7 @@ def buildAndTrainNewModelGroup():
     #   [TaggedDocument(['word1','word2',...], ['0']), TaggedDocument(['word1','word2',...], ['1']), ...]
 
     # create an instance of D2VModelGroup
-    group = D2VModelGroup(group_name, abs_models_folder, autoload=True)  # autoload: True to add models, False to override
+    group = D2VModelGroup(group_name, abs_models_folder, autoload=False)  # autoload: True to add models, False to override
     # create one model with parameters in each element of the parameters_list and adds them to the new group
     group.add([Doc2Vec(**hp) for hp in parameters_list])
 
