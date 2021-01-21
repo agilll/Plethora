@@ -115,47 +115,58 @@ def buildAndTrainNewModelGroup():
     # a relative path or a absolute path (if it starts with '/')
     abs_training_files = []
     with open(abs_training_docs_file) as df:
-        for file in df:
-            if file.startswith("/"):
-                abs_training_files.append(file.strip())
+        for file_path in df:
+            if file_path.startswith("/"):
+                abs_file_path = file_path.strip()
             else:
-                abs_training_files.append(korpus_dir + ("/" if not korpus_dir.endswith("/") else "") + file.strip())  # add "/" if is necessary
+                abs_file_path = korpus_dir + ("/" if not korpus_dir.endswith("/") else "") + file_path.strip()  # add "/" if is necessary
+            abs_training_files.append(abs_file_path)
 
-    training_texts = []  # each member is a text
+    tagged_training_lists = []
 
-    LOG.append("Training with " + str(len(abs_training_files)) + " files")
+    for i, training_file in enumerate(abs_training_files):
 
-    # Add the content of the training_files to the training corpus (training_texts)
-    for training_file in abs_training_files:
-        training_fd = open(training_file, 'r')
-        text = training_fd.read()
-        training_texts.append(text)
+        try:
+            # read and store the text in the file
+            training_fd = open(training_file, 'r')
+            text = training_fd.read()
 
-    # remove stopwords, if specified, with Gensim remove_stopwords function
-    if flag_remove_stopWords:
-        training_texts = [remove_stopwords(text) for text in training_texts]
+            # remove stopwords, if specified, with Gensim remove_stopwords function
+            if flag_remove_stopWords:
+                text = remove_stopwords(text)
 
-    # preprocess each text (tokenize, lower, remove punctuation, remove <2 and >50 length words)
-    training_lists = [simple_preprocess(text, max_len=50) for text in training_texts]
+            # preprocess the text (tokenize, lower, remove punctuation, remove <2 and >50 length words)
+            training_list = simple_preprocess(text, max_len=50)
 
-    # Tag the training lists (add an increasing number as tag)
-    tagged_training_lists = [TaggedDocument(words=l, tags=[i]) for i, l in enumerate(training_lists)]
+            # tag the training list (add an increasing number as tag)
+            tagged_training_list = TaggedDocument(words=training_list, tags=[i])
 
-    # this is the input for training.
-    # tagged_training_lists is a list:
-    #   [TaggedDocument(['word1','word2',...], ['0']), TaggedDocument(['word1','word2',...], ['1']), ...]
+            tagged_training_lists.append(tagged_training_list)
+            # this is the input for training.
+            # tagged_training_lists is a list:
+            #   [TaggedDocument(['word1','word2',...], ['0']), TaggedDocument(['word1','word2',...], ['1']), ...]
+
+        except Exception as e:
+            print(e)
+            LOG.append("Skipping the file %i in the training Corpus..." % i)
+
+    LOG.append("Training with " + str(len(tagged_training_lists)) + " files")
 
     # create an instance of D2VModelGroup
-    group = _D2VModelGroup(group_name, abs_models_folder, autoload=False)  # autoload: True to add models, False to override
+    group = _D2VModelGroup(group_name, abs_models_folder, autoload=False)  # autoload: True to add models to a existing group, False to override
+
     # create one model with parameters in each element of the parameters_list and adds them to the new group
     group.add([Doc2Vec(**hp) for hp in parameters_list])
 
     # train all models in the new group
     for i, model in enumerate(group):
+
         # append a new log message when each model starts the train
         LOG.append("Training the model %i in the group '%s'..." % (i, group_name))
+
         # build the vocabulary with all words in the training corpus
         model.build_vocab(tagged_training_lists, update=(model.corpus_total_words != 0))
+
         # train each model with all default hyperparameters (defined in the Doc2Vec instance build)
         model.train(
             documents=tagged_training_lists,
