@@ -44,7 +44,7 @@ def getAllSavedD2VGroups():
     for group in groups:
         groups_list.append({
             'group': group.name,
-            'models': os.listdir(group.group_folder)
+            'models': [model for model in os.listdir(group.group_folder) if model.endswith(".d2v.model")]
         })
     return jsonify(groups_list), 200
 
@@ -89,11 +89,11 @@ def buildAndTrainNewModelGroup():
         LOG.append("ERROR: Invalid query argument 'training_docs_file' in /buildAndTrainNewModelGroup request")
         return jsonify({
             'reason': "invalid argument",
-            'msg': "training_docs_file argument does not refer to any existing file"
+            'msg': "training_docs_file argument does refer to no existing file"
         }), 400
 
     # append new server log message
-    LOG.append("Build the new '%s' models group '%s' in the folder '%s', with files in '%s'" % (models_type, group_name, abs_models_folder, abs_training_docs_file))
+    LOG.append("Build new '%s' models group '%s' in folder '%s', with files in '%s'" % (models_type, group_name, abs_models_folder, abs_training_docs_file))
 
     parameters_list = []
     # store all hyperparameters names in 'params'
@@ -148,7 +148,7 @@ def buildAndTrainNewModelGroup():
 
         except Exception as e:
             print(e)
-            LOG.append("Skipping the file %i in the training Corpus..." % i)
+            LOG.append("Skipping file %i of the Training Corpus..." % i)
 
     LOG.append("Training with " + str(len(tagged_training_lists)) + " files")
 
@@ -162,7 +162,7 @@ def buildAndTrainNewModelGroup():
     for i, model in enumerate(group):
 
         # append a new log message when each model starts the train
-        LOG.append("Training the model %i in the group '%s'..." % (i, group_name))
+        LOG.append("Training model %i in group '%s'..." % (i, group_name))
 
         # build the vocabulary with all words in the training corpus
         model.build_vocab(tagged_training_lists, update=(model.corpus_total_words != 0))
@@ -174,11 +174,11 @@ def buildAndTrainNewModelGroup():
             epochs=model.epochs
         )
 
-    # save the group in the models_folder path. Creates a folder with the group name and saved the models inside
+    # save the group in models_folder path. Creates a folder with the group name and saved the models inside
     group.save()
 
     # append a new log message after saving the group
-    LOG.append("The new group '%s' was saved!" % group_name)
+    LOG.append("New group '%s' was saved!" % group_name)
 
     # return the new group in a dict with the name of the group and a list with all models in the group
     group_models = []
