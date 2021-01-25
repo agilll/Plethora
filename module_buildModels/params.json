@@ -98,6 +98,45 @@
         }
     ],
     "word2vec": [
-
+        {
+            "name": "size",
+            "abbreviation": "sze",
+            "format": "int-positive",
+            "optional": "true",
+            "default": 100,
+            "description": "Dimensionality of the word vectors."
+        },
+        {
+            "name": "window",
+            "abbreviation": "wnd",
+            "format": "int-positive",
+            "optional": "true",
+            "default": 5,
+            "description": "Maximum distance between the current and predicted word within a sentence."
+        },
+        {
+            "name": "iter",
+            "abbreviation": "ite",
+            "format": "int-positive",
+            "optional": "true",
+            "default": 5,
+            "description": "Number of iterations (epochs) over the corpus."
+        },
+        {
+            "name": "min_count",
+            "abbreviation": "mco",
+            "format": "int-positive",
+            "optional": "true",
+            "default": 1,
+            "description": "Ignores all words with total frequency lower than this."
+        },
+        {
+            "name": "workers",
+            "abbreviation": "wks",
+            "format": "int-positive",
+            "optional": "true",
+            "default": 3,
+            "description": "Number of working threads, used for multiprocessing. Use these many worker threads to train the model (=faster training with multicore machines)."
+        }
     ]
 }

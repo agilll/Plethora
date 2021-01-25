@@ -20,6 +20,10 @@
 
         <div id="trainingOptions"> <!-- Selects with build and train options -->
 
+            <h3>Models type:</h3><div><select id="modelsTypeSelect">
+                <option value="d2v" selected>Doc2Vec</option>
+                <option value="w2v">Word2Vec</option>
+            </select></div>
             <h3>Training documents file:</h3><div><a class="inputPrefix">KORPUS/</a><input id="trainingDocsFileInput" value="{{training_docs_file}}"></input></div>
             <h3>Models folder:</h3><div><a class="inputPrefix">KORPUS/</a><input id="modelsFolderInput" value="{{models_folder}}"></input></div>
 
@@ -47,7 +51,9 @@
 
         const SERVER_DIR = "http://localhost:6060"
 
-        var hyperparameters = [] // Ask server for hyperparams
+        var hyperparameters = [] // Ask server for params.json -> {d2v: [...], w2v: [...]}
+                                 // Select d2v or w2v params in the Object
+        var selectedTypeHyperparameters = [] // Update this array with hyperparameters.d2v or hyperparameters.w2v according to modelsTypeSelect
 
         const onezeroValuesPattern = /^$|^[0,1]$/
         const intValuesPattern = /^$|^(-?\d+((:-?\d+)?){2})(,(-?\d+((:-?\d+)?){2}))*$/
@@ -185,7 +191,7 @@
                     }
                 }
                 
-                let pFormat = hyperparameters.find(p => p.name === paramNameSelect.val()).format
+                let pFormat = selectedTypeHyperparameters.find(p => p.name === paramNameSelect.val()).format
                 
                 let pVal = $(paramValueInput).val()
 
@@ -211,7 +217,7 @@
 
             let newPlus = document.createElement('div')
             newPlus.classList.add('paramCard', 'plus')
-            $(newPlus).click(() => {if ($("#paramTable div.paramCard:not(.plus)").length < hyperparameters.length) createNewParamCard()})
+            $(newPlus).click(() => {if ($("#paramTable div.paramCard:not(.plus)").length < selectedTypeHyperparameters.length) createNewParamCard()})
             $("#paramTable").append($(newPlus))
 
             updateSelectOptionsInParamCards()
@@ -221,21 +227,20 @@
 
         // Update the options values in every ParamCard Select
         function updateSelectOptionsInParamCards() {
-
             let paramCardsSelects = $("#paramTable div.paramCard:not(.plus) select.paramName")
             let paramCardsSelectedOptionsValues = paramCardsSelects.find("option:selected").map((i, o) => o.value).toArray().filter(v => v)
-            let allOptionsValues = ["", ...hyperparameters.map(p => p.name)]
+            let allOptionsValues = ["", ...selectedTypeHyperparameters.map(p => p.name)]
 
-            // Update default value views
+            // Update default value views with param.json data (in 'selectedTypeHyperparameters')
             let paramCards = $("#paramTable div.paramCard:not(.plus)")
             paramCards.each(function(i, card) {
                 let pName = $(card).find("select option:selected").val()
                 let vMsgP = $(card).find(".valuesMessage")
-                let hpInfo = hyperparameters.find(p => p.name == pName)
+                let hpInfo = selectedTypeHyperparameters.find(p => p.name == pName)
                 if (hpInfo)
                     vMsgP.text(`Values ( ${hpInfo.default} )`)
                 else
-                    vMsgP.text(`Values ( _ )`)
+                    vMsgP.text("Values ( _ )")
             })
 
             // Check every Select of every param card
@@ -281,7 +286,7 @@
             let groupName = prompt('Escoja un nombre para el grupo: ', 'testgroup')
             if (groupName == null) return -1
 
-            let modelsType = "d2v" //TODO
+            let modelsType = $("#modelsTypeSelect option:selected").val()
             let trainingDocsFile = $("#trainingDocsFileInput").val()
             let modelsFolder = $("#modelsFolderInput").val()
 
@@ -289,7 +294,7 @@
             let cardsData = $(".paramCard .data")
             cardsData.each(function(i, cardData) {
                 let key = $(cardData).find("select[name='paramName']").val()
-                let value = parsePattern($(cardData).find("input[name='paramData']").val(), hyperparameters.find(p => p.name === key).format)
+                let value = parsePattern($(cardData).find("input[name='paramData']").val(), selectedTypeHyperparameters.find(p => p.name === key).format)
                 if (key.length > 0 && value.length > 0) params[key] = value
             })
 
@@ -345,15 +350,23 @@
             return values
         }
 
-        function addOptionsToSelectInput(select, optionsText) {
-            optionsText.forEach(txt => {
-                let option = document.createElement('option')
-                option.text = txt
-                option.value = txt.toLowerCase()
-                select.append(option)
-            });
+        function updateModelType() {
+            // get the new type
+            let selectedTypeVal = $("#modelsTypeSelect option:selected").val()
+
+            // select the w2v or d2v hparams according to the new type. Update 'selectedTypeHyperparameters'
+            if (selectedTypeVal === "w2v")
+                selectedTypeHyperparameters = hyperparameters.word2vec
+            else
+                selectedTypeHyperparameters = hyperparameters.doc2vec
+
+            // reset selected hyperparameters
+            $("#paramTable div.paramCard:not(.plus)").remove()
+
+            createNewParamCard()
         }
 
+        $("#modelsTypeSelect").change(updateModelType)
         $("#updateButton").click(updateGroupsView)
         $("#createGroupButton").click(collectParamsAndCreateGroup)
         $("#paramTable div .plus").click(createNewParamCard)
@@ -371,9 +384,9 @@
             type: "GET",
             url: SERVER_DIR + "/params",
             success: function(result) {
-                hyperparameters = result.doc2vec
-                hyperparameters.slice(0, 3).forEach(param => createNewParamCard().find(`option[value="${param.name}"]`).attr("selected", "selected"))
-                updateSelectOptionsInParamCards()
+                hyperparameters = result
+                $("#modelsTypeSelect option[value={{models_type}}]").attr("selected", "selected")
+                updateModelType()
             }
         })
 
