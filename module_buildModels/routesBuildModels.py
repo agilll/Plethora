@@ -30,15 +30,17 @@ def getAllSavedGroups():
     if models_folder.startswith("/"):
         abs_models_folder = models_folder
     else:
-        abs_models_folder = korpus_dir + ("/" if not korpus_dir.endswith("/") else "") + models_folder  # add "/" if is necessary
+        abs_models_folder = korpus_dir + ("/" if not korpus_dir.endswith("/") else "") + models_folder
+
+    abs_models_folder += "/" if not abs_models_folder.endswith("/") else ""  # is folder, so add "/" if is necessary
 
     # append new server log message
     LOG.append("Get all saved groups in DB")
 
     # get all saved D2V models groups in the 'models_folder' path
-    d2v_groups = _getAllD2VGroups(abs_models_folder)
+    d2v_groups = _getAllD2VGroups(abs_models_folder + "Doc2Vec")
     # get all saved W2V models groups in the 'models_folder' path
-    w2v_groups = _getAllW2VGroups(abs_models_folder)
+    w2v_groups = _getAllW2VGroups(abs_models_folder + "Word2Vec")
 
     # return a list of d2v and w2v groups. Each element is a dict with the group name and a list of models
     d2v_groups_list = []
@@ -86,13 +88,15 @@ def buildAndTrainNewModelGroup():
     if models_folder.startswith("/"):
         abs_models_folder = models_folder
     else:
-        abs_models_folder = korpus_dir + ("/" if not korpus_dir.endswith("/") else "") + models_folder  # add "/" if is necessary
+        abs_models_folder = korpus_dir + ("/" if not korpus_dir.endswith("/") else "") + models_folder
+
+    abs_models_folder += "/" if not abs_models_folder.endswith("/") else ""  # is folder, so add "/" if is necessary
 
     # actual absolute path of the 'training_docs_file'
     if training_docs_file.startswith("/"):
         abs_training_docs_file = training_docs_file
     else:
-        abs_training_docs_file = korpus_dir + ("/" if not korpus_dir.endswith("/") else "") + training_docs_file  # add "/" if is necessary
+        abs_training_docs_file = korpus_dir + ("/" if not korpus_dir.endswith("/") else "") + training_docs_file
 
     # check query arguments validity. The http error code is always 400
     # TODO do it with every argument
@@ -134,6 +138,7 @@ def buildAndTrainNewModelGroup():
             abs_training_files.append(abs_file_path)
 
     if models_type == "d2v":
+        abs_models_folder = abs_models_folder + ("/" if not abs_models_folder.endswith("/") else "") + "Doc2Vec/"
         new_group = _trainD2VGroupFromTxtFilePaths(
             training_files_paths=abs_training_files,
             models_folder=abs_models_folder,
@@ -144,6 +149,7 @@ def buildAndTrainNewModelGroup():
         )
 
     else:
+        abs_models_folder = abs_models_folder + ("/" if not abs_models_folder.endswith("/") else "") + "Word2Vec/"
         new_group = _trainW2VGroupFromTxtFilePaths(
             training_files_paths=abs_training_files,
             models_folder=abs_models_folder,

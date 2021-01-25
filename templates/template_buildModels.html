@@ -119,15 +119,17 @@
         }
 
         // Update the groups list (1.) with the saved groups
+        // TODO Separate D2Vs and W2Vs
         function updateGroupsView() {
             $("#updateButton").attr("enabled", "false")
             $.ajax({
                 type: "GET",
                 url: SERVER_DIR + "/getAllSavedGroups",
                 data: {"models_folder": $("#modelsFolderInput").val()},
-                success: function(result) {
+                success: function(result) { 
                     $("#groupsList").empty()
-                    result.doc2vec.forEach(group => {
+                    let concated_groups = [...result.doc2vec, ...result.word2vec]
+                    concated_groups.forEach(group => {
                         let groupDiv = document.createElement('div')
                         let groupTittle = document.createElement('h3')
                         let groupList = document.createElement('ol')

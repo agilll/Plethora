@@ -110,7 +110,8 @@ def getAllW2VGroups(models_folder_path):
 
     saved_groups = []
     for group_folder_name in os.listdir(models_folder_path):
-        if os.path.isdir(models_folder_path + ("/" if not models_folder_path.endswith("/") else "") + group_folder_name):
+        group_folder_path = models_folder_path + ("/" if not models_folder_path.endswith("/") else "") + group_folder_name
+        if os.path.isdir(group_folder_path):
             new_group = W2VModelGroup(name=group_folder_name, models_folder=models_folder_path, autoload=True)
             saved_groups.append(new_group)
 
