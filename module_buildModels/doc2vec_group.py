@@ -7,6 +7,7 @@ import os
 # If autoload flag is True, an already created group will be searched. If the group exists in
 # 'models_folder' (a folder named like the group name), saved models will be loaded in this group.
 class D2VModelGroup:
+    mtype = "d2v"
 
     def __init__(self, name, models_folder, autoload=False):
         # group name

@@ -1,9 +1,8 @@
-from model_groups import getAllD2VGroups as _getAllD2VGroups
-from model_groups import D2VModelGroup as _D2VModelGroup
+from doc2vec_group import getAllD2VGroups as _getAllD2VGroups
+from word2vec_group import getAllW2VGroups as _getAllW2VGroups
+from trainGroups import trainD2VGroupFromTxtFilePaths as _trainD2VGroupFromTxtFilePaths
+from trainGroups import trainW2VGroupFromTxtFilePaths as _trainW2VGroupFromTxtFilePaths
 from itertools import zip_longest as zipl, product as prod
-from gensim.models.doc2vec import TaggedDocument, Doc2Vec
-from gensim.parsing.preprocessing import remove_stopwords
-from gensim.utils import simple_preprocess
 from flask import request, jsonify
 import os
 
@@ -21,7 +20,7 @@ flag_remove_stopWords = True
 
 # this function obtains all saved groups (folders with models) in a specific path. This path is passed by a query
 # param called "models_folder"
-def getAllSavedD2VGroups():
+def getAllSavedGroups():
     global LOG
 
     # folder path where new models groups were saved
@@ -34,19 +33,30 @@ def getAllSavedD2VGroups():
         abs_models_folder = korpus_dir + ("/" if not korpus_dir.endswith("/") else "") + models_folder  # add "/" if is necessary
 
     # append new server log message
-    LOG.append("Get all saved D2V groups in DB")
+    LOG.append("Get all saved groups in DB")
 
-    # get all saved models groups in the 'models_folder' path
-    groups = _getAllD2VGroups(abs_models_folder)
+    # get all saved D2V models groups in the 'models_folder' path
+    d2v_groups = _getAllD2VGroups(abs_models_folder)
+    # get all saved W2V models groups in the 'models_folder' path
+    w2v_groups = _getAllW2VGroups(abs_models_folder)
 
-    # return a list of groups. Each element is a dict with the group name and a list of models
-    groups_list = []
-    for group in groups:
-        groups_list.append({
-            'group': group.name,
-            'models': [model for model in os.listdir(group.group_folder) if model.endswith(".d2v.model")]
+    # return a list of d2v and w2v groups. Each element is a dict with the group name and a list of models
+    d2v_groups_list = []
+    w2v_groups_list = []
+    for d2vg in d2v_groups:
+        d2v_groups_list.append({
+            'group': d2vg.name,
+            'models': [model for model in os.listdir(d2vg.group_folder) if model.endswith(".d2v.model")]
         })
-    return jsonify(groups_list), 200
+    for w2vg in w2v_groups:
+        w2v_groups_list.append({
+            'group': w2vg.name,
+            'models': [model for model in os.listdir(w2vg.group_folder) if model.endswith(".w2v.model")]
+        })
+    return jsonify({
+        "word2vec": w2v_groups_list,
+        "doc2vec": d2v_groups_list
+    }), 200
 
 
 # this function builds a new group of models and trains these models with a specific corpus. Then the new group is
@@ -122,67 +132,29 @@ def buildAndTrainNewModelGroup():
                 abs_file_path = korpus_dir + ("/" if not korpus_dir.endswith("/") else "") + file_path.strip()  # add "/" if is necessary
             abs_training_files.append(abs_file_path)
 
-    tagged_training_lists = []
-
-    for i, training_file in enumerate(abs_training_files):
-
-        try:
-            # read and store the text in the file
-            training_fd = open(training_file, 'r')
-            text = training_fd.read()
-
-            # remove stopwords, if specified, with Gensim remove_stopwords function
-            if flag_remove_stopWords:
-                text = remove_stopwords(text)
-
-            # preprocess the text (tokenize, lower, remove punctuation, remove <2 and >50 length words)
-            training_list = simple_preprocess(text, max_len=50)
-
-            # tag the training list (add an increasing number as tag)
-            tagged_training_list = TaggedDocument(words=training_list, tags=[i])
-
-            tagged_training_lists.append(tagged_training_list)
-            # this is the input for training.
-            # tagged_training_lists is a list:
-            #   [TaggedDocument(['word1','word2',...], ['0']), TaggedDocument(['word1','word2',...], ['1']), ...]
-
-        except Exception as e:
-            print(e)
-            LOG.append("Skipping file %i of the Training Corpus..." % i)
-
-    LOG.append("Training with " + str(len(tagged_training_lists)) + " files")
-
-    # create an instance of D2VModelGroup
-    group = _D2VModelGroup(group_name, abs_models_folder, autoload=False)  # autoload: True to add models to a existing group, False to override
-
-    # create one model with parameters in each element of the parameters_list and adds them to the new group
-    group.add([Doc2Vec(**hp) for hp in parameters_list])
-
-    # train all models in the new group
-    for i, model in enumerate(group):
-
-        # append a new log message when each model starts the train
-        LOG.append("Training model %i in group '%s'..." % (i, group_name))
-
-        # build the vocabulary with all words in the training corpus
-        model.build_vocab(tagged_training_lists, update=(model.corpus_total_words != 0))
-
-        # train each model with all default hyperparameters (defined in the Doc2Vec instance build)
-        model.train(
-            documents=tagged_training_lists,
-            total_examples=model.corpus_count,
-            epochs=model.epochs
+    if models_type == "d2v":
+        new_group = _trainD2VGroupFromTxtFilePaths(
+            training_files_paths=abs_training_files,
+            models_folder=abs_models_folder,
+            group_name=group_name,
+            parameters_list=parameters_list,
+            flag_remove_stopWords=flag_remove_stopWords,
+            LOG=LOG
         )
 
-    # save the group in models_folder path. Creates a folder with the group name and saved the models inside
-    group.save()
-
-    # append a new log message after saving the group
-    LOG.append("New group '%s' was saved!" % group_name)
+    else:
+        new_group = _trainW2VGroupFromTxtFilePaths(
+            training_files=abs_training_files,
+            models_folder=abs_models_folder,
+            group_name=group_name,
+            parameters_list=parameters_list,
+            flag_remove_stopWords=flag_remove_stopWords,
+            LOG=LOG
+        )
 
     # return the new group in a dict with the name of the group and a list with all models in the group
     group_models = []
-    for i, model in enumerate(group):
+    for i, model in enumerate(new_group):
         group_models.append({
             'model': i,
             'total_training_time': model.total_train_time
