@@ -29,7 +29,7 @@
 
         <div id="paramTable"><div class="paramCard plus"></div></div> <!-- Divs list to select multiple params -->
 
-        <div id="createGroupButton" class="button">Create group</div> <!-- Req /buildAndTrainNewModelGroup with all params -->
+        <div id="createGroupButton" class="button" enabled="true">Create group</div> <!-- Req /buildAndTrainNewModelGroup with all params -->
         
         <h2>1. Saved groups <div id="updateButton" class="button" enabled="true">Update view</div></h2> <!-- Req /getAllSavedD2VGroups to update the groups list -->
 
@@ -47,10 +47,19 @@
 
         const SERVER_DIR = "http://localhost:6060"
 
-        const naturalNumbersPattern = '^(\d+|\d+-\d+)((,(\d+|\d+-\d+))*)$' // Pattern checker for [0,1,2,...]
-        const hyperparameters = ['window', 'epochs', 'vector_size', 'workers'] // All hyperparameters
-        const defaultHyperparameters = ['window', 'epochs', 'vector_size'] // Default selected hyperparameters
-        const logUpdate = { // Log console handler
+        var hyperparameters = [] // Ask server for hyperparams
+
+        const onezeroValuesPattern = /^$|^[0,1]$/
+        const intValuesPattern = /^$|^(-?\d+((:-?\d+)?){2})(,(-?\d+((:-?\d+)?){2}))*$/
+        const intPositiveValuesPattern = /^$|^(\d+((:\d+)?){2})(,(\d+((:\d+)?){2}))*$/
+        const floatValuesPattern = /^$|^(-?\d+(\.\d+)?((:-?\d+(\.\d+)?)?){2})(,(-?\d+(\.\d+)?((:-?\d+(\.\d+)?)?){2}))*$/
+        const floatPositiveValuesPattern = /^$|^(\d+(\.\d+)?((:\d+(\.\d+)?)?){2})(,(\d+(\.\d+)?((:\d+(\.\d+)?)?){2}))*$/
+        
+        const defaultFloatValueStep = 0.1
+        const defaultNaturalValueStep = 1
+
+        // Log console handler
+        const logUpdate = {
             stack: [],
             lastLogIndex: -1,
             init: function(callback=()=>{}) {
@@ -103,7 +112,8 @@
             }
         }
 
-        function updateGroupsView() { // Update the groups list (1.) with the saved groups
+        // Update the groups list (1.) with the saved groups
+        function updateGroupsView() {
             $("#updateButton").attr("enabled", "false")
             $.ajax({
                 type: "GET",
@@ -137,7 +147,8 @@
             })
         }
 
-        function createNewParamCard() { // Adds another card to define a new parameter-value
+        // Adds another card to define a new parameter-value
+        function createNewParamCard() {
             let plusDiv = $("#paramTable .plus")
             
             let remDiv = $(document.createElement("div"))
@@ -146,14 +157,14 @@
             let paramNameSelect = $(document.createElement("select"))
             let paramValueP = $(document.createElement("p"))
             let paramValueInput = $(document.createElement("input"))
-            
+
             plusDiv.removeClass('plus')
             remDiv.addClass("rem")
             dataDiv.addClass("data")
             paramNameP.text("Param name")
             paramNameSelect.addClass("paramName").attr("name", "paramName")
             paramValueP.text("Param values")
-            paramValueInput.addClass("paramData").attr("name", "paramData").attr("type", "text").attr("placeholder", "5-10,15-20")
+            paramValueInput.addClass("paramData").attr("name", "paramData").attr("type", "text").attr("placeholder", "50:10:100").attr("valid", "true")
 
             plusDiv.off("click")
             remDiv.click(() => {plusDiv.remove(); updateSelectOptionsInParamCards()})
@@ -162,6 +173,42 @@
             plusDiv.append(remDiv, dataDiv)
             dataDiv.append(paramNameP, paramNameSelect, paramValueP, paramValueInput)
             
+            $(paramValueInput).on("input", function() {
+
+                let validFunc = function(valid) {
+                    if (valid == false) {
+                        $("#createGroupButton").attr("enabled", "false")
+                        $(paramValueInput).attr("valid", "false")
+                    } else {
+                        $("#createGroupButton").attr("enabled", "true")
+                        $(paramValueInput).attr("valid", "true")
+                    }
+                }
+                
+                let pFormat = hyperparameters.find(p => p.name === paramNameSelect.val()).format
+                
+                let pVal = $(paramValueInput).val()
+
+                switch(pFormat) {
+                    case "onezero":
+                        validFunc(onezeroValuesPattern.test(pVal))
+                        break
+                    case "int":
+                        validFunc(intValuesPattern.test(pVal))
+                        break
+                    case "int-positive":
+                        validFunc(intPositiveValuesPattern.test(pVal))
+                        break
+                    case "float":
+                        validFunc(floatValuesPattern.test(pVal))
+                        break
+                    case "float-positive":
+                        validFunc(floatPositiveValuesPattern.test(pVal))
+                        break
+                }
+                
+            })
+
             let newPlus = document.createElement('div')
             newPlus.classList.add('paramCard', 'plus')
             $(newPlus).click(() => {if ($("#paramTable div.paramCard:not(.plus)").length < hyperparameters.length) createNewParamCard()})
@@ -172,35 +219,52 @@
             return plusDiv
         }
 
+        // Update the options values in every ParamCard Select
         function updateSelectOptionsInParamCards() {
             let paramCardsSelects = $("#paramTable div.paramCard:not(.plus) select.paramName")
             let paramCardsSelectedOptionsValues = paramCardsSelects.find("option:selected").map((i, o) => o.value).toArray().filter(v => v)
-            let allOptionsValues = ["", ...hyperparameters]
+            let allOptionsValues = ["", ...hyperparameters.map(p => p.name)]
 
+            // Check every Select of every param card
             paramCardsSelects.each((i, select) => {
 
+                // Get all options in this select
                 let options = $(select).find("option")
+                // Get the selected option in this select
                 let selectedOption = $(select).find("option:selected")
 
+                // Remove all options that were already selected in another select
                 options.each((i, option) => {
-                    let val = $(option).val()
-                    if (paramCardsSelectedOptionsValues.includes(val) && val !== selectedOption.val())
+                    let optionVal = $(option).val()
+                    if (paramCardsSelectedOptionsValues.includes(optionVal) && optionVal !== selectedOption.val())
                         $(option).remove()
                 })
 
+                // Insert all free options
                 allOptionsValues.forEach(v => {
-                    let optionsValues = $(select).find("option").map((i, o) => o.value).toArray() 
+                    // Get all options values of this select (stores in array)
+                    let optionsValues = $(select).find("option").map((i, o) => o.value).toArray()
+                    // Insert the new option if the value is not already in this Select or is selected in another Select
                     if (!optionsValues.includes(v) && !paramCardsSelectedOptionsValues.includes(v)) {
-                        let sortedIndex = optionsValues.indexOf(optionsValues.find(p => v < p))
-                        select.insertBefore($(document.createElement("option")).val(v).text(v ? v : " - select param - ")[0], select.children[sortedIndex])
+                        let newOption = $(document.createElement("option")).val(v).text(v ? v : " - select param - ")[0]
+                        // Index of the next element from this new option 
+                        // (options are sorted according to server response array)
+                        let sortedIndex = optionsValues.indexOf(optionsValues.find(p => {
+                            let pPrio = allOptionsValues.indexOf(p)
+                            let vPrio = allOptionsValues.indexOf(v)
+                            return pPrio > vPrio
+                        }))
+                        // Insert the new option before the element in sortedIndex
+                        select.insertBefore(newOption, select.children[sortedIndex])
                     }
                 })
 
             })
         }
 
-        function collectParamsAndCreateGroup() { // Collects parameter-value pairs from all cards and makes a POST request to /buildAndTrainNewModelGroup
-            $("#createGroupButton").attr("disabled", "true")
+        // Collects parameter-value pairs from all cards and makes a POST request to /buildAndTrainNewModelGroup
+        function collectParamsAndCreateGroup() {
+            $("#createGroupButton").attr("enabled", "false")
             let groupName = prompt('Escoja un nombre para el grupo: ', 'testgroup')
             if (groupName == null) return -1
 
@@ -212,7 +276,7 @@
             let cardsData = $(".paramCard .data")
             cardsData.each(function(i, cardData) {
                 let key = $(cardData).find("select[name='paramName']").val()
-                let value = parsePattern($(cardData).find("input[name='paramData']").val(), 'naturals')
+                let value = parsePattern($(cardData).find("input[name='paramData']").val(), hyperparameters.find(p => p.name === key).format)
                 if (key.length > 0 && value.length > 0) params[key] = value
             })
 
@@ -224,7 +288,7 @@
                 success: function(result) {
                     console.log(result)
                     updateGroupsView()
-                    $("#createGroupButton").attr("disabled", "false")
+                    $("#createGroupButton").attr("enabled", "true")
                 },
                 error: function(res) {},
                 beforeSend: function() {logUpdate.push()},
@@ -232,29 +296,35 @@
             })
         }
 
-        function parsePattern(input, type) { // Transforms the input pattern into a sorted list of numbers
-            switch (type) {
-                case 'naturals':
-                    let values = []
-                    input.split(',').forEach(v => {
-                        if (v.includes('-')) {
-                            let markers = v.split('-')
-                            let vInit = parseInt(markers[0])
-                            let vEnd = parseInt(markers[1])
-                            if (vInit <= vEnd)
-                                for (let i = vInit; i <= vEnd; i++) values.push(i)
-                            else
-                                for (let i = vInit; i >= vEnd; i--) values.push(i)
-                        } else {
-                            if (parseInt(v)) values.push(parseInt(v))
-                        }
-                    });
-                    if (values.length > 0) return [...new Set(values)].sort((a, b) => a - b)
-                    else return []
+        // Transforms the input pattern into a sorted list of numbers
+        function parsePattern(input, type) {
+            console.log(type)
+            let values = []
 
-                default:
-                    break
-            }
+            input.split(',').forEach(elem => {
+                nrange = elem.split(':')
+
+                if (nrange.length == 1) {
+                    values.push(parseFloat(nrange))
+
+                } else if (nrange.length == 2) {
+                    let vInit = parseFloat(nrange[0])
+                    let vEnd = parseFloat(nrange[1])
+                    if (vInit < vEnd)
+                        for (let i = vInit; i <= vEnd; i += defaultFloatStep) values.push(i)
+                    else
+                        for (let i = vInit; i >= vEnd; i -= defaultFloatStep) values.push(i)
+
+                } else if (nrange.length == 3) {
+                    let vInit = parseFloat(nrange[0])
+                    let vEnd = parseFloat(nrange[2])
+                    let step = parseFloat(nrange[1])
+                    if (step > 0)
+                        for (let i = vInit; i <= vEnd; i += step) values.push(i)
+                    else
+                        for (let i = vInit; i >= vEnd; i -= step) values.push(i)
+                }
+            })
         }
 
         function addOptionsToSelectInput(select, optionsText) {
@@ -268,7 +338,7 @@
 
         $("#updateButton").click(updateGroupsView)
         $("#createGroupButton").click(collectParamsAndCreateGroup)
-        $("#paramTable div").click(createNewParamCard)
+        $("#paramTable div .plus").click(createNewParamCard)
         $("#trainingOptions div").each((i, option) => {
             let input = $(option).find("input")
             let prefix = $(option).find("a.inputPrefix")
@@ -279,9 +349,16 @@
                     prefix.show()
             })
         })
+        $.ajax({
+            type: "GET",
+            url: SERVER_DIR + "/params",
+            success: function(result) {
+                hyperparameters = result
+                hyperparameters.slice(0, 3).forEach(param => createNewParamCard().find(`option[value="${param.name}"]`).attr("selected", "selected"))
+                updateSelectOptionsInParamCards()
+            }
+        })
 
-        defaultHyperparameters.forEach(param => createNewParamCard().find(`option[value="${param}"]`).attr("selected", "selected"))
-        updateSelectOptionsInParamCards()
         logUpdate.init(() => updateGroupsView())
         
         $.ajax({

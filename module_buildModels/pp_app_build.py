@@ -19,6 +19,11 @@ def send_css(path):
     return send_from_directory('../css', path)
 
 
+@app.route('/params')
+def send_params():
+    return send_from_directory(".", "params.json")
+
+
 # Flask routes binding for interface requests
 app.add_url_rule("/getLog", "getLog", _getLog, methods=["GET"])
 app.add_url_rule("/getKorpusPath", "getKorpusPath", _getKorpusPath, methods=["GET"])

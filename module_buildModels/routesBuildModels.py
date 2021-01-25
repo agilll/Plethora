@@ -96,9 +96,9 @@ def buildAndTrainNewModelGroup():
     LOG.append("Build new '%s' models group '%s' in folder '%s', with files in '%s'" % (models_type, group_name, abs_models_folder, abs_training_docs_file))
 
     parameters_list = []
-    # store all hyperparameters names in 'params'
+    # store all hyperparameters names
     nlist = [name for name in params.keys() if len(params[name]) > 0]
-    # store all values lists in 'params'
+    # store all values lists
     vlist = [params[name] for name in nlist]
     # compute the cartesian product of the values lists. The result is a list of lists with all combinations
     # of all values
