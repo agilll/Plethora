@@ -62,6 +62,7 @@ def getAllSavedGroups():
 # this function builds a new group of models and trains these models with a specific corpus. Then the new group is
 # saved in the given path with this pattern name for each model:
 #   <group_name>_id<model_id>_dm<param_dm>_ep<param_epochs>_vs<param_vectorsize>_wn<param_window>.d2v.model
+#   <group_name>_id<model_id>_it<param_iter>_sz<param_size>_wn<param_window>.w2v.model
 def buildAndTrainNewModelGroup():
     global LOG
 
@@ -144,7 +145,7 @@ def buildAndTrainNewModelGroup():
 
     else:
         new_group = _trainW2VGroupFromTxtFilePaths(
-            training_files=abs_training_files,
+            training_files_paths=abs_training_files,
             models_folder=abs_models_folder,
             group_name=group_name,
             parameters_list=parameters_list,

@@ -118,7 +118,7 @@ def trainW2VGroupFromTxtFilePaths(training_files_paths, models_folder, group_nam
 
         # train each model with all default hyperparameters (defined in the Doc2Vec instance build)
         model.train(
-            documents=training_lists,
+            sentences=training_lists,
             total_examples=model.corpus_count,
             epochs=model.epochs
         )

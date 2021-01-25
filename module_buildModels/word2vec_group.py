@@ -46,9 +46,9 @@ class W2VModelGroup:
         for mdl in self.models:
             m_id = self.get_next_model_id()
             # each model is saved with the same name pattern:
-            #   <group_name>_id<model_id>_dm<param_dm>_ep<param_epochs>_vs<param_vectorsize>_wn<param_window>.w2v.model
-            mdl.save(self.group_folder + "/" + "%s_id%i_dm%i_ep%i_vs%i_wn%i.%s.model"
-                     % (self.name, m_id, mdl.dm, mdl.epochs, mdl.vector_size, mdl.window, "w2v"))
+            #   <group_name>_id<model_id>_it<param_iter>_sz<param_size>_wn<param_window>.w2v.model
+            mdl.save(self.group_folder + "/" + "%s_id%i_it%i_sz%i_wn%i.%s.model"
+                     % (self.name, m_id, mdl.iter, mdl.vector_size, mdl.window, "w2v"))
 
     # Load all saved models in 'group_folder' to 'self.models' variable. Load all the files in the folder which
     # end with the '.w2v.model' extension
@@ -78,7 +78,7 @@ class W2VModelGroup:
             return 0
 
         # get all number ids from the name of all files. The name patters must be:
-        #   <group_name>_id<model_id>_dm<param_dm>_ep<param_epochs>_vs<param_vectorsize>_wn<param_window>.w2v.model
+        #   <group_name>_id<model_id>_it<param_iter>_sz<param_size>_wn<param_window>.w2v.model
         models_ids = []
         for filename in os.listdir(self.group_folder):
             if filename.endswith(".w2v.model"):
