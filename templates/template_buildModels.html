@@ -4,7 +4,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
-    <title>Train Tool</title>
+    <title>Word embeddings custom training tool</title>
 
     <link rel="stylesheet" href="../css/style_buildModels.css">
 </head>
@@ -14,18 +14,44 @@
 
     <div id="info"> <!-- Interface -->
 
-        <h1>Custom Train Tool</h1>
+        <h1>Word embeddings custom training tool</h1>
 
         <h2>0. Create a group of D2V models with multiple parameters</h2>
 
         <div id="trainingOptions"> <!-- Selects with build and train options -->
 
-            <h3>Models type:</h3><div><select id="modelsTypeSelect">
-                <option value="d2v" selected>Doc2Vec</option>
-                <option value="w2v">Word2Vec</option>
-            </select></div>
-            <h3>Training documents file:</h3><div><a class="inputPrefix">KORPUS/</a><input id="trainingDocsFileInput" value="{{training_docs_file}}"></input></div>
-            <h3>Models folder:</h3><div><a class="inputPrefix">KORPUS/</a><input id="modelsFolderInput" value="{{models_folder}}"></input></div>
+            <h3>Models type:</h3>
+            <div class="training-option-div">
+                <div>
+                    <select id="modelsTypeSelect">
+                        <option value="d2v" selected>Doc2Vec</option>
+                        <option value="w2v">Word2Vec</option>
+                    </select>
+                </div>
+            </div>
+
+            <h3>Training documents file:</h3>
+            <div class="training-option-div">
+
+                <div class="inline-div">
+                    <span id="trainingDocsFilePrefix" class="input-prefix">KORPUS/</span>
+                    <input id="trainingDocsFileInput" class="input-after-prefix" value="{{training_docs_file}}" type="text"></input>
+                </div>
+
+                <div id="trainingPercentDiv" class="inline-div">
+                        <input id="trainingPercentInput" type="number" min="0" max="100" value=50></input>
+                        <a id="trainingPercentInputSuffix">%</a>
+                </div>
+
+            </div>
+            
+            <h3>Models folder:</h3>
+            <div class="training-option-div">
+                <div>
+                    <span id="modelsFolderPrefix" class="input-prefix">KORPUS/</span>
+                    <input id="modelsFolderInput" class="input-after-prefix" value="{{models_folder}}"></input>
+                </div>
+            </div>
 
         </div>
 
@@ -290,7 +316,7 @@
 
             let modelsType = $("#modelsTypeSelect option:selected").val()
             let trainingDocsFile = $("#trainingDocsFileInput").val()
-            let percentageTrainingCorpus = 1 //TODO use
+            let percentageTrainingCorpus = $("#trainingPercentInput").val()
             let modelsFolder = $("#modelsFolderInput").val()
             
             let params = {}
@@ -375,14 +401,14 @@
 
             createNewParamCard()
         }
-
+        
         $("#modelsTypeSelect").change(updateModelType)
         $("#updateButton").click(updateGroupsView)
         $("#createGroupButton").click(collectParamsAndCreateGroup)
         $("#paramTable div .plus").click(createNewParamCard)
         $("#trainingOptions div").each((i, option) => {
             let input = $(option).find("input")
-            let prefix = $(option).find("a.inputPrefix")
+            let prefix = $(option).find("a.input-prefix")
             input.on("input", function() {
                 if (input.val().startsWith("/"))
                     prefix.hide()
@@ -406,8 +432,20 @@
             type: "GET",
             url: SERVER_DIR + "/getKorpusPath",
             success: function(result) {
-                $("#trainingOptions .inputPrefix").text(result.korpus)
+                $("#trainingDocsFilePrefix").text(result.korpus)
+                $("#modelsFolderPrefix").text(result.korpus)
             }
+        })
+
+        $("#trainingPercentInput").change(function() {
+            let val = parseInt($("#trainingPercentInput").val())
+            if (!val || typeof val !== "number")
+                val = 0
+            else if (val > 100)
+                val = 100
+            else if (val < 0)
+                val = 0
+            $("#trainingPercentInput").val(val)
         })
 
     </script>

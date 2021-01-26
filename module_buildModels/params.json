@@ -37,7 +37,7 @@
             "abbreviation": "eps",
             "format": "int-positive",
             "optional": "true",
-            "default": 5,
+            "default": 50,
             "description": "Number of iterations (epochs) over the corpus."
         },
         {
@@ -119,7 +119,7 @@
             "abbreviation": "ite",
             "format": "int-positive",
             "optional": "true",
-            "default": 5,
+            "default": 50,
             "description": "Number of iterations (epochs) over the corpus."
         },
         {

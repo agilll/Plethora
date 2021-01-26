@@ -4,6 +4,7 @@ from trainGroups import trainD2VGroupFromTxtFilePaths as _trainD2VGroupFromTxtFi
 from trainGroups import trainW2VGroupFromTxtFilePaths as _trainW2VGroupFromTxtFilePaths
 from itertools import zip_longest as zipl, product as prod
 from flask import request, jsonify
+import json
 import os
 
 # string array for the new logs
@@ -114,18 +115,32 @@ def buildAndTrainNewModelGroup():
         percentage_training_corpus = 0
     elif int(percentage_training_corpus) > 100:
         percentage_training_corpus = 100
+    else:
+        percentage_training_corpus = int(percentage_training_corpus)
 
     # append new server log message
     LOG.append("Build new '%s' models group '%s' in folder '%s', with files in '%s'" % (models_type, group_name, abs_models_folder, abs_training_docs_file))
 
     parameters_list = []
+
     # store all hyperparameters names
     nlist = [name for name in params.keys() if len(params[name]) > 0]
     # store all values lists
     vlist = [params[name] for name in nlist]
-    # compute the cartesian product of the values lists. The result is a list of lists with all combinations
-    # of all values
+
+    # add the default value of all other parameters (not received in the request).
+    # these values are extracted from the file params.json
+    with open('params.json') as params_file:
+        all_hparams_json = json.load(params_file)
+        all_hparams_json = all_hparams_json["word2vec"] if models_type == "w2v" else all_hparams_json["doc2vec"]
+        not_defined_hparams = [hp for hp in all_hparams_json if hp["name"] not in nlist]
+        nlist.extend([ndhp["name"] for ndhp in not_defined_hparams])
+        vlist.extend([[ndhp["default"]] for ndhp in not_defined_hparams])
+
+    # compute the cartesian product of the values lists. The result is a list of lists with
+    # all combinations of all values
     values_prod = prod(*vlist)
+
     # fill 'parameters_list' with a list of dicts with each combination of parameters:
     #   [{vector_size: 10, window: 10}, {vector_size: 10, window: 11}, {vector_size: 10, window: 12}, ...]
     for values in values_prod:
@@ -133,6 +148,8 @@ def buildAndTrainNewModelGroup():
         for name, value in zipl(nlist, values, fillvalue=None):
             new_json[name] = value
         parameters_list.append(new_json)
+
+    print(parameters_list)
 
     # opens the file with all training files paths and stores them in 'abs_training_files' variable. Each line may be
     # a relative path or a absolute path (if it starts with '/')
@@ -145,6 +162,9 @@ def buildAndTrainNewModelGroup():
                 abs_file_path = korpus_dir + ("/" if not korpus_dir.endswith("/") else "") + file_path.strip()  # add "/" if is necessary
             abs_training_files.append(abs_file_path)
 
+    # call _trainD2VGroupFromTxtFilePaths to create the new group of d2v or w2v models and train
+    # them with the received hyperparameters ('parameters_list'). This function also apply the percentage to the
+    # training corpus ('percentage_training_corpus' to 'abs_training_files')
     if models_type == "d2v":
         abs_models_folder = abs_models_folder + ("/" if not abs_models_folder.endswith("/") else "") + "Doc2Vec/"
         new_group = _trainD2VGroupFromTxtFilePaths(

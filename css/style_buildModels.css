@@ -1,8 +1,6 @@
-/*
-* {
+/* * {
     outline: 2px dotted red;
-}
-*/
+} */
 
 html {
     height: 100%;
@@ -30,17 +28,17 @@ h1, h2, h3 {
     margin-top: 10px;
     margin-bottom: 10px;
 }
+
 .button:active {
     background-color: #0251a0;
     box-shadow: 0 0 15px 1px rgba(0, 0, 0, 0.8);
 }
+
 .button[enabled="false"] {
     background-color: #000000;
     pointer-events: none;
     cursor: default;
 }
-
-
 
 #info {
     width: 70%;
@@ -49,6 +47,7 @@ h1, h2, h3 {
 #console p::before {
     content: " >> ";
 }
+
 #console {
     position: fixed;
     top: 0;
@@ -64,20 +63,66 @@ h1, h2, h3 {
 }
 
 
-
-
 #trainingOptions select, #trainingOptions input {
     margin: 10px;
     padding: 10px;
     border-radius: 8px;
 }
+
 #trainingOptions select {
     display: block;
 }
+
 #trainingOptions input {
     text-align: left;
 }
 
+#trainingOptions .input-prefix {
+    min-width: fit-content;
+    max-width: 300px;
+    border-radius: 8px 0px 0px 8px;
+    color: #555;
+    background-color: #eee;
+    text-align: right;
+    margin: 10px;
+    padding: 10px;
+    margin-right: 0;
+    padding-right: 5px;
+    border: 1px solid #ccc;
+    font-size: medium;
+}
+
+#trainingOptions .input-after-prefix {
+    border-radius: 0px 8px 8px 0px;
+    margin: 10px;
+    padding: 10px;
+    margin-left: 0;
+    padding-left: 5px;
+    border: 1px solid #ccc;
+    font-size: medium;
+}
+
+#trainingPercentDiv {
+    margin-right: 0;
+    padding-right: 0;
+}
+
+#trainingPercentInput {
+    width: 60px;
+    font-weight: bold;
+    font-size: medium;
+}
+
+#trainingPercentInputSuffix {
+    margin-left: -3.3em;
+    font-weight: bold;
+    font-size: medium;
+}
+
+.inline-div {
+    display: table-cell;
+    vertical-align: middle;
+}
 
 .paramCard {
     display: inline-table;
@@ -89,9 +134,6 @@ h1, h2, h3 {
     border-color: red;
 }
 
-
-
-
 .plus::before {
     content: "+";
 }
@@ -99,9 +141,6 @@ h1, h2, h3 {
     box-shadow: 0 0 15px 1px rgba(0, 0, 0, 0.2);
     background-color: rgba(0, 255, 0, 0.1);
 }
-
-
-
 
 .rem::before {
     content: "-";
@@ -115,9 +154,6 @@ h1, h2, h3 {
     background-color: rgba(255, 0, 0, 0.1);
 
 }
-
-
-
 
 #groupsList div:active {
     box-shadow: 0 0 15px 1px rgba(0, 0, 0, 0.8);
