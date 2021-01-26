@@ -81,7 +81,7 @@ def trainW2VGroupFromTxtFilePaths(training_files_paths, models_folder, group_nam
     training_files_paths = training_files_paths[:int(len(training_files_paths)*percentage_training_corpus/100)]
 
     if LOG:
-        LOG.append("Training with %i files (%i% of the Corpus)" % (len(training_files_paths), percentage_training_corpus))
+        LOG.append("Training with %i files (%i%% of the Corpus)" % (len(training_files_paths), percentage_training_corpus))
 
     for i, training_file in enumerate(training_files_paths):
         try:
