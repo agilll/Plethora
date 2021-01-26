@@ -18,9 +18,9 @@ Open the template in the browser -- http://localhost:6060/train
 
 **NOTE:** On the template you can add any model parameter with a simple pattern as its value. At the moment, this is how the pattern works:
 
-    vector_size = "1-5,7-9"
+    vector_size = "0:2:10,20:25"
 
-    processPattern("1-5,7-9") --> [1,2,3,4,5,7,8,9]
+    processPattern("0:2:4,10:13") --> [0, 2, 4, 10, 11, 12, 13]
 
 ### API
 
