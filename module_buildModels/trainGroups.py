@@ -6,8 +6,14 @@ from gensim.parsing.preprocessing import remove_stopwords
 from gensim.utils import simple_preprocess
 
 
-def trainD2VGroupFromTxtFilePaths(training_files_paths, models_folder, group_name, parameters_list, flag_remove_stopWords=False, LOG=None):
+def trainD2VGroupFromTxtFilePaths(training_files_paths, models_folder, group_name, parameters_list, percentage_training_corpus=100, flag_remove_stopWords=False, LOG=None):
     tagged_training_lists = []
+
+    # apply the percentage_training_corpus to the corpus files number
+    training_files_paths = training_files_paths[:int(len(training_files_paths)*percentage_training_corpus/100)]
+
+    if LOG:
+        LOG.append("Training with %i files (%i%% of the Corpus)" % (len(training_files_paths), percentage_training_corpus))
 
     for i, training_file in enumerate(training_files_paths):
 
@@ -35,9 +41,6 @@ def trainD2VGroupFromTxtFilePaths(training_files_paths, models_folder, group_nam
             print(e)
             if LOG:
                 LOG.append("Skipping file %i of the Training Corpus..." % i)
-
-    if LOG:
-        LOG.append("Training with " + str(len(tagged_training_lists)) + " files")
 
     # create an instance of D2VModelGroup
     group = _D2VModelGroup(group_name, models_folder, autoload=False)  # autoload: True to add models to a existing group, False to override
@@ -71,9 +74,14 @@ def trainD2VGroupFromTxtFilePaths(training_files_paths, models_folder, group_nam
     return group
 
 
-def trainW2VGroupFromTxtFilePaths(training_files_paths, models_folder, group_name, parameters_list, flag_remove_stopWords=False, LOG=None):
-
+def trainW2VGroupFromTxtFilePaths(training_files_paths, models_folder, group_name, parameters_list, percentage_training_corpus=100, flag_remove_stopWords=False, LOG=None):
     training_lists = []
+
+    # apply the percentage_training_corpus to the corpus files number
+    training_files_paths = training_files_paths[:int(len(training_files_paths)*percentage_training_corpus/100)]
+
+    if LOG:
+        LOG.append("Training with %i files (%i% of the Corpus)" % (len(training_files_paths), percentage_training_corpus))
 
     for i, training_file in enumerate(training_files_paths):
         try:
@@ -97,9 +105,6 @@ def trainW2VGroupFromTxtFilePaths(training_files_paths, models_folder, group_nam
             print(e)
             if LOG:
                 LOG.append("Skipping file %i of the Training Corpus..." % i)
-
-    if LOG:
-        LOG.append("Training with " + str(len(training_lists)) + " files")
 
     # create an instance of D2VModelGroup
     group = _W2VModelGroup(group_name, models_folder, autoload=False)  # autoload: True to add models to a existing group, False to override

@@ -3,9 +3,9 @@
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    
+
     <title>Train Tool</title>
-    
+
     <link rel="stylesheet" href="../css/style_buildModels.css">
 </head>
 <body>
@@ -34,7 +34,7 @@
         <div id="paramTable"><div class="paramCard plus"></div></div> <!-- Divs list to select multiple params -->
 
         <div id="createGroupButton" class="button" enabled="true">Create group</div> <!-- Req /buildAndTrainNewModelGroup with all params -->
-        
+
         <h2>1. Saved groups <div id="updateButton" class="button" enabled="true">Update view</div></h2> <!-- Req /getAllSavedD2VGroups to update the groups list -->
 
         <div id="groupsList"></div> <!-- Show all saved groups -->
@@ -171,7 +171,7 @@
             dataDiv.addClass("data")
             paramNameP.addClass("nameMessage").text("Name")
             paramNameSelect.addClass("paramName").attr("name", "paramName")
-            paramValueP.addClass("valuesMessage").text("Values (_)")
+            paramValueP.addClass("valuesMessage")
             paramValueInput.addClass("paramData").attr("name", "paramData").attr("type", "text").attr("placeholder", "50:10:100").attr("valid", "true")
 
             plusDiv.off("click")
@@ -240,9 +240,9 @@
                 let vMsgP = $(card).find(".valuesMessage")
                 let hpInfo = selectedTypeHyperparameters.find(p => p.name == pName)
                 if (hpInfo)
-                    vMsgP.text(`Values ( ${hpInfo.default} )`)
+                    vMsgP.text(`Values [default = ${hpInfo.default}]`)
                 else
-                    vMsgP.text("Values ( _ )")
+                    vMsgP.text("Values [ _ ]")
             })
 
             // Check every Select of every param card
@@ -290,13 +290,21 @@
 
             let modelsType = $("#modelsTypeSelect option:selected").val()
             let trainingDocsFile = $("#trainingDocsFileInput").val()
+            let percentageTrainingCorpus = 1 //TODO use
             let modelsFolder = $("#modelsFolderInput").val()
-
+            
             let params = {}
             let cardsData = $(".paramCard .data")
             cardsData.each(function(i, cardData) {
-                let key = $(cardData).find("select[name='paramName']").val()
-                let value = parsePattern($(cardData).find("input[name='paramData']").val(), selectedTypeHyperparameters.find(p => p.name === key).format)
+                let key, value
+                key = $(cardData).find("select[name='paramName']").val()
+                if (key) {
+                    let hpInfo = selectedTypeHyperparameters.find(p => p.name === key)
+                    if (hpInfo) {
+                        let paramValue = $(cardData).find("input[name='paramData']").val()
+                        value = parsePattern(paramValue, hpInfo.format)
+                    }
+                }
                 if (key.length > 0 && value.length > 0) params[key] = value
             })
 
@@ -304,7 +312,7 @@
                 type: "POST",
                 url: SERVER_DIR + "/buildAndTrainNewModelGroup",
                 contentType: 'application/json',
-                data: JSON.stringify({"group_name": groupName, "models_type": modelsType, "training_docs_file": trainingDocsFile, "models_folder": modelsFolder, "params": params}),
+                data: JSON.stringify({"group_name": groupName, "models_type": modelsType, "training_docs_file": trainingDocsFile, "percentage_training_corpus": percentageTrainingCorpus, "models_folder": modelsFolder, "params": params}),
                 success: function(result) {
                     console.log(result)
                     updateGroupsView()

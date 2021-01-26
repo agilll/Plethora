@@ -75,6 +75,8 @@ def buildAndTrainNewModelGroup():
     # file with all training files for the new models. Each line of this file must be a training file path.
     # Absolute path (if starts with '/') or relative path from the Corpus folder
     training_docs_file = request.get_json().get('training_docs_file')
+    # percentage_training_corpus. Default 100%
+    percentage_training_corpus = request.get_json().get('percentage_training_corpus')
     # folder path where the new group will be saved after the training.
     # Absolute path (if starts with '/') or relative path from the Corpus folder
     models_folder = request.get_json().get('models_folder')
@@ -106,6 +108,12 @@ def buildAndTrainNewModelGroup():
             'reason': "invalid argument",
             'msg': "training_docs_file argument does refer to no existing file"
         }), 400
+
+    # set percentage_training_corpus in the range [0,100]
+    if int(percentage_training_corpus) < 0:
+        percentage_training_corpus = 0
+    elif int(percentage_training_corpus) > 100:
+        percentage_training_corpus = 100
 
     # append new server log message
     LOG.append("Build new '%s' models group '%s' in folder '%s', with files in '%s'" % (models_type, group_name, abs_models_folder, abs_training_docs_file))
@@ -144,6 +152,7 @@ def buildAndTrainNewModelGroup():
             models_folder=abs_models_folder,
             group_name=group_name,
             parameters_list=parameters_list,
+            percentage_training_corpus=percentage_training_corpus,
             flag_remove_stopWords=flag_remove_stopWords,
             LOG=LOG
         )
@@ -155,6 +164,7 @@ def buildAndTrainNewModelGroup():
             models_folder=abs_models_folder,
             group_name=group_name,
             parameters_list=parameters_list,
+            percentage_training_corpus=percentage_training_corpus,
             flag_remove_stopWords=flag_remove_stopWords,
             LOG=LOG
         )
