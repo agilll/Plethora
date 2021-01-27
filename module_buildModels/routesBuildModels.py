@@ -149,8 +149,6 @@ def buildAndTrainNewModelGroup():
             new_json[name] = value
         parameters_list.append(new_json)
 
-    print(parameters_list)
-
     # opens the file with all training files paths and stores them in 'abs_training_files' variable. Each line may be
     # a relative path or a absolute path (if it starts with '/')
     abs_training_files = []

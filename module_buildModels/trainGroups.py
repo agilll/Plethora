@@ -18,7 +18,7 @@ def trainD2VGroupFromTxtFilePaths(training_files_paths, models_folder, group_nam
     for i, training_file in enumerate(training_files_paths):
 
         try:
-            # read and store the text in the file
+            # read and store the file text
             training_fd = open(training_file, 'r')
             text = training_fd.read()
 

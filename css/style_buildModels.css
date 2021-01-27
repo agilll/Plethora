@@ -20,7 +20,7 @@ h1, h2, h3 {
     cursor: pointer;
     display: inline-block;
     padding: 10px 20px;
-    border-radius: 5px;
+    border-radius: 8px;
     color: #FFFFFF;
     background-color: #0066cc;
     box-shadow: 0 0 15px 1px rgba(0, 0, 0, 0.2);
@@ -55,7 +55,7 @@ h1, h2, h3 {
     right: 0;
     left: 70%;
     background-color: rgba(0, 0, 0, 0.9);
-    border-radius: 5px;
+    border-radius: 8px;
     color: white;
     overflow: auto;
     padding: 5px;
@@ -78,8 +78,7 @@ h1, h2, h3 {
 }
 
 #trainingOptions .input-prefix {
-    min-width: fit-content;
-    max-width: 300px;
+    pointer-events: none;
     border-radius: 8px 0px 0px 8px;
     color: #555;
     background-color: #eee;
@@ -129,6 +128,7 @@ h1, h2, h3 {
     margin: 10px;
     padding: 10px;
     box-shadow: 0 0 15px 1px rgba(0, 0, 0, 0.4);
+    border-radius: 8px;
 }
 .paramCard div .paramData[valid="false"] {
     border-color: red;
@@ -138,6 +138,7 @@ h1, h2, h3 {
     content: "+";
 }
 .plus {
+    cursor: pointer;
     box-shadow: 0 0 15px 1px rgba(0, 0, 0, 0.2);
     background-color: rgba(0, 255, 0, 0.1);
 }
@@ -146,13 +147,13 @@ h1, h2, h3 {
     content: "-";
 }
 .rem {
+    cursor: pointer;
     float: right;
     box-shadow: 0 0 15px 1px rgba(255, 0, 0, 0.2);
     width: 20px;
     height: 20px;
     text-align: center;
     background-color: rgba(255, 0, 0, 0.1);
-
 }
 
 #groupsList div:active {
