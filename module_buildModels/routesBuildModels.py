@@ -36,7 +36,7 @@ def getAllSavedGroups():
     abs_models_folder += "/" if not abs_models_folder.endswith("/") else ""  # is folder, so add "/" if is necessary
 
     # append new server log message
-    LOG.append("Get all saved groups in DB")
+    LOG.append("Get all saved groups in " + abs_models_folder)
 
     # get all saved D2V models groups in the 'models_folder' path
     d2v_groups = _getAllD2VGroups(abs_models_folder + "Doc2Vec")

@@ -43,13 +43,13 @@ def trainD2VGroupFromTxtFilePaths(training_files_paths, models_folder, group_nam
                 LOG.append("Skipping file %i of the Training Corpus..." % i)
 
     # create an instance of D2VModelGroup
-    group = _D2VModelGroup(group_name, models_folder, autoload=False)  # autoload: True to add models to a existing group, False to override
+    group = _D2VModelGroup(group_name, models_folder, override=True)  # override: False to add models to a existing group, True to override
 
-    # create one model with parameters in each element of the parameters_list and adds them to the new group
-    group.add([Doc2Vec(**hp) for hp in parameters_list])
+    # create the models with every hyperparameter in parameters_list
+    new_models = [Doc2Vec(**hp) for hp in parameters_list]
 
-    # train all models in the new group
-    for i, model in enumerate(group):
+    # train every new model
+    for i, model in enumerate(new_models):
         # append a new log message when each model starts the train
         if LOG:
             LOG.append("Training model %i in group '%s'..." % (i, group_name))
@@ -64,8 +64,8 @@ def trainD2VGroupFromTxtFilePaths(training_files_paths, models_folder, group_nam
             epochs=model.epochs
         )
 
-    # save the group in models_folder path. Creates a folder with the group name and saved the models inside
-    group.save()
+        # add the model to the group and save it in group_folder
+        group.add(model, True)
 
     # append a new log message after saving the group
     if LOG:
@@ -107,13 +107,13 @@ def trainW2VGroupFromTxtFilePaths(training_files_paths, models_folder, group_nam
                 LOG.append("Skipping file %i of the Training Corpus..." % i)
 
     # create an instance of D2VModelGroup
-    group = _W2VModelGroup(group_name, models_folder, autoload=False)  # autoload: True to add models to a existing group, False to override
+    group = _W2VModelGroup(group_name, models_folder, override=True)  # override: False to add models to a existing group, True to override
 
-    # create one model with parameters in each element of the parameters_list and adds them to the new group
-    group.add([Word2Vec(**hp) for hp in parameters_list])
+    # create the models with every hyperparameter in parameters_list
+    new_models = [Word2Vec(**hp) for hp in parameters_list]
 
-    # train all models in the new group
-    for i, model in enumerate(group):
+    # train every new model
+    for i, model in enumerate(new_models):
         # append a new log message when each model starts the train
         if LOG:
             LOG.append("Training model %i in group '%s'..." % (i, group_name))
@@ -121,15 +121,15 @@ def trainW2VGroupFromTxtFilePaths(training_files_paths, models_folder, group_nam
         # build the vocabulary with all words in the training corpus
         model.build_vocab(training_lists, update=(model.corpus_total_words != 0))
 
-        # train each model with all default hyperparameters (defined in the Doc2Vec instance build)
+        # train each model with all default hyperparameters (defined in the Word2Vec instance build)
         model.train(
             sentences=training_lists,
             total_examples=model.corpus_count,
             epochs=model.epochs
         )
 
-    # save the group in models_folder path. Creates a folder with the group name and saved the models inside
-    group.save()
+        # add the model to the group and save it in group_folder
+        group.add(model, True)
 
     # append a new log message after saving the group
     if LOG:
