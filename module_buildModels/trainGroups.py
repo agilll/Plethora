@@ -67,6 +67,10 @@ def trainD2VGroupFromTxtFilePaths(training_files_paths, models_folder, group_nam
         # add the model to the group and save it in group_folder
         group.add(model, True)
 
+    # generate a json file with a summary of the group data (name, hyperparameters, training_time of every models, ...).
+    # training_files argument (and any other arguments we add) will be written in the json file.
+    group.saved_models_summary(True, training_files=len(training_files_paths))
+
     # append a new log message after saving the group
     if LOG:
         LOG.append("New doc2vec group '%s' was saved!" % group_name)
@@ -130,6 +134,10 @@ def trainW2VGroupFromTxtFilePaths(training_files_paths, models_folder, group_nam
 
         # add the model to the group and save it in group_folder
         group.add(model, True)
+
+    # generate a json file with a summary of the group data (name, hyperparameters, training_time of every models, ...).
+    # training_files argument (and any other arguments we add) will be written in the json file.
+    group.saved_models_summary(True, training_files=len(training_files_paths))
 
     # append a new log message after saving the group
     if LOG:

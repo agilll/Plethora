@@ -1,5 +1,7 @@
 from gensim.models.doc2vec import Doc2Vec
 import shutil
+import json
+import re
 import os
 
 
@@ -93,10 +95,52 @@ class D2VModelGroup:
 
         # Get all free (not used) ids from 0 to the maximum id (+1) in the folder.
         # If the saved models are 1, 2, 4 and 7, 'not_ids' will obtain 0, 3, 5, 6 and 8.
-        not_ids = [n for n in range(max(models_ids)+2) if n not in models_ids]
+        not_ids = [n for n in range(max(models_ids) + 2) if n not in models_ids]
 
         # Return first element in 'not_ids'. This is the first unused number id.
         return not_ids[0]
+
+    def saved_models_summary(self, save=False, **extra_data):
+        group_summ = {
+            "type": self.mtype,
+            "name": self.name,
+            "length": 0,
+            "extra_data": extra_data,
+            "models": []
+        }
+
+        if not os.path.isdir(self.group_folder):
+            return group_summ
+
+        for model in os.listdir(self.group_folder):
+            if model.endswith(".d2v.model"):
+                model_id = int(re.findall("_id\d+", model)[0].split("_id")[1])
+                d2v_model = Doc2Vec.load(self.group_folder + "/" + model)
+                group_summ["models"].append({
+                    "id": model_id,
+                    "corpus_total_words": d2v_model.corpus_total_words,
+                    "total_train_time": d2v_model.total_train_time,
+                    "train_count": d2v_model.train_count,
+                    "hyperparams": {
+                        "vector_size": d2v_model.vector_size,
+                        "window": d2v_model.window,
+                        "alpha": d2v_model.alpha,
+                        "min_alpha": d2v_model.min_alpha,
+                        "epochs": d2v_model.epochs,
+                        "min_count": d2v_model.min_count,
+                        "hs": d2v_model.hs,
+                        "negative": d2v_model.negative,
+                        "ns_exponent": d2v_model.ns_exponent
+                    }
+                })
+
+        group_summ["length"] = len(group_summ["models"])
+
+        if save:
+            with open(self.group_folder + "/" + self.name + "_summary.json", 'w') as fjson:
+                json.dump(group_summ, fjson)
+
+        return group_summ
 
     # This allows uses a D2VModelGroup instance in a for-each, directly. A list of the group models will be always the iterable element of this class.
     def __iter__(self):

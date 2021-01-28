@@ -1,5 +1,7 @@
 from gensim.models.word2vec import Word2Vec
 import shutil
+import json
+import re
 import os
 
 
@@ -97,6 +99,48 @@ class W2VModelGroup:
 
         # Return first element in 'not_ids'. This is the first unused number id.
         return not_ids[0]
+
+    def saved_models_summary(self, save=False, **extra_data):
+        group_summ = {
+            "type": self.mtype,
+            "name": self.name,
+            "length": 0,
+            "extra_data": extra_data,
+            "models": []
+        }
+
+        if not os.path.isdir(self.group_folder):
+            return group_summ
+
+        for model in os.listdir(self.group_folder):
+            if model.endswith(".w2v.model"):
+                model_id = int(re.findall("_id\d+", model)[0].split("_id")[1])
+                w2v_model = Word2Vec.load(self.group_folder + "/" + model)
+                group_summ["models"].append({
+                    "id": model_id,
+                    "corpus_total_words": w2v_model.corpus_total_words,
+                    "total_train_time": w2v_model.total_train_time,
+                    "train_count": w2v_model.train_count,
+                    "hyperparams": {
+                        "size": w2v_model.vector_size,
+                        "window": w2v_model.window,
+                        "alpha": w2v_model.alpha,
+                        "min_alpha": w2v_model.min_alpha,
+                        "epochs": w2v_model.epochs,
+                        "min_count": w2v_model.min_count,
+                        "hs": w2v_model.hs,
+                        "negative": w2v_model.negative,
+                        "ns_exponent": w2v_model.ns_exponent
+                    }
+                })
+
+        group_summ["length"] = len(group_summ["models"])
+
+        if save:
+            with open(self.group_folder + "/" + self.name + "_summary.json", 'w') as fjson:
+                json.dump(group_summ, fjson)
+
+        return group_summ
 
     # This allows uses a W2VModelGroup instance in a for-each, directly. A list of the group models will be always the iterable element of this class.
     def __iter__(self):
