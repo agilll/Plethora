@@ -12,8 +12,11 @@ body {
     background: #fafafa;
 }
 
-h1, h2, h3 {
+h1, h2 {
     color: #0066cc;
+}
+h3 {
+    color: #0f66cc;
 }
 
 .button {
@@ -156,29 +159,22 @@ h1, h2, h3 {
     background-color: rgba(255, 0, 0, 0.1);
 }
 
-#groupsList div:active {
-    box-shadow: 0 0 15px 1px rgba(0, 0, 0, 0.8);
-}
-#groupsList div {
+#groupsList .group-card {
     cursor: pointer;
     display: inline-table;
     margin: 10px;
+    padding: 10px;
+    box-shadow: 0 0 15px 1px rgba(0, 0, 0, 0.4);
+    border-radius: 8px;
     text-align: center;
-    box-shadow: 0 0 15px 1px rgba(0, 0, 0, 0.2);
 }
 
-#groupsList div ol {
-    list-style-type: none;
-    max-height: 300px;
-    overflow-y: auto;
-    padding: 0;
+#groupsList .group-card:active {
+    box-shadow: 0 0 15px 1px rgba(0, 0, 0, 0.8);
+    background-color: rgba(0, 255, 0, 0.1);
 }
 
-#groupsList div ol li {
-    padding: 5px;
-    margin-bottom: 5px;
-}
-
-#groupsList div ol li, #groupsList div h3 {
-    pointer-events: none;
+#groupsList .group-card[enabled="true"] {
+    box-shadow: 0 0 15px 1px rgba(0, 0, 0, 0.8);
+    background-color: rgba(0, 255, 0, 0.1);
 }

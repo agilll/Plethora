@@ -38,27 +38,14 @@ def getAllSavedGroups():
     # append new server log message
     LOG.append("Get all saved groups in " + abs_models_folder)
 
-    # get all saved D2V models groups in the 'models_folder' path
-    d2v_groups = _getAllD2VGroups(abs_models_folder + "Doc2Vec")
-    # get all saved W2V models groups in the 'models_folder' path
-    w2v_groups = _getAllW2VGroups(abs_models_folder + "Word2Vec")
+    # get all saved D2V models groups in the 'models_folder' path (summary json)
+    d2v_groups = _getAllD2VGroups(abs_models_folder + "Doc2Vec", summary=True)
+    # get all saved W2V models groups in the 'models_folder' path (summary json)
+    w2v_groups = _getAllW2VGroups(abs_models_folder + "Word2Vec", summary=True)
 
-    # return a list of d2v and w2v groups. Each element is a dict with the group name and a list of models
-    d2v_groups_list = []
-    w2v_groups_list = []
-    for d2vg in d2v_groups:
-        d2v_groups_list.append({
-            'group': d2vg.name,
-            'models': [model for model in os.listdir(d2vg.group_folder) if model.endswith(".d2v.model")]
-        })
-    for w2vg in w2v_groups:
-        w2v_groups_list.append({
-            'group': w2vg.name,
-            'models': [model for model in os.listdir(w2vg.group_folder) if model.endswith(".w2v.model")]
-        })
     return jsonify({
-        "word2vec": w2v_groups_list,
-        "doc2vec": d2v_groups_list
+        "word2vec": w2v_groups,
+        "doc2vec": d2v_groups
     }), 200
 
 
@@ -214,7 +201,7 @@ def getLog():
     }), 200
 
 
-# this function simply returns the Corpus folder, defined directly in this script.
+# this function returns the Corpus folder path, defined directly in this script.
 def getKorpusPath():
     return jsonify({
         'korpus': korpus_dir

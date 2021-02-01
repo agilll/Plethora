@@ -16,7 +16,7 @@
 
         <h1>Word embeddings custom training tool</h1>
 
-        <h2>0. Create a group of D2V models with multiple parameters</h2>
+        <h2>Create a group of D2V models with multiple parameters</h2>
 
         <div id="trainingOptions"> <!-- Selects with build and train options -->
 
@@ -44,7 +44,7 @@
                 </div>
 
             </div>
-            
+
             <h3>Models folder:</h3>
             <div class="training-option-div">
                 <div>
@@ -55,15 +55,17 @@
 
         </div>
 
-        <h3>Hyperameters list:</h3>
+        <h3>Hyperpameters list:</h3>
 
         <div id="paramTable"><div class="paramCard plus"></div></div> <!-- Divs list to select multiple params -->
 
         <div id="createGroupButton" class="button" enabled="true">Create group</div> <!-- Req /buildAndTrainNewModelGroup with all params -->
 
-        <h2>1. Saved groups <div id="updateButton" class="button" enabled="true">Update view</div></h2> <!-- Req /getAllSavedD2VGroups to update the groups list -->
+        <h2>Saved groups <div id="updateButton" class="button" enabled="true">Update view</div></h2> <!-- Req /getAllSavedD2VGroups to update the groups list -->
 
         <div id="groupsList"></div> <!-- Show all saved groups -->
+
+        <canvas id="canvas"></canvas>
 
     </div>
 
@@ -72,6 +74,9 @@
 
     <!-- jQuery CDN -->
     <script src="https://code.jquery.com/jquery-1.12.0.min.js"></script>
+
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
 
     <script>
 
@@ -86,9 +91,12 @@
         const intPositiveValuesPattern = /^$|^(\d+((:\d+)?){2})(,(\d+((:\d+)?){2}))*$/
         const floatValuesPattern = /^$|^(-?\d+(\.\d+)?((:-?\d+(\.\d+)?)?){2})(,(-?\d+(\.\d+)?((:-?\d+(\.\d+)?)?){2}))*$/
         const floatPositiveValuesPattern = /^$|^(\d+(\.\d+)?((:\d+(\.\d+)?)?){2})(,(\d+(\.\d+)?((:\d+(\.\d+)?)?){2}))*$/
-        
+
         const defaultFloatValueStep = 0.1
         const defaultNaturalValueStep = 1
+
+        const ctx = document.getElementById('canvas').getContext('2d')
+        var visibleChart = null
 
         // Log console handler
         const logUpdate = {
@@ -122,7 +130,7 @@
                                 newp.innerText = `[${fidx + i + 1}] ${msg}`
                                 $("#console").append($(newp))
                                 $("#console").scrollTop($("#console")[0].scrollHeight)
-                            });
+                            })
                         } else if (logUpdate.lastLogIndex > result.lastidx) {
                             logUpdate.init(() => logUpdate.upd())
                         }
@@ -148,43 +156,60 @@
         // TODO Separate D2Vs and W2Vs
         function updateGroupsView() {
             $("#updateButton").attr("enabled", "false")
+
             $.ajax({
                 type: "GET",
                 url: SERVER_DIR + "/getAllSavedGroups",
                 data: {"models_folder": $("#modelsFolderInput").val()},
-                success: function(result) { 
+                success: function(result) {
                     $("#groupsList").empty()
-                    let concated_groups = [...result.doc2vec, ...result.word2vec]
-                    concated_groups.forEach(group => {
+                    updateGroupChart(null)
+
+                    let selectedType = $("#modelsTypeSelect option:selected").val()
+                    let groupSummaries = (selectedType !== "d2v") ? result.word2vec : result.doc2vec
+
+                    groupSummaries.forEach(group => {
                         let groupDiv = document.createElement('div')
                         let groupTittle = document.createElement('h3')
-                        let groupList = document.createElement('ol')
 
-                        groupTittle.innerText = group.group
-                        group.models.forEach(model => {
-                            let listElement = document.createElement('li')
-                            listElement.innerText = model
-                            groupList.append(listElement)
-                        })
+                        groupTittle.innerText = group.name
 
-                        groupDiv.classList.add('clickable')
-                        groupDiv.addEventListener('click', (e) => console.log("Clicked " + group.group))
+                        groupDiv.classList.add("clickable", "group-card")
+
+                        // update the bottom chart when a group is clicked
+                        groupDiv.addEventListener('click', (e) => {
+                            let enabled = groupDiv.getAttribute("enabled")
+                            if (enabled == "true") {
+                                console.log("enabled")
+                                groupDiv.setAttribute("enabled", "false")
+                                updateGroupChart(null)
+                            } else {
+                                console.log("disabled")
+                                $("#groupsList .group-card[enabled='true']").attr("enabled", "false")
+                                groupDiv.setAttribute("enabled", "true")
+                                updateGroupChart(group, selectedType == "w2v" ? "size" : "vector_size")
+                                $("#canvas")[0].scrollIntoView()
+
+                            }
+                        }) // TODO the user decides this hparam
 
                         groupDiv.append(groupTittle)
-                        groupDiv.append(groupList)
                         $("#groupsList").append(groupDiv)
                     })
-                    $("#updateButton").attr("enabled", "true")
+
                 },
                 beforeSend: function() {logUpdate.push()},
-                complete: function() {logUpdate.pop()}
+                complete: function() {
+                    logUpdate.pop()
+                    $("#updateButton").attr("enabled", "true")
+                }
             })
         }
 
         // Adds another card to define a new parameter-value
         function createNewParamCard() {
             let plusDiv = $("#paramTable .plus")
-            
+
             let remDiv = $(document.createElement("div"))
             let dataDiv = $(document.createElement("div"))
             let paramNameP = $(document.createElement("p"))
@@ -206,8 +231,11 @@
 
             plusDiv.append(remDiv, dataDiv)
             dataDiv.append(paramNameP, paramNameSelect, paramValueP, paramValueInput)
-            
+
             $(paramValueInput).on("input", function() {
+
+                // TODO: when the button is disabled because of a request waiting, it must be disabled until the request ends. However,
+                //       is the user set an input the button is enabled. FIX THIS
 
                 let validFunc = function(valid) {
                     if (valid == false) {
@@ -218,9 +246,9 @@
                         $(paramValueInput).attr("valid", "true")
                     }
                 }
-                
+
                 let pFormat = selectedTypeHyperparameters.find(p => p.name === paramNameSelect.val()).format
-                
+
                 let pVal = $(paramValueInput).val()
 
                 switch(pFormat) {
@@ -240,7 +268,7 @@
                         validFunc(floatPositiveValuesPattern.test(pVal))
                         break
                 }
-                
+
             })
 
             let newPlus = document.createElement('div')
@@ -249,7 +277,7 @@
             $("#paramTable").append($(newPlus))
 
             updateSelectOptionsInParamCards()
-            
+
             return plusDiv
         }
 
@@ -293,7 +321,7 @@
                     // Insert the new option if the value is not already in this Select or is selected in another Select
                     if (!optionsValues.includes(v) && !paramCardsSelectedOptionsValues.includes(v)) {
                         let newOption = $(document.createElement("option")).val(v).text(v ? v : " - select param - ")[0]
-                        // Index of the next element from this new option 
+                        // Index of the next element from this new option
                         // (options are sorted according to server response array)
                         let sortedIndex = optionsValues.indexOf(optionsValues.find(p => {
                             let pPrio = allOptionsValues.indexOf(p)
@@ -310,15 +338,16 @@
 
         // Collects parameter-value pairs from all cards and makes a POST request to /buildAndTrainNewModelGroup
         function collectParamsAndCreateGroup() {
-            $("#createGroupButton").attr("enabled", "false")
             let groupName = prompt('Escoja un nombre para el grupo: ', 'testgroup')
             if (groupName == null) return -1
+
+            $("#createGroupButton").attr("enabled", "false")
 
             let modelsType = $("#modelsTypeSelect option:selected").val()
             let trainingDocsFile = $("#trainingDocsFileInput").val()
             let percentageTrainingCorpus = $("#trainingPercentInput").val()
             let modelsFolder = $("#modelsFolderInput").val()
-            
+
             let params = {}
             let cardsData = $(".paramCard .data")
             cardsData.each(function(i, cardData) {
@@ -362,7 +391,7 @@
 
             input.split(',').forEach(elem => {
                 if (!elem) return []
-                
+
                 nrange = elem.split(':')
 
                 if (nrange.length == 1) {
@@ -404,6 +433,77 @@
             $("#paramTable div.paramCard:not(.plus)").remove()
 
             createNewParamCard()
+            updateGroupsView()
+        }
+
+        function updateGroupChart(groupSummary, hparamName="vector_size") {
+
+            // remove the chart if already exists
+            if (visibleChart != null)
+                visibleChart.destroy()
+
+            if (groupSummary == null)
+                return
+
+            // sort models list by 'hparamNa,e' hiperparameter values
+            let models = groupSummary.models.sort((m1, m2) => m1.hyperparams[hparamName] - m2.hyperparams[hparamName])
+
+            // create a new graph with the summary of the given group, and the given hyperparameter on the X-axis
+            visibleChart = new Chart(ctx, {
+                type: 'line', // Type of chart we want to create
+                data: { // Data for our dataset
+                    labels: models.map(mdl => mdl.hyperparams[hparamName]),
+                    datasets: [
+                        {
+                            label: 'Trainning Time',
+                            data: models.map(mdl => mdl.total_train_time),
+                            hidden: false
+                        },
+                        {
+                            label: 'File Size',
+                            data: models.map(mdl => mdl.size),
+                            hidden: true
+                        }
+                    ]
+                },
+                options: { // Configuration options
+                    title: {
+                        display: true,
+                        text: groupSummary.name
+                    },
+                    scales: {
+                        yAxes: [{
+                            scaleLabel: {
+                                display: true,
+                                labelString: "Trainning Time"
+                            }
+                        }],
+                        xAxes: [{
+                            scaleLabel: {
+                                display: true,
+                                labelString: hparamName
+                            }
+                        }]
+                    },
+                    legend: {
+                        onHover: function(e, legendItem) {
+                            e.target.style.cursor = 'pointer'
+                        },
+                        onLeave: function (e) {
+                            e.target.style.cursor = 'default'
+                        },
+                        onClick: function(e, legendItem) {
+                            let index = legendItem.datasetIndex
+                            let ci = this.chart
+                            let selectedDs = ci.data.datasets[index]
+                            ci.data.datasets.forEach((ds, i) => ds.hidden = (i != index) ? true : false)
+                            ci.options.scales.yAxes[0].scaleLabel.labelString = selectedDs.label
+                            ci.update()
+                        }
+                    }
+                }
+            })
+            return visibleChart
         }
         
         $("#modelsTypeSelect").change(updateModelType)

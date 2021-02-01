@@ -100,7 +100,11 @@ class D2VModelGroup:
         # Return first element in 'not_ids'. This is the first unused number id.
         return not_ids[0]
 
+    # Generate a summary file with data of the group and every model. Uses only the SAVED files in 'self.group_folder'
     def saved_models_summary(self, save=False, **extra_data):
+        if not os.path.isdir(self.group_folder):
+            return {}
+
         group_summ = {
             "type": self.mtype,
             "name": self.name,
@@ -109,18 +113,26 @@ class D2VModelGroup:
             "models": []
         }
 
-        if not os.path.isdir(self.group_folder):
-            return group_summ
+        folder_files = os.listdir(self.group_folder)
 
-        for model in os.listdir(self.group_folder):
+        for model in folder_files:
             if model.endswith(".d2v.model"):
+
                 model_id = int(re.findall("_id\d+", model)[0].split("_id")[1])
                 d2v_model = Doc2Vec.load(self.group_folder + "/" + model)
+
+                # add sizes of every model files (main file and subfiles)
+                size = 0
+                model_subfiles = [file for file in folder_files if file.startswith(model)]
+                for sf in model_subfiles:
+                    size += os.path.getsize(self.group_folder + "/" + sf)
+
                 group_summ["models"].append({
                     "id": model_id,
                     "corpus_total_words": d2v_model.corpus_total_words,
                     "total_train_time": d2v_model.total_train_time,
                     "train_count": d2v_model.train_count,
+                    "size": size,
                     "hyperparams": {
                         "vector_size": d2v_model.vector_size,
                         "window": d2v_model.window,
@@ -149,7 +161,8 @@ class D2VModelGroup:
 
 # This function gets all saved d2v groups in the given folder. The return is a list of instances
 # of D2VModelGroup with all the models of the group already loaded.
-def getAllD2VGroups(models_folder_path):
+# If 'summary' is True, the return is a list of summary.json files (from every group folder)
+def getAllD2VGroups(models_folder_path, summary=True):
     if not os.path.isdir(models_folder_path):
         return []
 
@@ -157,7 +170,12 @@ def getAllD2VGroups(models_folder_path):
     for group_folder_name in os.listdir(models_folder_path):
         group_folder_path = models_folder_path + ("/" if not models_folder_path.endswith("/") else "") + group_folder_name
         if os.path.isdir(group_folder_path):
-            new_group = D2VModelGroup(name=group_folder_name, models_folder=models_folder_path, override=False)
-            saved_groups.append(new_group)
+            if summary:
+                with open(group_folder_path + "/" + group_folder_name + "_summary.json", 'r') as file_summ:
+                    data_summ = json.load(file_summ)
+                    saved_groups.append(data_summ)
+            else:
+                new_group = D2VModelGroup(name=group_folder_name, models_folder=models_folder_path, override=False)
+                saved_groups.append(new_group)
 
     return saved_groups
