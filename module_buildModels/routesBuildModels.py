@@ -107,7 +107,7 @@ def buildAndTrainNewModelGroup():
         LOG.append("ERROR: Invalid query argument 'training_docs_file' in /buildAndTrainNewModelGroup request")
         return jsonify({
             'reason': "invalid argument",
-            'msg': "training_docs_file argument does refer to no existing file"
+            'msg': "training_docs_file argument does not exist. ("+abs_training_docs_file+")"
         }), 400
 
     # set percentage_training_corpus in the range [0,100]

@@ -342,11 +342,15 @@
                 success: function(result) {
                     console.log(result)
                     updateGroupsView()
-                    $("#createGroupButton").attr("enabled", "true")
                 },
                 error: function(res) {},
-                beforeSend: function() {logUpdate.push()},
-                complete: function() {logUpdate.pop()}
+                beforeSend: function() {
+                    logUpdate.push()
+                },
+                complete: function() {
+                    logUpdate.pop()
+                    $("#createGroupButton").attr("enabled", "true")
+                },
             })
         }
 
