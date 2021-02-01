@@ -14,14 +14,12 @@ from textSimilarities import Doc2VecSimilarity as _Doc2VecSimilarity
 from aux_build import SortTuplaList_byPosInTupla as _SortTuplaList_byPosInTupla
 from aux_build import MODELS_FOLDER as _MODELS_FOLDER, CORPUS_FOLDER as _CORPUS_FOLDER, SCRAPPED_PAGES_FOLDER as _SCRAPPED_PAGES_FOLDER
 
-if len(sys.argv) < 5:
-	print("Use: "+sys.argv[0]+" EVALUATE  num_modelo_inicial  num_modelo_final dir_modelos")
+if len(sys.argv) < 3:
+	print("Use: "+sys.argv[0]+" EVALUATE  num_modelo")
 	exit(-1)
 
 EVALUATE  = int(sys.argv[1])   # the number of candidates to evaluate (they are the number more similar)
-mini = int(sys.argv[2])
-mfin = int(sys.argv[3])
-dir_modelos = sys.argv[4]
+num = sys.argv[2]
 
 
 _AP_D2V_MODEL = "doc2vec.bin"
@@ -43,16 +41,14 @@ except Exception as e:
 
 # listFull_OrderedAP for everyone, listTOP_OrderedAP for teh first 1000
 listTOP_OrderedAP = listFull_OrderedAP[:EVALUATE]
-listToTest = listFull_OrderedAP
+listToTest = listTOP_OrderedAP
 
-print("Starting multiple evaluation: ", EVALUATE, mini, mfin, dir_modelos)
+print("Starting evaluation: ", EVALUATE, num)
 
 listModels = [] # the list of models to evaluate
-listModels.append(_AP_D2V_MODEL)
-prefix=dir_modelos+"/"
-for x in range(mini, mfin):
-    #listModels.append("M"+str(x)+".model")
-    listModels.append(prefix+"1926-w."+str(x)+".model")
+#listModels.append(_AP_D2V_MODEL)
+prefix="hib"
+listModels.append(prefix+num+"/"+_HYB_D2V_MODEL)
 
 # eval all models
 models = {}

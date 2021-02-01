@@ -90,11 +90,11 @@
 
 			<div class="form-group" style="margin-bottom: 0px">
 				<!--  the textarea will be filled with a template parameter just after loading the page  -->
-				<textarea id="contentF0_corpusText"  style="border: 2px solid #888; width:1000px; height:300px;"></textarea>
+				<textarea id="contentF0_corpusText"  style="border: 2px solid #888; width:1000px; height:200px;"></textarea>
 			</div>
 			<p style="margin-bottom:5mm;"></p>
 			<div class="form-group" style="margin-bottom: 0px">
-				<input style="background-color: #0066cc; color: white" id="submitF0_getGetWikicats" type="button" value="Next Ph1: Get Wikicats"></input>
+				<input style="background-color: #0066cc; color: white" id="submitF0_getGetWikicats" type="button" value="Next (ph1: Get Wikicats)"></input>
 			</div>
 
 
@@ -109,7 +109,7 @@
 			<div id='contentF1_showWikicats'></div>  <!-- empty div to later show wikicats identified in text -->
 			<p style="margin-bottom:5mm;"></p>
 			<div class="form-group" style="margin-bottom: 0px">
-				<input style="background-color: #0066cc; color: white" id="submitF1_findURLs" type="button" value="Next Ph2: Find candidate URLs"></input>
+				<input style="background-color: #0066cc; color: white" id="submitF1_findURLs" type="button" value="Next (ph2: Find candidate URLs)"></input>
 				&nbsp;&nbsp;&nbsp;&nbsp;
 				<span id="spanFromStartF1">  <input id="fromStartF1" name="fromStartF1" type="checkbox"></input>
 				From start (Selected=this phase and previous, Non selected=only this phase)</span>
@@ -125,7 +125,7 @@
 			<div id='contentF2_showNumberUrls'></div> <!-- empty div to later show number of candidate URLs discovered for each wikicat -->
 			<p style="margin-bottom:5mm;"></p>
 			<div class="form-group" style="margin-bottom: 0px">
-				<input style="background-color: #0066cc; color: white" id="submitF2_DownloadURLs" type="button" value="Next Ph3: Download and clean candidate URLs"></input>
+				<input style="background-color: #0066cc; color: white" id="submitF2_DownloadURLs" type="button" value="Next (ph3: Download and clean candidate URLs)"></input>
 				&nbsp;&nbsp;&nbsp;&nbsp;
 				<span id="spanFromStartF2">  <input id="fromStartF2" name="fromStartF2" type="checkbox"></input>
 				From start (Selected=this phase and previous, Non selected=only this phase)</span>
@@ -141,7 +141,7 @@
 			<div id='contentF3_numberTextsDownloaded'></div> <!-- empty div to later show the number of candidate texts downloaded -->
 			<p style="margin-bottom:5mm;"></p>
 			<div class="form-group" style="margin-bottom: 0px">
-				<input style="background-color: #0066cc; color: white" id="submitF3_identifyWikicats" type="button" value="Next Ph4: Identify wikicats in candidate texts"></input>
+				<input style="background-color: #0066cc; color: white" id="submitF3_identifyWikicats" type="button" value="Next (ph4: Identify wikicats in candidate texts)"></input>
 				&nbsp;&nbsp;&nbsp;&nbsp;
 				<span id="spanFromStartF3">  <input id="fromStartF3" name="fromStartF3" type="checkbox"></input>
 				From start (Selected=this phase and previous, Non selected=only this phase)</span>
@@ -157,7 +157,7 @@
 			<div id='contentF4_numberTextsValid'></div> <!-- empty div to later show the number of candidate texts with wikicats -->
 			<p style="margin-bottom:5mm;"></p>
 			<div class="form-group" style="margin-bottom: 0px">
-				<input style="background-color: #0066cc; color: white" id="submitF4_computeSimilarities" type="button" value="Next Ph5: Compute Similarities for candidate texts"></input>
+				<input style="background-color: #0066cc; color: white" id="submitF4_computeSimilarities" type="button" value="Next (ph5: Compute Similarities for candidate texts)"></input>
 				&nbsp;&nbsp;&nbsp;&nbsp;
 				<span id="spanFromStartF4">  <input id="fromStartF4" name="fromStartF4" type="checkbox"></input>
 				From start (Selected=this phase and previous, Non selected=only this phase)</span>
@@ -174,7 +174,7 @@
 			<p style="margin-bottom:5mm;"></p>
 			<div class="form-group" style="margin-bottom: 0px">
 				Percentages to create models: <input id="inputF5_pctges" type="text" value="5" size="5"></input><br>
-				<input style="background-color: #0066cc; color: white" id="submitF5_trainD2V" type="button" value="Next Ph6: train D2V model with corpus"></input>
+				<input style="background-color: #0066cc; color: white" id="submitF5_trainD2V" type="button" value="Next (ph6: train D2V model with corpus)"></input>
 				&nbsp;&nbsp;&nbsp;&nbsp;
 				<span id="spanFromStartF5">  <input id="fromStartF5" name="fromStartF5" type="checkbox"></input>
 				From start (Selected=this phase and previous, Non selected=only this phase)</span>
@@ -191,7 +191,7 @@
 			<p style="margin-bottom:5mm;"></p>
 			<div class="form-group" style="margin-bottom: 0px">
 				Models to review corpus: <input id="inputF6_models" type="text" value="5" size="5"></input><br>
-				<input style="background-color: #0066cc; color: white" id="submitF6_reviewCorpus" type="button" value="Next Ph7: review corpus with D2V model"></input>
+				<input style="background-color: #0066cc; color: white" id="submitF6_reviewCorpus" type="button" value="Next (ph7: review corpus with D2V model)"></input>
 				&nbsp;&nbsp;&nbsp;&nbsp;
 				<span id="spanFromStartF6">  <input id="fromStartF6" name="fromStartF6" type="checkbox"></input>
 				From start (Selected=this phase and previous, Non selected=only this phase)</span>
@@ -471,7 +471,7 @@
 					results = "<b>"+result['P3_numUrlsDownloaded']  + " new files have been downloaded in this iteration</b><br>\n"
 					results += "<b>"+result['P3_lenListEnoughContent']  + " files with enough content are available</b><br>\n"
 					results += "<b>"+result['P3_lenListNotEnoughContent']  + " files without enough content have been discarded</b><br>\n"
-					results += "<b>Duration of F3: " + result['P3_elapsedTimeF3']  + " seconds</b><br>\n"
+					//results += "<b>Duration of F3: " + result['P3_elapsedTimeF3']  + " seconds</b><br>\n"
 
 					return results
 				}
@@ -522,7 +522,7 @@
 					results = "<b>"+result['P4_numUrlsProcessed']  + " new files have been processed in this iteration</b><br>\n"
 					results += "<b>"+result['P4_lenListWithWKSB']  + " files with wikicats or subjects are available</b><br>\n"
 					results += "<b>"+result['P4_lenListWithoutWKSB']  + " files without wikicats nor subjects have been discarded</b><br>\n"
-					results += "<b>Duration of F4: " + result['P4_elapsedTimeF4']  + " seconds</b><br>\n"
+					//results += "<b>Duration of F4: " + result['P4_elapsedTimeF4']  + " seconds</b><br>\n"
 
 					return results
 				}
@@ -574,7 +574,7 @@
 
 
 				function buildF5contents (result) {
-					results = "<b>Duration of F5: " + result['P5_elapsedTimeF5']  + " seconds</b><br>\n"
+					//results = "<b>Duration of F5: " + result['P5_elapsedTimeF5']  + " seconds</b><br>\n"
 					results += "<b>Best Similarity: " + result['P5_bestSim'] + " </b><br>\n"
 					results += "<b>Ratings: " + result['P5_ratings'] + " </b><br>\n"
 

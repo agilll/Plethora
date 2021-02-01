@@ -102,7 +102,7 @@ class MyCorpusGen():
 
 
 	def __iter__(self):
-		print("MyCorpusGen iteration")
+		print("MyCorpusGen iteration", numIter)
 
 		startTime = datetime.now()
 		for i,file in enumerate(listGeneric):
@@ -165,13 +165,17 @@ corpus_data_both = MyCorpusBoth()
 corpus_data_gen = MyCorpusGen()
 corpus_data_ah = MyCorpusAH()
 
+numIter=0
 
 print("\nVamos con la red")
 model = Doc2Vec(vector_size=vector_size, window=window, alpha=alpha, min_alpha=min_alpha, min_count=min_count, dm=distributed_memory)
 print("Vamos a construir el vocabulario")
-model.build_vocab(corpus_data_both)
-print("Vamos a entrenar")
+#model.build_vocab(corpus_data_both)
+model.build_vocab(corpus_data_gen)
+
+numIter=0
+print("Vamos a entrenar con", epochs1, "epochs")
 model.train(corpus_data_gen, total_examples=408, start_alpha=alpha, end_alpha=min_alpha, epochs=epochs1)  # hay 408 docs txt en el corpus gen
-model.train(corpus_data_ah, total_examples=5035, start_alpha=alpha, end_alpha=min_alpha, epochs=epochs2)  # hay 5035 docs txt en el corpus ah
+#model.train(corpus_data_ah, total_examples=5035, start_alpha=alpha, end_alpha=min_alpha, epochs=epochs2)  # hay 5035 docs txt en el corpus ah
 print("\nTodo bien, guardamos el modelo")
 model.save(MODEL_NAME)

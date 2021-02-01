@@ -88,8 +88,8 @@ def computeN (modelFilename, listToTest):
     validPositions = []
     for idx,docCandidate in enumerate(listOrdered_OnlyNames, start=1):
         if docCandidate in listEntityDocsOriginalText:  # one entity of the original text found in list
-            print("Found", docCandidate, "--- pos=", idx)
-            if (idx > 839) and not outliar: # above 1%, let's start to check for outliars
+            print("Found", docCandidate, "--- pos=", idx, "--- sim=", sims[docCandidate])
+            if (idx > 400) and not outliar: # above 1%, let's start to check for outliars
                 newlist = list(validPositions)
                 newlist.append(idx) # add the new one
                 if _checkZOutliar(newlist) and _checkIRQOutliar(newlist):

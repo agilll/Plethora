@@ -3,7 +3,7 @@
 # entrena un nuevo modelo con ese 5%
 # y vuelta a empezar, en cada iteracion un nuevo modelo
 
-modelTargetNumber = 2
+modelTargetNumber = 10
 
 import sys
 import os
@@ -73,6 +73,8 @@ print("Tamaño total candidatos =", lenListFull_OrderedAP)
 sizeCorpus = int(lenListFull_OrderedAP / 100) *  modelTargetNumber
 print("Tamaño corpus inicial =", sizeCorpus)
 
+listTOP_OrderedAP = listFull_OrderedAP[:10000]
+listToTest = listTOP_OrderedAP
 listDocsOriginalCorpus = listFull_OrderedAP[:sizeCorpus]
 
 modelBaseFilename = "M"+str(modelTargetNumber)+".model"   # fichero del modelo Mx inicial
@@ -88,13 +90,15 @@ while True:
     print("\n\nIteration", iterations)
 
     simsAdHocD2V = {} # dict to compute new AdHoc D2V sims
-    print("Reviewing candidates  ("+str(lenListFull_OrderedAP)+" files) with D2V similarity derived from current model:", modelFilename, flush=True)
+    print("Reviewing candidates  ("+str(len(listToTest))+" files) with D2V similarity derived from current model:", modelFilename, flush=True)
 
     d2vSimilarity = _Doc2VecSimilarity(modelFullFilename, P0_originalText)
 
-    for idx,rCandidateFile in enumerate(listFull_OrderedAP, start=1):    # TIEMPO !!!!!!
-    	if (idx % 2000) == 0:
-    		print(int(idx/2000), end=' ', flush=True)
+    toReview = len(listToTest)
+    toPing = int(toReview/10)
+    for idx,rCandidateFile in enumerate(listToTest, start=1):    # TIEMPO !!!!!!
+    	if (idx % toPing) == 0:
+    		print(idx, end=' ', flush=True)
 
     	candidateFile = _SCRAPPED_PAGES_FOLDER+rCandidateFile
     	candidateTextFD = open(candidateFile, "r")
@@ -116,7 +120,7 @@ while True:
     for idx,docCandidate in enumerate(listOrdered_OnlyNames, start=1):
         if docCandidate in listEntityDocsOriginalText:  # one entity of the original text found in list
             print("Found", docCandidate, "--- pos=", idx)
-            if (idx > 839) and not outliar: # above 1%, let's start to check for outliars
+            if (idx > 400) and not outliar: # above 1%, let's start to check for outliars
                 newlist = list(validPositions)
                 newlist.append(idx) # add the new one
                 if _checkZOutliar(newlist) and _checkIRQOutliar(newlist):
@@ -149,9 +153,8 @@ while True:
     print("N for the first 15 =", round(media,1))
 
 
-    INCREMENTO=1678
     nuevos=0
-    for doc in listOrdered_OnlyNames[:1678]:
+    for doc in listOrdered_OnlyNames[:500]:
         if not doc in listDocsCorpus:
             listDocsCorpus.append(doc)
             nuevos += 1
