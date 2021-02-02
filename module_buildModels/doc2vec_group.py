@@ -86,7 +86,7 @@ class D2VModelGroup:
         models_ids = []
         for filename in os.listdir(self.group_folder):
             if filename.endswith(".d2v.model"):
-                model_id = filename.split("_")[1][len("id"):]  # TODO error with wrong name formats
+                model_id = int(re.findall("_id\d+", filename)[0].split("_id")[1])  # TODO error with wrong name formats
                 models_ids.append(int(model_id))
 
         # return 0 if there are no files in the folder

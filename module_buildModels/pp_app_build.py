@@ -39,11 +39,11 @@ def home():
     models_folder = request.args.get("models_folder", "ModelsGroups")  # TODO remove these default values
     # default file with the paths of the training files (one per line). Query param
     # 'training_files.txt' by default
-    training_docs_file = request.args.get("training_docs_file", "training_files.txt")
+    training_docs_path = request.args.get("training_docs_path", "training_files.txt")
     # default type for the new models (w2v or d2v). Query param
     # 'd2v' by default
     models_type = request.args.get("models_type", "d2v")
-    return render_template('template_buildModels.html', models_type=models_type, models_folder=models_folder, training_docs_file=training_docs_file)
+    return render_template('template_buildModels.html', models_type=models_type, models_folder=models_folder, training_docs_path=training_docs_path)
 
 
 if __name__ == '__main__':

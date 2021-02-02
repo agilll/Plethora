@@ -13,7 +13,8 @@ LOG = []
 
 # Folder path of the training Corpus. This folder MUST exist.
 # All new groups (folders with models) will be saved here by default.
-korpus_dir = "/home/sergio/Projects/TFG/KORPUS/"
+# Must not end with '/'
+korpus_dir = "/home/sergio/Projects/TFG/KORPUS"
 
 # Use flag_remove_stopWords to indicate if stopwords must be removed or not in the training files.
 flag_remove_stopWords = True
@@ -26,22 +27,20 @@ def getAllSavedGroups():
 
     # folder path where new models groups were saved
     models_folder = request.args.get("models_folder")
+
     # this variable is the actual absolute path for the new models groups. If 'models_folder' doesn't start
     # with '/', means it is a relative path from the Corpus path
-    if models_folder.startswith("/"):
-        abs_models_folder = models_folder
-    else:
-        abs_models_folder = korpus_dir + ("/" if not korpus_dir.endswith("/") else "") + models_folder
-
-    abs_models_folder += "/" if not abs_models_folder.endswith("/") else ""  # is folder, so add "/" if is necessary
+    abs_models_folder = korpus_dir + "/" + models_folder if not models_folder.startswith("/") else models_folder
+    # remove the last '/' if exists
+    abs_models_folder = abs_models_folder[:-1] if abs_models_folder.endswith("/") else abs_models_folder
 
     # append new server log message
     LOG.append("Get all saved groups in " + abs_models_folder)
 
     # get all saved D2V models groups in the 'models_folder' path (summary json)
-    d2v_groups = _getAllD2VGroups(abs_models_folder + "Doc2Vec", summary=True)
+    d2v_groups = _getAllD2VGroups(abs_models_folder + "/Doc2Vec", summary=True)
     # get all saved W2V models groups in the 'models_folder' path (summary json)
-    w2v_groups = _getAllW2VGroups(abs_models_folder + "Word2Vec", summary=True)
+    w2v_groups = _getAllW2VGroups(abs_models_folder + "/Word2Vec", summary=True)
 
     return jsonify({
         "word2vec": w2v_groups,
@@ -56,13 +55,17 @@ def getAllSavedGroups():
 def buildAndTrainNewModelGroup():
     global LOG
 
+    # GET PARAMETERS #
+
     # identification name for the new group. All _ characters will be removed in the final name
     group_name = request.get_json().get('group_name').replace('_', '')
     # d2v or w2v
-    models_type = request.get_json().get('models_type')  # TODO use
-    # file with all training files for the new models. Each line of this file must be a training file path.
+    models_type = request.get_json().get('models_type')
+    # path to training files. Allows:
+    #       - Path to file with a list of training files. Each line of this file must be a training file path.
+    #       - Path to folder with the training files.
     # Absolute path (if starts with '/') or relative path from the Corpus folder
-    training_docs_file = request.get_json().get('training_docs_file')
+    training_docs_path = request.get_json().get('training_docs_path')
     # percentage_training_corpus. Default 100%
     percentage_training_corpus = request.get_json().get('percentage_training_corpus')
     # folder path where the new group will be saved after the training.
@@ -71,31 +74,20 @@ def buildAndTrainNewModelGroup():
     # training hyperparameters lists to create all models. This input must be a dict with
     #   key = parameter name
     #   value = list of values for this parameter
-    # the models will be created with all possible combinations of all values
+    # the models will be created with all possible combinations of every value
     params = request.get_json().get('params')
 
+    # FIX PATHS #
+
     # actual absolute path of the 'models_folder'
-    if models_folder.startswith("/"):
-        abs_models_folder = models_folder
-    else:
-        abs_models_folder = korpus_dir + ("/" if not korpus_dir.endswith("/") else "") + models_folder
+    abs_models_folder = korpus_dir + "/" + models_folder if not models_folder.startswith("/") else models_folder
+    # remove the last '/' if exists
+    abs_models_folder = abs_models_folder[:-1] if abs_models_folder.endswith("/") else abs_models_folder
 
-    abs_models_folder += "/" if not abs_models_folder.endswith("/") else ""  # is folder, so add "/" if is necessary
-
-    # actual absolute path of the 'training_docs_file'
-    if training_docs_file.startswith("/"):
-        abs_training_docs_file = training_docs_file
-    else:
-        abs_training_docs_file = korpus_dir + ("/" if not korpus_dir.endswith("/") else "") + training_docs_file
-
-    # check query arguments validity. The http error code is always 400
-    # TODO do it with every argument
-    if not os.path.isfile(abs_training_docs_file):
-        LOG.append("ERROR: Invalid query argument 'training_docs_file' in /buildAndTrainNewModelGroup request")
-        return jsonify({
-            'reason': "invalid argument",
-            'msg': "training_docs_file argument does not exist. ("+abs_training_docs_file+")"
-        }), 400
+    # actual absolute path of the 'training_docs_path'
+    abs_training_docs_path = korpus_dir + "/" + training_docs_path if not training_docs_path.startswith("/") else training_docs_path
+    # remove the last '/' if exists
+    abs_training_docs_path = abs_training_docs_path[:-1] if abs_training_docs_path.endswith("/") else abs_training_docs_path
 
     # set percentage_training_corpus in the range [0,100]
     if int(percentage_training_corpus) < 0:
@@ -106,7 +98,34 @@ def buildAndTrainNewModelGroup():
         percentage_training_corpus = int(percentage_training_corpus)
 
     # append new server log message
-    LOG.append("Build new '%s' models group '%s' in folder '%s', with files in '%s'" % (models_type, group_name, abs_models_folder, abs_training_docs_file))
+    LOG.append("Build new '%s' models group '%s' in folder '%s', with files in '%s'" % (models_type, group_name, abs_models_folder, abs_training_docs_path))
+
+    # GET TRAINING TEXT FILES #
+
+    # opens the file/folder with all training files and stores them in 'abs_training_files' variable.
+    abs_training_files = []
+
+    # file with the path to a training file per line
+    if os.path.isfile(abs_training_docs_path):
+        with open(abs_training_docs_path) as df:
+            for file_path in df:
+                file_path = file_path.strip()
+                # Each line may be a relative path or a absolute path (if it starts with '/').
+                abs_file_path = korpus_dir + "/" + file_path if not file_path.startswith("/") else file_path
+                abs_training_files.append(abs_file_path)
+
+    # directory where all training files are located
+    elif os.path.isdir(abs_training_docs_path):
+        abs_training_files = [abs_training_docs_path + "/" + file for file in os.listdir(abs_training_docs_path)]
+
+    else:
+        LOG.append("ERROR: '%s' path does not exist. Invalid training_docs_path argument." % abs_training_docs_path)
+        return jsonify({
+            'reason': "invalid argument",
+            'msg': "'%s' path does not exist. Invalid training_docs_path argument." % abs_training_docs_path
+        }), 400
+
+    # CALCULATE HYPERPARAMETERS LISTS #
 
     parameters_list = []
 
@@ -116,7 +135,7 @@ def buildAndTrainNewModelGroup():
     vlist = [params[name] for name in nlist]
 
     # add the default value of all other parameters (not received in the request).
-    # these values are extracted from the file params.json
+    # These values are extracted from the file params.json.
     with open('params.json') as params_file:
         all_hparams_json = json.load(params_file)
         all_hparams_json = all_hparams_json["word2vec"] if models_type == "w2v" else all_hparams_json["doc2vec"]
@@ -124,8 +143,8 @@ def buildAndTrainNewModelGroup():
         nlist.extend([ndhp["name"] for ndhp in not_defined_hparams])
         vlist.extend([[ndhp["default"]] for ndhp in not_defined_hparams])
 
-    # compute the cartesian product of the values lists. The result is a list of lists with
-    # all combinations of all values
+    # compute the cartesian product of the values lists.
+    # The result is a list of lists with all combinations of all values.
     values_prod = prod(*vlist)
 
     # fill 'parameters_list' with a list of dicts with each combination of parameters:
@@ -136,22 +155,13 @@ def buildAndTrainNewModelGroup():
             new_json[name] = value
         parameters_list.append(new_json)
 
-    # opens the file with all training files paths and stores them in 'abs_training_files' variable. Each line may be
-    # a relative path or a absolute path (if it starts with '/')
-    abs_training_files = []
-    with open(abs_training_docs_file) as df:
-        for file_path in df:
-            if file_path.startswith("/"):
-                abs_file_path = file_path.strip()
-            else:
-                abs_file_path = korpus_dir + ("/" if not korpus_dir.endswith("/") else "") + file_path.strip()  # add "/" if is necessary
-            abs_training_files.append(abs_file_path)
+    # CREATE CORPUS AND TRAIN MODELS #
 
-    # call _trainD2VGroupFromTxtFilePaths to create the new group of d2v or w2v models and train
-    # them with the received hyperparameters ('parameters_list'). This function also apply the percentage to the
-    # training corpus ('percentage_training_corpus' to 'abs_training_files')
+    # call _trainD2VGroupFromTxtFilePaths to create the new group of d2v or w2v models and train them with the
+    # received hyperparameters ('parameters_list').
+    # This function also apply the percentage to the training corpus ('percentage_training_corpus' to 'abs_training_files').
     if models_type == "d2v":
-        abs_models_folder = abs_models_folder + ("/" if not abs_models_folder.endswith("/") else "") + "Doc2Vec/"
+        abs_models_folder = abs_models_folder + "/Doc2Vec"
         new_group = _trainD2VGroupFromTxtFilePaths(
             training_files_paths=abs_training_files,
             models_folder=abs_models_folder,
@@ -163,7 +173,7 @@ def buildAndTrainNewModelGroup():
         )
 
     else:
-        abs_models_folder = abs_models_folder + ("/" if not abs_models_folder.endswith("/") else "") + "Word2Vec/"
+        abs_models_folder = abs_models_folder + "/Word2Vec"
         new_group = _trainW2VGroupFromTxtFilePaths(
             training_files_paths=abs_training_files,
             models_folder=abs_models_folder,
@@ -173,6 +183,8 @@ def buildAndTrainNewModelGroup():
             flag_remove_stopWords=flag_remove_stopWords,
             LOG=LOG
         )
+
+    # RETURN POST RESPONSE #
 
     # return the new group in a dict with the name of the group and a list with all models in the group
     group_models = []
@@ -204,5 +216,5 @@ def getLog():
 # this function returns the Corpus folder path, defined directly in this script.
 def getKorpusPath():
     return jsonify({
-        'korpus': korpus_dir
+        'korpus': korpus_dir + "/"
     })

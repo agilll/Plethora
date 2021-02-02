@@ -30,12 +30,12 @@
                 </div>
             </div>
 
-            <h3>Training documents file:</h3>
+            <h3>Training documents path</h3>
             <div class="training-option-div">
 
                 <div class="inline-div">
-                    <span id="trainingDocsFilePrefix" class="input-prefix">KORPUS/</span>
-                    <input id="trainingDocsFileInput" class="input-after-prefix" value="{{training_docs_file}}" type="text"></input>
+                    <span id="trainingDocsPathPrefix" class="input-prefix">KORPUS/</span>
+                    <input id="trainingDocsPathInput" class="input-after-prefix" value="{{training_docs_path}}" type="text"></input>
                 </div>
 
                 <div id="trainingPercentDiv" class="inline-div">
@@ -77,6 +77,16 @@
 
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
+
+    <!-- Inputs descriptions -->
+    <script>
+        $("#modelsTypeSelect")[0].title = "Model type - Word2Vec or Doc2Vec"
+        $("#trainingDocsPathInput")[0].title = "Path to a file with a list of training file paths or a folder with these training files"
+        $("#trainingPercentDiv")[0].title = "Percentage of the corpus to be used in the model training"
+        $("#modelsFolderInput")[0].title = "Directory where model groups will be saved"
+        $("#createGroupButton")[0].title = "Send parameters to the Server and create the new group"
+        $("#updateButton")[0].title = "Update the saved groups list below"
+    </script>
 
     <script>
 
@@ -189,7 +199,6 @@
                                 groupDiv.setAttribute("enabled", "true")
                                 updateGroupChart(group, selectedType == "w2v" ? "size" : "vector_size")
                                 $("#canvas")[0].scrollIntoView()
-
                             }
                         }) // TODO the user decides this hparam
 
@@ -344,7 +353,7 @@
             $("#createGroupButton").attr("enabled", "false")
 
             let modelsType = $("#modelsTypeSelect option:selected").val()
-            let trainingDocsFile = $("#trainingDocsFileInput").val()
+            let trainingDocsPath = $("#trainingDocsPathInput").val()
             let percentageTrainingCorpus = $("#trainingPercentInput").val()
             let modelsFolder = $("#modelsFolderInput").val()
 
@@ -367,7 +376,7 @@
                 type: "POST",
                 url: SERVER_DIR + "/buildAndTrainNewModelGroup",
                 contentType: 'application/json',
-                data: JSON.stringify({"group_name": groupName, "models_type": modelsType, "training_docs_file": trainingDocsFile, "percentage_training_corpus": percentageTrainingCorpus, "models_folder": modelsFolder, "params": params}),
+                data: JSON.stringify({"group_name": groupName, "models_type": modelsType, "training_docs_path": trainingDocsPath, "percentage_training_corpus": percentageTrainingCorpus, "models_folder": modelsFolder, "params": params}),
                 success: function(result) {
                     console.log(result)
                     updateGroupsView()
@@ -419,6 +428,7 @@
             return values
         }
 
+        // Update the hyperparameters options and the group list, according to the selected type
         function updateModelType() {
             // get the new type
             let selectedTypeVal = $("#modelsTypeSelect option:selected").val()
@@ -436,6 +446,7 @@
             updateGroupsView()
         }
 
+        // Update the info with the given summary.json
         function updateGroupChart(groupSummary, hparamName="vector_size") {
 
             // remove the chart if already exists
@@ -486,6 +497,7 @@
                         }]
                     },
                     legend: {
+                        position: "right",
                         onHover: function(e, legendItem) {
                             e.target.style.cursor = 'pointer'
                         },
@@ -536,7 +548,7 @@
             type: "GET",
             url: SERVER_DIR + "/getKorpusPath",
             success: function(result) {
-                $("#trainingDocsFilePrefix").text(result.korpus)
+                $("#trainingDocsPathPrefix").text(result.korpus)
                 $("#modelsFolderPrefix").text(result.korpus)
             }
         })
