@@ -36,6 +36,8 @@ class W2VModelGroup:
             new_models = [models]
         elif isinstance(models, list):
             new_models = [mdl for mdl in models if isinstance(mdl, Word2Vec)]
+        else:
+            return
         if save:
             self.save(new_models)
         self.models.extend(new_models)

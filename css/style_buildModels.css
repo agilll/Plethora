@@ -1,6 +1,6 @@
 /* * {
     outline: 2px dotted red;
-} */
+}*/
 
 html {
     height: 100%;
@@ -19,7 +19,7 @@ h3 {
     color: #0f66cc;
 }
 
-.button {
+.action-button {
     cursor: pointer;
     display: inline-block;
     padding: 10px 20px;
@@ -32,12 +32,12 @@ h3 {
     margin-bottom: 10px;
 }
 
-.button:active {
+.action-button:active {
     background-color: #0251a0;
     box-shadow: 0 0 15px 1px rgba(0, 0, 0, 0.8);
 }
 
-.button[enabled="false"] {
+.action-button[enabled="false"] {
     background-color: #000000;
     pointer-events: none;
     cursor: default;
@@ -122,18 +122,17 @@ h3 {
 }
 
 .inline-div {
-    display: table-cell;
-    vertical-align: middle;
+    display: inline-table;
 }
 
-.paramCard {
+.param-card {
     display: inline-table;
     margin: 10px;
     padding: 10px;
     box-shadow: 0 0 15px 1px rgba(0, 0, 0, 0.4);
     border-radius: 8px;
 }
-.paramCard div .paramData[valid="false"] {
+.param-card div .param-data[valid="false"] {
     border-color: red;
 }
 
@@ -159,7 +158,7 @@ h3 {
     background-color: rgba(255, 0, 0, 0.1);
 }
 
-#groupsList .group-card {
+.group-card {
     cursor: pointer;
     display: inline-table;
     margin: 10px;
@@ -169,12 +168,37 @@ h3 {
     text-align: center;
 }
 
-#groupsList .group-card:active {
+.group-card:hover {
+    box-shadow: 0 0 15px 1px rgba(0, 0, 0, 0.8);
+}
+
+.group-card[selected="selected"], .group-card:active {
     box-shadow: 0 0 15px 1px rgba(0, 0, 0, 0.8);
     background-color: rgba(0, 255, 0, 0.1);
 }
 
-#groupsList .group-card[enabled="true"] {
+.param-buttons-container {
+    text-align: center;
+}
+
+.param-button {
+    cursor: pointer;
+    display: inline-table;
+    margin: 5px 5px 5px 0;
+    padding: 5px;
+    text-align: center;
+    font-weight: bold;
+    background-color: #eee;
     box-shadow: 0 0 15px 1px rgba(0, 0, 0, 0.8);
+    min-width: fit-content;
+    border: 1px solid grey;
+}
+
+.param-button:hover {
+    box-shadow: 0 0 15px 1px rgba(0, 0, 0, 1);
+}
+
+.param-button[selected="selected"], .param-button:active {
+    box-shadow: 0 0 15px 1px rgba(0, 0, 0, 1);
     background-color: rgba(0, 255, 0, 0.1);
 }
