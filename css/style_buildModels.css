@@ -70,18 +70,12 @@ h3 {
     margin: 10px;
     padding: 10px;
     border-radius: 8px;
-}
-
-#trainingOptions select {
-    display: block;
-}
-
-#trainingOptions input {
     text-align: left;
 }
 
 #trainingOptions .input-prefix {
     pointer-events: none;
+    display: inline-block;
     border-radius: 8px 0px 0px 8px;
     color: #555;
     background-color: #eee;
@@ -91,6 +85,7 @@ h3 {
     margin-right: 0;
     padding-right: 5px;
     border: 1px solid #ccc;
+    border-right: 0;
     font-size: medium;
 }
 
@@ -101,6 +96,7 @@ h3 {
     margin-left: 0;
     padding-left: 5px;
     border: 1px solid #ccc;
+    border-left: 0;
     font-size: medium;
 }
 

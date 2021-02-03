@@ -20,7 +20,7 @@
 
         <div id="trainingOptions"> <!-- Selects with build and train options -->
 
-            <h3>Models type:</h3>
+            <h3>Models type</h3>
             <div class="training-option-div">
                 <div>
                     <select id="modelsTypeSelect">
@@ -30,12 +30,12 @@
                 </div>
             </div>
 
-            <h3>Training documents path</h3>
+            <h3>Training files path</h3>
             <div class="training-option-div">
 
                 <div class="inline-div">
                     <span id="trainingDocsPathPrefix" class="input-prefix">KORPUS/</span>
-                    <input id="trainingDocsPathInput" class="input-after-prefix" value="{{training_docs_path}}" type="text"></input>
+                    <input id="trainingDocsPathInput" class="input-after-prefix" value="{{training_docs_path}}" type="text"/>
                 </div>
 
                 <div id="trainingPercentDiv" class="inline-div">
@@ -45,17 +45,17 @@
 
             </div>
 
-            <h3>Models folder:</h3>
+            <h3>Models folder</h3>
             <div class="training-option-div">
-                <div>
+                <div class="inline-div">
                     <span id="modelsFolderPrefix" class="input-prefix">KORPUS/</span>
-                    <input id="modelsFolderInput" class="input-after-prefix" value="{{models_folder}}"></input>
+                    <input id="modelsFolderInput" class="input-after-prefix" value="{{models_folder}}" type="text"/>
                 </div>
             </div>
 
         </div>
 
-        <h3>Hyperpameters list:</h3>
+        <h3>Hyperparameters list</h3>
 
         <div id="paramTable"><div class="param-card plus"></div></div> <!-- Divs list to select multiple params -->
 
@@ -582,7 +582,7 @@
         $("#paramTable div .plus").click(createNewParamCard)
         $("#trainingOptions div").each((i, option) => {
             let input = $(option).find("input")
-            let prefix = $(option).find("a.input-prefix")
+            let prefix = $(option).find(".input-prefix")
             input.on("input", function() {
                 if (input.val().startsWith("/"))
                     prefix.hide()
