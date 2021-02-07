@@ -59,7 +59,7 @@
 
         <div id="paramTable"><div class="param-card plus"></div></div> <!-- Divs list to select multiple params -->
 
-        <div id="createGroupButton" class="action-button" enabled="true">Create group</div> <!-- Req /buildAndTrainNewModelGroup with all params -->
+        <h2><div id="createGroupButton" class="action-button" enabled="true">Create group</div></h2> <!-- Req /buildAndTrainNewModelGroup with all params -->
 
         <h2>Saved groups <div id="updateButton" class="action-button" enabled="true">Update view</div></h2> <!-- Req /getAllSavedD2VGroups to update the groups list -->
 
@@ -167,7 +167,6 @@
         }
 
         // Update the groups list (1.) with the saved groups
-        // TODO Separate D2Vs and W2Vs
         function updateGroupsView() {
             $("#updateButton").attr("enabled", "false")
 
@@ -202,7 +201,7 @@
                                 updateGroupChart(group)
                                 $("#canvas")[0].scrollIntoView()
                             }
-                        }) // TODO the user decides this hparam
+                        })
 
                         groupDiv.append(groupTittle)
                         $("#groupsList").append(groupDiv)
@@ -247,6 +246,9 @@
 
                 // TODO: when the button is disabled because of a request waiting, it must be disabled until the request ends. However,
                 //       is the user set an input the button is enabled. FIX THIS
+
+                // TODO: this listener activates or disactivates the button according to only the last check. If a card value is invalid 
+                //       and then write a valid value in the next one, the button will be activate . FIX THIS
 
                 let validFunc = function(valid) {
                     if (valid == false) {
@@ -581,13 +583,16 @@
         $("#createGroupButton").click(collectParamsAndCreateGroup)
         $("#paramTable div .plus").click(createNewParamCard)
         $("#trainingOptions div").each((i, option) => {
-            let input = $(option).find("input")
+            let input = $(option).find(".input-after-prefix")
             let prefix = $(option).find(".input-prefix")
             input.on("input", function() {
-                if (input.val().startsWith("/"))
+                if (input.val().startsWith("/")) {
                     prefix.hide()
-                else
+                    input.css("border-left", "1px solid #ccc")
+                } else {
                     prefix.show()
+                    input.css("border-left", "0")
+                }
             })
         })
         $.ajax({
