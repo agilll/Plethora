@@ -6,3 +6,5 @@ module_buildCorpus - subproject to build a corpus of ad hoc texts selected from 
 module_processCorpus - subproject to process original corpus files downloaded from Internet
 
 module_train - subproject to train W2V and D2V neural networks
+
+module_buildModel - subproject with a tool to aitomarize the training of Word2Vec and Doc2Vec models
