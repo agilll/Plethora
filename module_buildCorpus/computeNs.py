@@ -23,9 +23,19 @@ mini = int(sys.argv[2])
 mfin = int(sys.argv[3])
 dir_modelos = sys.argv[4]
 
-
 _AP_D2V_MODEL = "doc2vec.bin"
-_HYB_D2V_MODEL = "hibrido.model"
+
+# read the relevant entities of the initial text that will be searched in the ordered set
+entitiesFilename = _CORPUS_FOLDER+"1926/1926.ph1.txt.en"    # this is for 18 entities, change to ph1 for 10 entities
+with open(entitiesFilename) as fp:	# format    http://dbpedia.org/resource/Title
+    listEntitiesOriginalText = fp.read().splitlines()
+
+listEntityTitlesOriginalText  = list(map(lambda x: x[1+x.rfind("/"):], listEntitiesOriginalText))	# keep only Title
+# add prefix and sufix to get format    en.wikipedia.org/wiki..Title.txt   DANGER!!!! may be not this way in future
+listEntityDocsOriginalText  = list(map(lambda x: "en.wikipedia.org/wiki.."+x+".txt", listEntityTitlesOriginalText))
+
+
+
 
 # read the list of candidates to evaluate from 1926.ph5-3.simsBest.csv
 filenameListBestAP = _CORPUS_FOLDER+"1926/1926.ph5-3.simsBest.csv"
@@ -43,7 +53,8 @@ except Exception as e:
 
 # listFull_OrderedAP for everyone, listTOP_OrderedAP for teh first 1000
 listTOP_OrderedAP = listFull_OrderedAP[:EVALUATE]
-listToTest = listFull_OrderedAP
+listToTest = listTOP_OrderedAP
+random.shuffle(listToTest)
 
 print("Starting multiple evaluation: ", EVALUATE, mini, mfin, dir_modelos)
 
@@ -57,7 +68,7 @@ for x in range(mini, mfin):
 # eval all models
 models = {}
 for m in listModels:
-    models[m]  = _computeN(m, listToTest)
+    models[m]  = _computeN(m, listToTest, listEntityDocsOriginalText)
 
 # get the minimum number without outliars
 globalNumber=100

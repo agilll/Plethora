@@ -15,15 +15,24 @@ from aux_build import SortTuplaList_byPosInTupla as _SortTuplaList_byPosInTupla
 from aux_build import MODELS_FOLDER as _MODELS_FOLDER, CORPUS_FOLDER as _CORPUS_FOLDER, SCRAPPED_PAGES_FOLDER as _SCRAPPED_PAGES_FOLDER
 
 if len(sys.argv) < 3:
-	print("Use: "+sys.argv[0]+" EVALUATE  num_modelo")
+	print("Use: "+sys.argv[0]+" EVALUATE  modelo")
 	exit(-1)
 
 EVALUATE  = int(sys.argv[1])   # the number of candidates to evaluate (they are the number more similar)
-num = sys.argv[2]
+modelo = sys.argv[2]
 
 
-_AP_D2V_MODEL = "doc2vec.bin"
-_HYB_D2V_MODEL = "hibrido.model"
+# read the relevant entities of the initial text that will be searched in the ordered set
+entitiesFilename = _CORPUS_FOLDER+"1926/1926.ph1.txt.en"    # this is for 18 entities, change to ph1 for 10 entities
+with open(entitiesFilename) as fp:	# format    http://dbpedia.org/resource/Title
+    listEntitiesOriginalText = fp.read().splitlines()
+
+listEntityTitlesOriginalText  = list(map(lambda x: x[1+x.rfind("/"):], listEntitiesOriginalText))	# keep only Title
+# add prefix and sufix to get format    en.wikipedia.org/wiki..Title.txt   DANGER!!!! may be not this way in future
+listEntityDocsOriginalText  = list(map(lambda x: "en.wikipedia.org/wiki.."+x+".txt", listEntityTitlesOriginalText))
+
+
+
 
 # read the list of candidates to evaluate from 1926.ph5-3.simsBest.csv
 filenameListBestAP = _CORPUS_FOLDER+"1926/1926.ph5-3.simsBest.csv"
@@ -43,17 +52,15 @@ except Exception as e:
 listTOP_OrderedAP = listFull_OrderedAP[:EVALUATE]
 listToTest = listTOP_OrderedAP
 
-print("Starting evaluation: ", EVALUATE, num)
+print("Starting evaluation: ", EVALUATE, modelo)
 
 listModels = [] # the list of models to evaluate
-#listModels.append(_AP_D2V_MODEL)
-prefix="hib"
-listModels.append(prefix+num+"/"+_HYB_D2V_MODEL)
+listModels.append(modelo)
 
 # eval all models
 models = {}
 for m in listModels:
-    models[m]  = _computeN(m, listToTest)
+    models[m]  = _computeN(m, listToTest, listEntityDocsOriginalText)
 
 # get the minimum number without outliars
 globalNumber=100

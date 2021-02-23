@@ -19,7 +19,7 @@ from aux_build import checkIRQOutliar as _checkIRQOutliar, checkZOutliar as _che
 
 
 
-def computeN (modelFilename, listToTest):
+def computeN (modelFilename, listToTest, listEntityDocsOriginalText):
     print("\nStarting evaluation for model", modelFilename)
     ping = int(len(listToTest) / 10) # the number of candidates to echo a ping after
     CURRENT_MODEL = _MODELS_FOLDER+modelFilename
@@ -72,14 +72,14 @@ def computeN (modelFilename, listToTest):
 
 
 
-    # read the relevant entities in the initial text
-    entitiesFilename = _CORPUS_FOLDER+"1926/1926.ph6.txt.en"
-    with open(entitiesFilename) as fp:	# format    http://dbpedia.org/resource/Title
-        listEntitiesOriginalText = fp.read().splitlines()
-
-    listEntityTitlesOriginalText  = list(map(lambda x: x[1+x.rfind("/"):], listEntitiesOriginalText))	# keep only Title
-    # add prefix and sufix to get format    en.wikipedia.org/wiki..Title.txt   DANGER!!!! may be not this way in future
-    listEntityDocsOriginalText  = list(map(lambda x: "en.wikipedia.org/wiki.."+x+".txt", listEntityTitlesOriginalText))
+    # # read the relevant entities in the initial text
+    # entitiesFilename = _CORPUS_FOLDER+"1926/1926.ph6.txt.en"
+    # with open(entitiesFilename) as fp:	# format    http://dbpedia.org/resource/Title
+    #     listEntitiesOriginalText = fp.read().splitlines()
+    #
+    # listEntityTitlesOriginalText  = list(map(lambda x: x[1+x.rfind("/"):], listEntitiesOriginalText))	# keep only Title
+    # # add prefix and sufix to get format    en.wikipedia.org/wiki..Title.txt   DANGER!!!! may be not this way in future
+    # listEntityDocsOriginalText  = list(map(lambda x: "en.wikipedia.org/wiki.."+x+".txt", listEntityTitlesOriginalText))
 
     model = {} # to store results    model[doc] = (pos, sim, outliar)
 
@@ -89,7 +89,7 @@ def computeN (modelFilename, listToTest):
     for idx,docCandidate in enumerate(listOrdered_OnlyNames, start=1):
         if docCandidate in listEntityDocsOriginalText:  # one entity of the original text found in list
             print("Found", docCandidate, "--- pos=", idx, "--- sim=", sims[docCandidate])
-            if (idx > 400) and not outliar: # above 1%, let's start to check for outliars
+            if (idx > 400) and not outliar: # above 400, let's start to check for outliars
                 newlist = list(validPositions)
                 newlist.append(idx) # add the new one
                 if _checkZOutliar(newlist) and _checkIRQOutliar(newlist):
@@ -119,6 +119,6 @@ def computeN (modelFilename, listToTest):
     positions = [model[entity][0] for entity in model]  # the idx for every candidate
     positions = positions[:15] # the first 15 candidates
     media = statistics.mean(positions)  # average position for 15 candidates
-    print("N for the first 15 =", round(media,1))
+    print("N with maximum 15 =", round(media,1))
 
     return model

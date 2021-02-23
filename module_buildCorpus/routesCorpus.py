@@ -1057,6 +1057,7 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 
 
 	def computeRating(indexSim, nameSim):
+		print("Compute rating para", nameSim)
 		listOrdered = list_sims_tuplas.copy()  # make a copy for this run
 		# _SortTuplaList_byPosInTupla: function to order a list of tuplas (0,1,2,3,4,5,6,7...) by the element in the position 'pos'=1,2...
 		_SortTuplaList_byPosInTupla(listOrdered, indexSim)  # order sims list by indexSim similarity (1,2,3,4...)
@@ -1074,6 +1075,7 @@ def doPh5(P0_originalText, P1_selectedWikicats):
 				# 	if checkOutliar(lpos):
 				# 		print("Found outliar for ", nameSim, ":", name, idx)
 				# 		# break to discard the outliar, here we don't do it
+				print("Found", name, "in possition", idx)
 				ratings[nameSim]["originalEntities"].append((name, idx))
 
 			if len(ratings[nameSim]["originalEntities"]) == len(listEntityFilesOriginalText):  # all entities of the original text have been found in the list
