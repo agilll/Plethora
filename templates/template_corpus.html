@@ -65,7 +65,7 @@
 
 
 
-<body style="margin: 10px;" >
+<body style="margin: 10px" >
 
 	<div>
 		<!-- spinner to animate waiting times  -->
@@ -81,7 +81,7 @@
 
 		<!-- Starting of the interface HTML page  -->
 
-		<h1 style="color:  #0066cc"> Corpus Builder Tool </h1> <!-- Tool main title -->
+		<h1 style="color:  #0066cc; text-align: center"> Corpus Builder Tool </h1> <!-- Tool main title -->
 
 		<h3 style="color: #0066cc" id="legendF0_OriginText" >0. Provide Origin Text</h3>
 
@@ -90,7 +90,7 @@
 
 			<div class="form-group" style="margin-bottom: 0px">
 				<!--  the textarea will be filled with a template parameter just after loading the page  -->
-				<textarea id="contentF0_corpusText"  style="border: 2px solid #888; width:1000px; height:200px;"></textarea>
+				<textarea id="contentF0_corpusText"  style="border: 2px solid #888; width:800px; height:100px;"></textarea>
 			</div>
 			<p style="margin-bottom:5mm;"></p>
 			<div class="form-group" style="margin-bottom: 0px">
@@ -102,17 +102,17 @@
 			<h3 style="color: #0066cc" id='legendF1_selectWikicats'>
 				<hr style="border-top: 1px solid red;">
 				1. Select relevant Wikicats from origin text &nbsp;&nbsp;
-				<input style="background-color: #0066cc; color: white" type="button" id="clearAllWikicats" value="Clear All"> &nbsp;&nbsp;
-				<input style="background-color: #0066cc; color: white" type="button" id="selectAllWikicats" value="Select All">
+				<input style="font-size: 20px; background-color: #0066cc; color: white" type="button" id="clearAllWikicats" value="Clear All"> &nbsp;&nbsp;
+				<input style="font-size: 20px; background-color: #0066cc; color: white" type="button" id="selectAllWikicats" value="Select All">
 			</h3>
 
 			<div id='contentF1_showWikicats'></div>  <!-- empty div to later show wikicats identified in text -->
 			<p style="margin-bottom:5mm;"></p>
-			<div class="form-group" style="margin-bottom: 0px">
+			<div class="form-group" style="margin-bottom: 0px; overflow: hidden">
 				<input style="background-color: #0066cc; color: white" id="submitF1_findURLs" type="button" value="Next (ph2: Find candidate URLs)"></input>
 				&nbsp;&nbsp;&nbsp;&nbsp;
 				<span id="spanFromStartF1">  <input id="fromStartF1" name="fromStartF1" type="checkbox"></input>
-				From start (Selected=this phase and previous, Non selected=only this phase)</span>
+				From start (Selected=run this phase and previous ones)</span>
 			</div>
 
 
@@ -128,7 +128,7 @@
 				<input style="background-color: #0066cc; color: white" id="submitF2_DownloadURLs" type="button" value="Next (ph3: Download and clean candidate URLs)"></input>
 				&nbsp;&nbsp;&nbsp;&nbsp;
 				<span id="spanFromStartF2">  <input id="fromStartF2" name="fromStartF2" type="checkbox"></input>
-				From start (Selected=this phase and previous, Non selected=only this phase)</span>
+				From start (Selected=run this phase and previous ones)</span>
 			</div>
 
 
@@ -144,7 +144,7 @@
 				<input style="background-color: #0066cc; color: white" id="submitF3_identifyWikicats" type="button" value="Next (ph4: Identify wikicats in candidate texts)"></input>
 				&nbsp;&nbsp;&nbsp;&nbsp;
 				<span id="spanFromStartF3">  <input id="fromStartF3" name="fromStartF3" type="checkbox"></input>
-				From start (Selected=this phase and previous, Non selected=only this phase)</span>
+				From start (Selected=run this phase and previous ones)</span>
 			</div>
 
 
@@ -160,7 +160,7 @@
 				<input style="background-color: #0066cc; color: white" id="submitF4_computeSimilarities" type="button" value="Next (ph5: Compute Similarities for candidate texts)"></input>
 				&nbsp;&nbsp;&nbsp;&nbsp;
 				<span id="spanFromStartF4">  <input id="fromStartF4" name="fromStartF4" type="checkbox"></input>
-				From start (Selected=this phase and previous, Non selected=only this phase)</span>
+				From start (Selected=run this phase and previous ones)</span>
 			</div>
 
 
@@ -177,7 +177,7 @@
 				<input style="background-color: #0066cc; color: white" id="submitF5_trainD2V" type="button" value="Next (ph6: train D2V model with corpus)"></input>
 				&nbsp;&nbsp;&nbsp;&nbsp;
 				<span id="spanFromStartF5">  <input id="fromStartF5" name="fromStartF5" type="checkbox"></input>
-				From start (Selected=this phase and previous, Non selected=only this phase)</span>
+				From start (Selected=run this phase and previous ones)</span>
 			</div>
 
 
@@ -194,7 +194,7 @@
 				<input style="background-color: #0066cc; color: white" id="submitF6_reviewCorpus" type="button" value="Next (ph7: review corpus with D2V model)"></input>
 				&nbsp;&nbsp;&nbsp;&nbsp;
 				<span id="spanFromStartF6">  <input id="fromStartF6" name="fromStartF6" type="checkbox"></input>
-				From start (Selected=this phase and previous, Non selected=only this phase)</span>
+				From start (Selected=run this phase and previous ones)</span>
 			</div>
 
 
