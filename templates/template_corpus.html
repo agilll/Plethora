@@ -107,8 +107,8 @@
 			</h3>
 
 			<div id='contentF1_showWikicats'></div>  <!-- empty div to later show wikicats identified in text -->
-			<p style="margin-bottom:5mm;"></p>
-			<div class="form-group" style="margin-bottom: 0px; overflow: hidden">
+			<input style="font-size: 14px; margin-bottom: 10px; background-color: #0066cc; color: white" type="button" id="showAllWikicats" value="show all wikicats">
+			<div class="form-group" style="margin-bottom: 0px">
 				<input style="background-color: #0066cc; color: white" id="submitF1_findURLs" type="button" value="Next (ph2: Find candidate URLs)"></input>
 				&nbsp;&nbsp;&nbsp;&nbsp;
 				<span id="spanFromStartF1">  <input id="fromStartF1" name="fromStartF1" type="checkbox"></input>
@@ -123,7 +123,7 @@
 			</h3>
 
 			<div id='contentF2_showNumberUrls'></div> <!-- empty div to later show number of candidate URLs discovered for each wikicat -->
-			<p style="margin-bottom:5mm;"></p>
+			<input style="font-size: 14px; margin-bottom: 10px; background-color: #0066cc; color: white" type="button" id="showAllNumberUrls" value="show all numbers">
 			<div class="form-group" style="margin-bottom: 0px">
 				<input style="background-color: #0066cc; color: white" id="submitF2_DownloadURLs" type="button" value="Next (ph3: Download and clean candidate URLs)"></input>
 				&nbsp;&nbsp;&nbsp;&nbsp;
@@ -167,7 +167,7 @@
 
 			<h3 style="color: #0066cc" id='legendF5_similarities'>
 				<hr style="border-top: 1px solid red;">
-				5. Similiarities
+				5. Similarities
 			</h3>
 
 			<div id='contentF5_similarities'></div> <!-- empty div to later show the result -->
@@ -237,6 +237,12 @@
 			P5_listDocsCorpus = [];
 			P6_modelName = "";
 
+			partialResultsWikicatsList = "";
+			fullResultsWikicatsList = "";
+
+			partialResultsNumbers = "";
+			fullResultsNumbers = "";
+
 			$(document).ready(function () {
 
 				setDebug();
@@ -246,14 +252,19 @@
 				$(contentF0_corpusText).val({{ parDefaultText | tojson }});   <!-- fill textarea with origin text -->
 
 
+
+
 				function buildF1contents (result) {
 					wikicatList = result["P1_wikicats"]   // this is the list of wikicats in text
 					selWikicats =  result["P1_selectedWikicats"]
 
-					results = "<b>"+wikicatList.length+" wikicats</b> (click on anyone to see its wikicat components)<br>\n"
+					results = "<b>"+wikicatList.length+" wikicats</b> (click 'show all' for the full set)<br>\n"
 					results += "<table>"
 					fila=0
-					wikicatList.forEach(function(w){
+					shown=0
+
+					for (let i = 0; i < wikicatList.length; i++) {
+						w = wikicatList[i];
 						if (fila++ % 3 == 0 )
 							results += "<tr><td style='padding-left:20px'>";
 						else
@@ -268,10 +279,15 @@
 
 						wr = result[w]
 						results += " <span onclick='alert(\""+wr["components"]+"\")'>"+w+"</span>";
-					});
-					results += "</table>"
+						shown++;
+						if (shown == 6) partialResultsWikicatsList=results;
+				}
 
-					return results
+					results += "</table>"
+					partialResultsWikicatsList += "</table>"
+					fullResultsWikicatsList = results
+
+					return fullResultsWikicatsList
 				}
 
 
@@ -351,6 +367,10 @@
 					});
 				});
 
+				$(showAllWikicats).click(function(event) {
+					$(contentF1_showWikicats).html(fullResultsWikicatsList)
+			  });
+
 
 
 
@@ -359,25 +379,38 @@
 					selWikicats = result["P1_selectedWikicats"]
 
 					// present the summary of results
-					results = "<b>"+selWikicats.length+" wikicats</b><br>\n"
+					results = "<b>"+selWikicats.length+" wikicats</b> (click 'show all' for the full set)<br>\n"
 					results += "<table style='border: 1px solid'>"
 					fila=0
+					shown = 0
 					results += "<th style='text-align: center; border: 1px solid'> Wikicat <th style='text-align: center; border: 1px solid'> Wikicat"
-					selWikicats.forEach(function(w){
-						if (fila++ % 2 == 0 ) {
-							results += "<tr style='border: 1px solid'><td style='padding-right:10px; padding-left:10px; border: 1px solid'>"
-						}
-						else {
-							results += "<td style='padding-right:10px; padding-left:10px; border: 1px solid'>"
-						}
-						wr = result[w]
-						results += w+" ("+wr["db"]+" from <span style='color: blue; font-weight: bold; text-decoration: underline;' name='"+w+"'  class='wiki wikicat'>DBpedia</span>, "
-						results += wr["wk"]+" from <span style='color: blue; font-weight: bold; text-decoration: underline;' name='"+w+"'  class='wiki wikidata'>Wikidata</span>)";
-					});
+
+					for (let i = 0; i < selWikicats.length; i++) {
+							w = wikicatList[i];
+							shown++;
+
+							if (fila++ % 2 == 0 ) {
+								results += "<tr style='border: 1px solid'><td style='padding-right:10px; padding-left:10px; border: 1px solid'>"
+							}
+							else {
+								results += "<td style='padding-right:10px; padding-left:10px; border: 1px solid'>"
+							}
+							wr = result[w]
+							results += w+" ("+wr["db"]+" from <span style='color: blue; font-weight: bold; text-decoration: underline;' name='"+w+"'  class='wiki wikicat'>DBpedia</span>, "
+							results += wr["wk"]+" from <span style='color: blue; font-weight: bold; text-decoration: underline;' name='"+w+"'  class='wiki wikidata'>Wikidata</span>)";
+
+							if (shown == 4) partialResultsNumbers=results;
+					}
+
 					results += "</table><p>"
 					results += "<p style='color: black'>Identified "+result['P2_totalDB']+" URLs from DBpedia and "+result['P2_totalWK']+" from Wikidata. Distinct URLs: "+result['P2_totalUrls']
 
-					return results
+					partialResultsNumbers += "</table><p>"
+					partialResultsNumbers += "<p style='color: black'>Identified "+result['P2_totalDB']+" URLs from DBpedia and "+result['P2_totalWK']+" from Wikidata. Distinct URLs: "+result['P2_totalUrls']
+
+					fullResultsNumbers = results;
+
+					return fullResultsNumbers
 				}
 
 
@@ -464,10 +497,15 @@
 					});
 				});
 
+				$(showAllNumberUrls).click(function(event) {
+					$(contentF2_showNumberUrls).html(fullResultsNumbers)
+			  });
+
 
 
 				function buildF3contents (result) {
-					results = "<b>"+result['P3_numUrlsDownloaded']  + " new files have been downloaded in this iteration</b><br>\n"
+					results = ""
+					// results += "<b>"+result['P3_numUrlsDownloaded']  + " new files have been downloaded in this iteration</b><br>\n"
 					results += "<b>"+result['P3_lenListEnoughContent']  + " files with enough content are available</b><br>\n"
 					results += "<b>"+result['P3_lenListNotEnoughContent']  + " files without enough content have been discarded</b><br>\n"
 					//results += "<b>Duration of F3: " + result['P3_elapsedTimeF3']  + " seconds</b><br>\n"
@@ -518,7 +556,8 @@
 
 
 				function buildF4contents (result) {
-					results = "<b>"+result['P4_numUrlsProcessed']  + " new files have been processed in this iteration</b><br>\n"
+					results = ""
+					//results += "<b>"+result['P4_numUrlsProcessed']  + " new files have been processed in this iteration</b><br>\n"
 					results += "<b>"+result['P4_lenListWithWKSB']  + " files with wikicats or subjects are available</b><br>\n"
 					results += "<b>"+result['P4_lenListWithoutWKSB']  + " files without wikicats nor subjects have been discarded</b><br>\n"
 					//results += "<b>Duration of F4: " + result['P4_elapsedTimeF4']  + " seconds</b><br>\n"
@@ -571,11 +610,20 @@
 				});
 
 
+				function changeName(n) {
+	  				n = n.replace('Fwikicats', 'SimW');
+						n = n.replace('Fsubjects', 'SimS');
+						n = n.replace('Spacy', 'SimC');
+						n = n.replace('Doc2Vec-AP', 'SimAP');
+
+						return n;
+				}
 
 				function buildF5contents (result) {
-					results = "<b>Duration of F5: " + result['P5_elapsedTimeF5']  + " seconds</b><br>\n"
-					results += "<b>Best Similarity: " + result['P5_bestSim'] + " </b><br>\n"
-					results += "<b>Ratings: " + result['P5_ratings'] + " </b><br>\n"
+					results = ""
+					//results += "<b>Duration of F5: " + result['P5_elapsedTimeF5']  + " seconds</b><br>\n"
+					results += "<b>Best Similarity: " + changeName(result['P5_bestSim']) + " </b><br>\n"
+					results += "<b>Ratings: " + changeName(result['P5_ratings']) + " </b><br>\n"
 
 					return results
 				}
